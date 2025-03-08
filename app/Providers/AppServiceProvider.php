@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\View\View;
+use Barryvdh\Debugbar\Facades\Debugbar;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -11,7 +13,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        \Illuminate\Support\Facades\View::composer('*', function (View $view) {
+            Debugbar::addMessage('View carregada: ' . $view->getPath(), 'views');
+        });
     }
 
     /**
