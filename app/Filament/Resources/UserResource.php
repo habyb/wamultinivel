@@ -12,6 +12,8 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Filament\Forms\Components\Select;
+use Illuminate\Support\Facades\Auth;
 
 class UserResource extends Resource
 {
@@ -29,12 +31,19 @@ class UserResource extends Resource
                 Forms\Components\TextInput::make('email')
                     ->email()
                     ->required()
+                    ->unique(ignoreRecord: true)
                     ->maxLength(255),
-                Forms\Components\DateTimePicker::make('email_verified_at'),
                 Forms\Components\TextInput::make('password')
                     ->password()
                     ->required()
+                    ->required(fn(string $operation): bool => $operation === 'create')
+                    ->dehydrated(fn(?string $state) => filled($state))
+                    ->confirmed()
                     ->maxLength(255),
+                Forms\Components\TextInput::make('password_confirmation')
+                    ->password()
+                    ->requiredWith(statePaths:'password')
+                    ->dehydrated(condition:false),
             ]);
     }
 
