@@ -2,6 +2,9 @@
 
 namespace App\Providers\Filament;
 
+use Filament\Forms\Components\Field;
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\TextInput;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -10,6 +13,9 @@ use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\Tables\Columns\ImageColumn;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ToggleColumn;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
@@ -39,6 +45,31 @@ class AdminPanelProvider extends PanelProvider
             ->widgets([
                 CustomAccountWidget::class,
             ])
+            ->bootUsing(function(){
+                Section::configureUsing(function(Section $field){
+                    $field->translateLabel();
+                });
+
+                Field::configureUsing(function(Field $field){
+                    $field->translateLabel();
+                });
+
+                TextInput::configureUsing(function(TextInput $field){
+                    $field->translateLabel();
+                });
+
+                TextColumn::configureUsing(function(TextColumn $field){
+                    $field->translateLabel();
+                });
+
+                ImageColumn::configureUsing(function(ImageColumn $field){
+                    $field->translateLabel();
+                });
+
+                ToggleColumn::configureUsing(function(ToggleColumn $field){
+                    $field->translateLabel();
+                });
+            })
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
