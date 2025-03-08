@@ -33,7 +33,7 @@ return [
     ],
     'boolean'              => 'O campo :attribute deve ser verdadeiro ou falso.',
     'can'                  => 'O campo :attribute contém valores não autorizado.',
-    'confirmed'            => 'O campo :attribute de confirmação não confere.',
+    'confirmed'            => 'O campo confirmação de :attribute não confere.',
     'contains'             => 'O campo :attribute está faltando um valor obrigatório.',
     'current_password'     => 'A senha está incorreta.',
     'date'                 => 'O campo :attribute deve ser uma data válida.',
