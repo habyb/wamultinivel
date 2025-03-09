@@ -20,6 +20,11 @@ class RoleResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
+    public static function getModelLabel(): string
+    {
+        return __('Roles');
+    }
+
     public static function form(Form $form): Form
     {
         return $form

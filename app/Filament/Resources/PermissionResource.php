@@ -20,6 +20,11 @@ class PermissionResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
+    public static function getModelLabel(): string
+    {
+        return __('Permissions');
+    }
+
     public static function form(Form $form): Form
     {
         return $form
