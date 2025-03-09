@@ -2,12 +2,22 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
+use App\Models\Role;
+use App\Models\User;
 use Illuminate\View\View;
+use App\Models\Permission;
+use App\Policies\UserPolicy;
 use Barryvdh\Debugbar\Facades\Debugbar;
+use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
+    protected $policies = [
+        User::class => UserPolicy::class,
+        // Role::class => RolePolicy::class,
+        // Permission::class => PermissionPolicy::class,
+    ];
+
     /**
      * Register any application services.
      */

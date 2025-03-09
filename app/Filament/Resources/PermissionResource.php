@@ -3,20 +3,20 @@
 namespace App\Filament\Resources;
 
 use Filament\Forms;
-use App\Models\Role;
 use Filament\Tables;
 use Filament\Forms\Form;
+use App\Models\Permission;
 use Filament\Tables\Table;
 use Filament\Resources\Resource;
 use Filament\Forms\Components\Select;
 use Illuminate\Database\Eloquent\Builder;
-use App\Filament\Resources\RoleResource\Pages;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
-use App\Filament\Resources\RoleResource\RelationManagers;
+use App\Filament\Resources\PermissionResource\Pages;
+use App\Filament\Resources\PermissionResource\RelationManagers;
 
-class RoleResource extends Resource
+class PermissionResource extends Resource
 {
-    protected static ?string $model = Role::class;
+    protected static ?string $model = Permission::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
@@ -27,9 +27,9 @@ class RoleResource extends Resource
                 Forms\Components\TextInput::make('name')
                     ->required()
                     ->maxLength(255),
-                Select::make('permissions')
+                Select::make('roles')
                     ->multiple()
-                    ->relationship('permissions', 'name')
+                    ->relationship('roles', 'name')
                     ->preload()
             ]);
     }
@@ -66,7 +66,7 @@ class RoleResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ManageRoles::route('/'),
+            'index' => Pages\ManagePermissions::route('/'),
         ];
     }
 }
