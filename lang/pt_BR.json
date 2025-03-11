@@ -190,5 +190,12 @@
   "Created at": "Criado em",
   "Updated at": "Modficado em",
   "Roles": "Funções",
+  "Expires at": "Expira em",
+  "Token name": "Nome do Token",
+  "User id": "Nome do Usuário",
+  "Tokenable": "Nome do Usuário",
+  "Token created successfully!": "Token criado com sucesso!",
+  "The token is displayed only once upon creation. If you lose it, you will need to delete it and generate a new one.": "O token é exibido somente uma vez após a sua criação. Se você o perder, será necessário excluí-lo e gerar um novo.",
+  "Copy the access token": "Copie o token de acesso",
   "": ""
 }
