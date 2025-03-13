@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Forms\Components\Select;
 use Illuminate\Support\Facades\Auth;
+use STS\FilamentImpersonate\Tables\Actions\Impersonate;
 
 class UserResource extends Resource
 {
@@ -24,6 +25,13 @@ class UserResource extends Resource
     public static function getModelLabel(): string
     {
         return __(key: 'User');
+    }
+
+    protected function getActions(): array
+    {
+        return [
+            Impersonate::make()->record($this->getRecord())
+        ];
     }
 
     public static function form(Form $form): Form
@@ -89,6 +97,7 @@ class UserResource extends Resource
                 //
             ])
             ->actions([
+                Impersonate::make(),
                 Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([
