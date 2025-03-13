@@ -46,6 +46,11 @@ class PermissionResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->searchable(),
+                Tables\Columns\TextColumn::make('roles.name')
+                    ->sortable()
+                    ->searchable()
+                    ->badge()
+                    ->separator(', '),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime(format: 'd/m/Y H:i:s')
                     ->sortable()
