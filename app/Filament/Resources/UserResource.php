@@ -55,9 +55,9 @@ class UserResource extends Resource
                         name: 'roles',
                         titleAttribute: 'name',
                         modifyQueryUsing: fn (Builder $query) =>
-                            Auth::user()?->hasRole('Admin')
-                                ? $query // Admin sees all roles
-                                : $query->where('name', '!=', 'Admin')
+                            Auth::user()?->hasRole('Superadmin')
+                                ? $query // Superadmin sees all roles
+                                : $query->where('name', '!=', 'Superadmin')
                     )
                     ->preload()
             ]);
@@ -116,11 +116,11 @@ class UserResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return Auth::user()->hasRole('Admin')
+        return Auth::user()->hasRole('Superadmin')
             ? parent::getEloquentQuery()
             : parent::getEloquentQuery()->whereHas(
                 relation: 'roles',
-                callback: fn(Builder $query) => $query->where('name', '!=', 'Admin')
+                callback: fn(Builder $query) => $query->where('name', '!=', 'Superadmin')
             );
     }
 }
