@@ -16,6 +16,7 @@ use Filament\Forms\Components\Select;
 use Illuminate\Support\Facades\Auth;
 use STS\FilamentImpersonate\Tables\Actions\Impersonate;
 use Filament\Tables\Columns\TextColumn;
+use Illuminate\Support\Str;
 
 class UserResource extends Resource
 {
@@ -95,7 +96,20 @@ class UserResource extends Resource
                         $state <= 5 => 'success',
                         default => 'warning',
                     }),
-                Tables\Columns\TextColumn::make('invitation_code')->label('Invited by'),
+                Tables\Columns\TextColumn::make('convidador.name')
+                    ->label('Invited by')
+                    ->formatStateUsing(function ($state, $record) {
+                        if (!$state) {
+                            return '—';
+                        }
+
+                        $nomeLimitado = Str::limit($state, 10, '...');
+                        return "{$nomeLimitado} ({$record->invitation_code})";
+                    })
+                    ->tooltip(
+                        fn($state, $record) =>
+                        $state ? "{$record->convidador->name} ({$record->invitation_code})" : null
+                    ),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime(format: 'd/m/Y H:i:s')
                     ->sortable()
@@ -141,7 +155,7 @@ class UserResource extends Resource
 
         // Superadmin
         if ($user->hasRole('Superadmin')) {
-            return parent::getEloquentQuery()->withCount('convidadosDiretos');
+            return parent::getEloquentQuery()->with(['convidador'])->withCount('convidadosDiretos');
         }
 
         // Admin
@@ -152,6 +166,7 @@ class UserResource extends Resource
                     fn(Builder $query) =>
                     $query->whereIn('name', ['Embaixador', 'Membro'])
                 )
+                ->with(['convidador'])
                 ->withCount('convidadosDiretos');
         }
 
@@ -159,6 +174,7 @@ class UserResource extends Resource
         if ($user->hasRole('Embaixador') || $user->hasRole('Membro')) {
             return parent::getEloquentQuery()
                 ->where('invitation_code', $user->code)
+                ->with(['convidador'])
                 ->withCount('convidadosDiretos');
         }
 
