@@ -87,7 +87,7 @@ class UserResource extends Resource
                     ->badge()
                     ->separator(', '),
                 TextColumn::make('convidados_diretos_count')
-                    ->label('Convidados')
+                    ->label('Number of guests')
                     ->badge()
                     ->sortable()
                     ->color(fn(string $state): string => match (true) {
@@ -95,7 +95,7 @@ class UserResource extends Resource
                         $state <= 5 => 'success',
                         default => 'warning',
                     }),
-                Tables\Columns\TextColumn::make('invitation_code')->label('Convidado por'),
+                Tables\Columns\TextColumn::make('invitation_code')->label('Invited by'),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime(format: 'd/m/Y H:i:s')
                     ->sortable()
