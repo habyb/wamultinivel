@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Forms\Components\Select;
 use Illuminate\Support\Facades\Auth;
 use STS\FilamentImpersonate\Tables\Actions\Impersonate;
+use Filament\Tables\Columns\TextColumn;
 
 class UserResource extends Resource
 {
@@ -55,17 +56,17 @@ class UserResource extends Resource
                     ->maxLength(255),
                 Forms\Components\TextInput::make('password_confirmation')
                     ->password()
-                    ->requiredWith(statePaths:'password')
-                    ->dehydrated(condition:false),
+                    ->requiredWith(statePaths: 'password')
+                    ->dehydrated(condition: false),
                 Select::make('roles')
                     ->multiple()
                     ->relationship(
                         name: 'roles',
                         titleAttribute: 'name',
-                        modifyQueryUsing: fn (Builder $query) =>
-                            Auth::user()?->hasRole('Superadmin')
-                                ? $query // Superadmin sees all roles
-                                : $query->where('name', '!=', 'Superadmin')
+                        modifyQueryUsing: fn(Builder $query) =>
+                        Auth::user()?->hasRole('Superadmin')
+                            ? $query // Superadmin sees all roles
+                            : $query->where('name', '!=', 'Superadmin')
                     )
                     ->preload()
             ]);
@@ -75,6 +76,7 @@ class UserResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\TextColumn::make('code')->label('Invitation ID'),
                 Tables\Columns\TextColumn::make('name')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('email')
@@ -84,6 +86,16 @@ class UserResource extends Resource
                     ->searchable()
                     ->badge()
                     ->separator(', '),
+                TextColumn::make('convidados_diretos_count')
+                    ->label('Convidados')
+                    ->badge()
+                    ->sortable()
+                    ->color(fn(string $state): string => match (true) {
+                        $state == 0 => 'gray',
+                        $state <= 5 => 'success',
+                        default => 'warning',
+                    }),
+                Tables\Columns\TextColumn::make('invitation_code')->label('Convidado por'),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime(format: 'd/m/Y H:i:s')
                     ->sortable()
@@ -125,11 +137,32 @@ class UserResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return Auth::user()->hasRole('Superadmin')
-            ? parent::getEloquentQuery()
-            : parent::getEloquentQuery()->whereHas(
-                relation: 'roles',
-                callback: fn(Builder $query) => $query->where('name', '!=', 'Superadmin')
-            );
+        $user = Auth::user();
+
+        // Superadmin
+        if ($user->hasRole('Superadmin')) {
+            return parent::getEloquentQuery()->withCount('convidadosDiretos');
+        }
+
+        // Admin
+        if ($user->hasRole('Admin')) {
+            return parent::getEloquentQuery()
+                ->whereHas(
+                    'roles',
+                    fn(Builder $query) =>
+                    $query->whereIn('name', ['Embaixador', 'Membro'])
+                )
+                ->withCount('convidadosDiretos');
+        }
+
+        // Embaixador or Membro
+        if ($user->hasRole('Embaixador') || $user->hasRole('Membro')) {
+            return parent::getEloquentQuery()
+                ->where('invitation_code', $user->code)
+                ->withCount('convidadosDiretos');
+        }
+
+        // fallback
+        return parent::getEloquentQuery()->whereRaw('0 = 1');
     }
 }
