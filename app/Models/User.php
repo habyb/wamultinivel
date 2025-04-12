@@ -55,4 +55,19 @@ class User extends Authenticatable implements FilamentUser
     {
         return $this->hasPermissionTo(permission: 'access_admin');
     }
+
+    public function convidadosDiretos()
+    {
+        return $this->hasMany(User::class, 'invitation_code', 'code');
+    }
+
+    public function convidador()
+    {
+        return $this->belongsTo(User::class, 'invitation_code', 'code');
+    }
+
+    public function redeCompleta()
+    {
+        return $this->convidadosDiretos()->with('redeCompleta');
+    }
 }
