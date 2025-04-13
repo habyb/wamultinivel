@@ -17,6 +17,8 @@ use Illuminate\Support\Facades\Auth;
 use STS\FilamentImpersonate\Tables\Actions\Impersonate;
 use Filament\Tables\Columns\TextColumn;
 use Illuminate\Support\Str;
+use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Grid;
 
 class UserResource extends Resource
 {
@@ -40,36 +42,58 @@ class UserResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('name')
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('email')
-                    ->email()
-                    ->required()
-                    ->unique(ignoreRecord: true)
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('password')
-                    ->password()
-                    ->required()
-                    ->required(fn(string $operation): bool => $operation === 'create')
-                    ->dehydrated(fn(?string $state) => filled($state))
-                    ->confirmed()
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('password_confirmation')
-                    ->password()
-                    ->requiredWith(statePaths: 'password')
-                    ->dehydrated(condition: false),
-                Select::make('roles')
-                    ->multiple()
-                    ->relationship(
-                        name: 'roles',
-                        titleAttribute: 'name',
-                        modifyQueryUsing: fn(Builder $query) =>
-                        Auth::user()?->hasRole('Superadmin')
-                            ? $query // Superadmin sees all roles
-                            : $query->where('name', '!=', 'Superadmin')
-                    )
-                    ->preload()
+                Grid::make()
+                    ->schema([
+                        Placeholder::make('code')
+                            ->label('Invitation ID')
+                            ->content(fn($record) => $record?->code ?? '—')
+                            ->visible(fn(string $operation): bool => $operation !== 'create'),
+                        Placeholder::make('convidados_diretos_count')
+                            ->label('Number of guests')
+                            ->content(fn($record) => $record?->convidados_diretos_count ?? 0)
+                            ->visible(fn(string $operation): bool => $operation !== 'create'),
+                        Placeholder::make('convidador.name')
+                            ->label('Invited by')
+                            ->content(
+                                fn($record) => $record?->convidador
+                                    ? "{$record->convidador->name} ({$record->invitation_code})"
+                                    : '—'
+                            )
+                            ->visible(fn(string $operation): bool => $operation !== 'create'),
+                    ])->columns(3),
+                Grid::make(2)->schema([
+                    Forms\Components\TextInput::make('name')
+                        ->required()
+                        ->maxLength(255),
+                    Forms\Components\TextInput::make('email')
+                        ->email()
+                        ->required()
+                        ->unique(ignoreRecord: true)
+                        ->maxLength(255),
+                    Forms\Components\TextInput::make('password')
+                        ->password()
+                        ->required()
+                        ->required(fn(string $operation): bool => $operation === 'create')
+                        ->dehydrated(fn(?string $state) => filled($state))
+                        ->confirmed()
+                        ->maxLength(255),
+                    Forms\Components\TextInput::make('password_confirmation')
+                        ->password()
+                        ->requiredWith(statePaths: 'password')
+                        ->dehydrated(condition: false),
+                    Select::make('roles')
+                        ->multiple()
+                        ->relationship(
+                            name: 'roles',
+                            titleAttribute: 'name',
+                            modifyQueryUsing: fn(Builder $query) =>
+                            Auth::user()?->hasRole('Superadmin')
+                                ? $query // Superadmin sees all roles
+                                : $query->where('name', '!=', 'Superadmin')
+                        )
+                        ->preload()
+                        ->columnSpanFull(),
+                ]),
             ]);
     }
 

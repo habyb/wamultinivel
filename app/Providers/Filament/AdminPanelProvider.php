@@ -15,6 +15,7 @@ use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\ToggleColumn;
 use Filament\Http\Middleware\Authenticate;
 use App\Filament\Widgets\CustomAccountWidget;
+use Filament\Forms\Components\Placeholder;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -47,28 +48,32 @@ class AdminPanelProvider extends PanelProvider
             ->widgets([
                 CustomAccountWidget::class,
             ])
-            ->bootUsing(function(){
-                Section::configureUsing(function(Section $field){
+            ->bootUsing(function () {
+                Section::configureUsing(function (Section $field) {
                     $field->translateLabel();
                 });
 
-                Field::configureUsing(function(Field $field){
+                Field::configureUsing(function (Field $field) {
                     $field->translateLabel();
                 });
 
-                TextInput::configureUsing(function(TextInput $field){
+                TextInput::configureUsing(function (TextInput $field) {
                     $field->translateLabel();
                 });
 
-                TextColumn::configureUsing(function(TextColumn $field){
+                TextColumn::configureUsing(function (TextColumn $field) {
                     $field->translateLabel();
                 });
 
-                ImageColumn::configureUsing(function(ImageColumn $field){
+                ImageColumn::configureUsing(function (ImageColumn $field) {
                     $field->translateLabel();
                 });
 
-                ToggleColumn::configureUsing(function(ToggleColumn $field){
+                ToggleColumn::configureUsing(function (ToggleColumn $field) {
+                    $field->translateLabel();
+                });
+
+                Placeholder::configureUsing(function (Placeholder $field) {
                     $field->translateLabel();
                 });
             })
