@@ -12,6 +12,7 @@ use Filament\Forms\Components\Section;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Forms\Components\TextInput;
 use Filament\Tables\Columns\ImageColumn;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ToggleColumn;
 use Filament\Http\Middleware\Authenticate;
 use App\Filament\Widgets\CustomAccountWidget;
@@ -74,6 +75,10 @@ class AdminPanelProvider extends PanelProvider
                 });
 
                 Placeholder::configureUsing(function (Placeholder $field) {
+                    $field->translateLabel();
+                });
+
+                IconColumn::configureUsing(function (IconColumn $field) {
                     $field->translateLabel();
                 });
             })
