@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'evulution' => [
+        'url' => env('EVULUTION_API_URL'),
+        'instance' => env('EVULUTION_API_INSTANCE'),
+        'token' => env('EVULUTION_API_TOKEN'),
+    ],
+
 ];
