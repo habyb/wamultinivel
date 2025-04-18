@@ -7,4 +7,4 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/convite/{codigo}', [InviteRedirectController::class, 'handle']);
+Route::get('/{codigo}', [InviteRedirectController::class, 'handle']);
