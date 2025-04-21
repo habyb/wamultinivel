@@ -70,7 +70,7 @@ class UserResource extends Resource
                         ->required()
                         ->unique(ignoreRecord: true)
                         ->maxLength(255),
-                    Forms\Components\TextInput::make('remote_jid')
+                    Forms\Components\TextInput::make('remoteJid')
                         ->required()
                         ->label('WhatsApp')
                         ->mask('(99) 99999-9999')
