@@ -70,32 +70,14 @@ class UserResource extends Resource
                         ->required()
                         ->unique(ignoreRecord: true)
                         ->maxLength(255),
-                    Forms\Components\TextInput::make('remoteJid')
-                        ->required()
+                    Placeholder::make('remoteJid')
                         ->label('WhatsApp')
-                        ->mask('(99) 99999-9999')
-                        ->placeholder('(21) 98888-8877')
-                        ->helperText('Formato: (DDD) 9XXXX-XXXX')
-                        ->rules([
-                            'nullable',
-                            'regex:/^\(\d{2}\)\s9\d{4}-\d{4}$/',
-                        ])
-                        ->dehydrateStateUsing(function (?string $state): ?string {
-                            // Remove máscara antes de salvar no banco
-                            return $state ? preg_replace('/\D/', '', $state) : null;
-                        })
-                        ->afterStateHydrated(function (Forms\Components\TextInput $component, $state) {
-                            // Só formata o número se for valor vindo do banco (edição)
-                            if (is_string($state) && preg_match('/^\d{11}$/', $state)) {
-                                $formatted = sprintf(
-                                    '(%s) %s-%s',
-                                    substr($state, 0, 2),
-                                    substr($state, 2, 5),
-                                    substr($state, 7)
-                                );
-                                $component->state($formatted);
-                            }
-                        }),
+                        ->content(
+                            fn($record) => $record?->remoteJid
+                                ? preg_replace('/\D/', '', $record->remoteJid)
+                                : '—'
+                        )
+                        ->visible(fn(string $operation): bool => $operation !== 'create'),
                 ])->columns(3),
                 Grid::make(2)->schema([
                     Forms\Components\TextInput::make('password')
