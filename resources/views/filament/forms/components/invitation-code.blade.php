@@ -1,6 +1,6 @@
 @php
     $code = $getRecord()?->code ?? '—';
-    $url = $code !== '—' ? "https://convite.andrecorrea.com.br/{$code}" : null;
+    $url = $code !== '—' ? config('app.url')."/{$code}" : null;
 @endphp
 
 @if ($code === '—')
