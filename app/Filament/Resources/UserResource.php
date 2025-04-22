@@ -46,7 +46,7 @@ class UserResource extends Resource
                     ->schema([
                         Placeholder::make('code')
                             ->label('Invitation ID')
-                            ->content(fn($record) => $record?->code ?? '—')
+                            ->view('filament.forms.components.invitation-code')
                             ->visible(fn(string $operation): bool => $operation !== 'create'),
                         Placeholder::make('convidados_diretos_count')
                             ->label('Number of guests')
