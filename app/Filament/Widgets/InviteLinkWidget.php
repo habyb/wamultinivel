@@ -16,6 +16,6 @@ class InviteLinkWidget extends Widget
 
         $code = $user->code;
 
-        return url("/convite/{$code}");
+        return url("/{$code}");
     }
 }
