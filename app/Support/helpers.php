@@ -1,0 +1,103 @@
+<?php
+
+if (!function_exists('generate_custom_alphanumeric_password')) {
+    /**
+     * Generate a custom secure alphanumeric password.
+     *
+     * Options:
+     * - Include/exclude lowercase letters
+     * - Include/exclude uppercase letters
+     * - Include/exclude digits
+     * - Exclude similar characters for better readability
+     *
+     * @param int $length
+     * @param bool $includeLowercase
+     * @param bool $includeUppercase
+     * @param bool $includeDigits
+     * @param bool $excludeSimilar
+     * @return string
+     *
+     * @throws \InvalidArgumentException
+     */
+    function generate_custom_alphanumeric_password(
+        int $length = 12,
+        bool $includeLowercase = true,
+        bool $includeUppercase = true,
+        bool $includeDigits = true,
+        bool $excludeSimilar = false
+    ): string {
+        if ($length < 1) {
+            throw new \InvalidArgumentException('Password length must be at least 1 character.');
+        }
+
+        $lowercase = 'abcdefghijklmnopqrstuvwxyz';
+        $uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $digits = '0123456789';
+
+        $similarCharacters = ['0', 'O', 'I', 'l', '1'];
+
+        $pool = '';
+
+        if ($includeLowercase) {
+            $pool .= $lowercase;
+        }
+        if ($includeUppercase) {
+            $pool .= $uppercase;
+        }
+        if ($includeDigits) {
+            $pool .= $digits;
+        }
+
+        if ($pool === '') {
+            throw new \InvalidArgumentException('At least one character set must be included.');
+        }
+
+        // Remove similar characters if needed
+        if ($excludeSimilar) {
+            $pool = str_replace($similarCharacters, '', $pool);
+        }
+
+        $password = '';
+
+        $maxIndex = strlen($pool) - 1;
+
+        for ($i = 0; $i < $length; $i++) {
+            $password .= $pool[random_int(0, $maxIndex)];
+        }
+
+        return $password;
+    }
+}
+
+if (!function_exists('fix_whatsapp_number')) {
+    /**
+     * Fix WhatsApp Number
+     *
+     * @param string $remoteJid
+     * @return string
+     *
+     * @throws \InvalidArgumentException
+     */
+    function fix_whatsapp_number(string $remoteJid): string
+    {
+        // Remove the sufix "@s.whatsapp.net"
+        $number = explode('@', $remoteJid)[0];
+
+        // If is not Brazil number, it retorns without to change
+        if (!str_starts_with($number, '55')) {
+            return $number;
+        }
+
+        $ddd = substr($number, 2, 2);
+        $remaining_part = substr($number, 4);
+
+        if (strlen($remaining_part) === 8) {
+            $firstDigit = $remaining_part[0];
+            if (in_array($firstDigit, ['6', '7', '8', '9'])) {
+                $remaining_part = '9' . $remaining_part;
+            }
+        }
+
+        return '55' . $ddd . $remaining_part;
+    }
+}

@@ -19,6 +19,7 @@ use Filament\Tables\Columns\TextColumn;
 use Illuminate\Support\Str;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Grid;
+use Filament\Tables\Actions\DeleteBulkAction;
 
 class UserResource extends Resource
 {
@@ -180,6 +181,16 @@ class UserResource extends Resource
             'index' => Pages\ListUsers::route('/'),
             'create' => Pages\CreateUser::route('/create'),
             'edit' => Pages\EditUser::route('/{record}/edit'),
+        ];
+    }
+
+    /**
+     * @return array
+     */
+    public static function getBulkActions(): array
+    {
+        return [
+            DeleteBulkAction::make()->visible(fn() => Auth::user()->can('delete', User::class)),
         ];
     }
 

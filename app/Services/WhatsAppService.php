@@ -7,6 +7,24 @@ use Illuminate\Support\Facades\Http;
 class WhatsAppService
 {
     /**
+     * Sends message
+     *
+     * @param string $phone
+     * @param string $text
+     */
+    public function sendText(string $phone, string $text)
+    {
+        $response = Http::withHeaders([
+            'apikey' => config('services.evulution.token'),
+            'Accept' => 'application/json',
+        ])
+            ->post(config('services.evulution.url') . '/message/sendText/' . config('services.evulution.instance'), [
+                'number' => $phone,
+                'text' => $text,
+            ]);
+    }
+
+    /**
      * Returns remote jid
      *
      * @param string $phone
