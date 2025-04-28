@@ -52,7 +52,7 @@ class AssignEmbaixadorRoleToUsers extends Command
             $users = User::role('Membro')->get();
 
             foreach ($users as $user) {
-                if ($user->is_add_email && $user->convidadosDiretos()->exists()) {
+                if ($user->convidadosDiretos()->where('is_add_email', true)->exists()) {
                     // Remove current role Membro
                     $user->removeRole('Membro');
 
