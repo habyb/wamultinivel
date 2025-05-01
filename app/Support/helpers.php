@@ -101,3 +101,38 @@ if (!function_exists('fix_whatsapp_number')) {
         return '55' . $ddd . $remaining_part;
     }
 }
+
+if (! function_exists('format_phone_number')) {
+    /**
+     * Format a phone number with DDI 55 (Brazil) into standard format.
+     *
+     * Example:
+     * Input: 5521988777555
+     * Output: 55 (21) 98877-7555
+     *
+     * @param string $number
+     * @return string
+     */
+    function format_phone_number(string $number): string
+    {
+        // Clean number: keep only digits
+        $cleanNumber = preg_replace('/\D/', '', $number);
+
+        // Check if it starts with '55' and length is valid
+        if (str_starts_with($cleanNumber, '55') && strlen($cleanNumber) >= 12) {
+            // Extract DDI, DDD, and phone number
+            $ddi = substr($cleanNumber, 0, 2);         // 55
+            $ddd = substr($cleanNumber, 2, 2);         // e.g., 21
+            $phone = substr($cleanNumber, 4);          // e.g., 988777555
+
+            // Split phone number into parts (5 + 4 digits)
+            $part1 = substr($phone, 0, strlen($phone) - 4);  // 98877
+            $part2 = substr($phone, -4);                     // 7555
+
+            return sprintf('%s (%s) %s-%s', $ddi, $ddd, $part1, $part2);
+        }
+
+        // If not a Brazilian number, return the cleaned number as-is
+        return $cleanNumber;
+    }
+}

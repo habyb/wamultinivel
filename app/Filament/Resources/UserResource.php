@@ -75,7 +75,7 @@ class UserResource extends Resource
                         ->label('WhatsApp')
                         ->content(
                             fn($record) => $record?->remoteJid
-                                ? preg_replace('/\D/', '', $record->remoteJid)
+                                ? format_phone_number(fix_whatsapp_number($record->remoteJid))
                                 : '—'
                         )
                         ->visible(fn(string $operation): bool => $operation !== 'create'),
@@ -115,7 +115,11 @@ class UserResource extends Resource
                 Tables\Columns\TextColumn::make('code')->label('Invitation ID'),
                 Tables\Columns\TextColumn::make('name')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('email')
+                Tables\Columns\TextColumn::make('remoteJid')
+                    ->label('WhatsApp')
+                    ->formatStateUsing(function (string $state): string {
+                        return format_phone_number(fix_whatsapp_number($state));
+                    })
                     ->searchable(),
                 Tables\Columns\TextColumn::make('roles.name')
                     ->sortable()
