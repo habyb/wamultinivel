@@ -17,6 +17,7 @@ use Filament\Tables\Columns\ToggleColumn;
 use Filament\Http\Middleware\Authenticate;
 use App\Filament\Widgets\CustomAccountWidget;
 use App\Filament\Widgets\InviteLinkWidget;
+use App\Filament\Widgets\TotalUsersRegistrationCompleted;
 use Filament\Forms\Components\Placeholder;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -52,6 +53,7 @@ class AdminPanelProvider extends PanelProvider
             ->widgets([
                 CustomAccountWidget::class,
                 InviteLinkWidget::class,
+                TotalUsersRegistrationCompleted::class,
             ])
             ->bootUsing(function () {
                 Section::configureUsing(function (Section $field) {

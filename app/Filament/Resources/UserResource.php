@@ -3,7 +3,6 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\UserResource\Pages;
-use App\Filament\Resources\UserResource\RelationManagers;
 use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -11,7 +10,6 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Forms\Components\Select;
 use Illuminate\Support\Facades\Auth;
 use STS\FilamentImpersonate\Tables\Actions\Impersonate;
@@ -114,6 +112,7 @@ class UserResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('code')->label('Invitation ID'),
                 Tables\Columns\TextColumn::make('name')
+                    ->sortable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('remoteJid')
                     ->label('WhatsApp')
@@ -204,7 +203,9 @@ class UserResource extends Resource
 
         // Superadmin
         if ($user->hasRole('Superadmin')) {
-            return parent::getEloquentQuery()->with(['convidador'])->withCount('convidadosDiretos');
+            return parent::getEloquentQuery()
+                ->with(['convidador'])
+                ->withCount('convidadosDiretos');
         }
 
         // Admin
@@ -213,9 +214,10 @@ class UserResource extends Resource
                 ->whereHas(
                     'roles',
                     fn(Builder $query) =>
-                    $query->whereIn('name', ['Embaixador', 'Membro'])
+                    $query->whereIn('name', ['Admin', 'Embaixador', 'Membro'])
                 )
                 ->with(['convidador'])
+                ->where('is_add_email', true)
                 ->withCount('convidadosDiretos');
         }
 
@@ -224,10 +226,11 @@ class UserResource extends Resource
             return parent::getEloquentQuery()
                 ->where('invitation_code', $user->code)
                 ->with(['convidador'])
+                ->where('is_add_email', true)
                 ->withCount('convidadosDiretos');
         }
 
         // fallback
-        return parent::getEloquentQuery()->whereRaw('0 = 1');
+        return parent::getEloquentQuery()->whereRaw('0 = 1')->where('is_add_email', true);
     }
 }
