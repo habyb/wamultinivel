@@ -57,18 +57,27 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasPermissionTo(permission: 'access_admin');
     }
 
-    public function convidadosDiretos()
+    public function firstLevelGuests()
     {
         return $this->hasMany(User::class, 'invitation_code', 'code');
     }
 
-    public function convidador()
+    public function referrer()
     {
         return $this->belongsTo(User::class, 'invitation_code', 'code');
     }
 
-    public function redeCompleta()
+    public function totalNetworkOfGuests(): int
     {
-        return $this->convidadosDiretos()->with('redeCompleta');
+        // get first level guests
+        $firstLevelIds = $this->firstLevelGuests()->pluck('code')->toArray();
+
+        // count the first-level guests
+        $countFirstLevel = count($firstLevelIds);
+
+        // count the indirect (level 2) guests – those invited by the first-level guests.
+        $countIndirectGuests = $this->whereIn('invitation_code', $firstLevelIds)->count();
+
+        return $countFirstLevel + $countIndirectGuests;
     }
 }

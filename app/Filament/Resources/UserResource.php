@@ -51,11 +51,11 @@ class UserResource extends Resource
                             ->label('Number of guests')
                             ->content(fn($record) => $record?->convidados_diretos_count ?? 0)
                             ->visible(fn(string $operation): bool => $operation !== 'create'),
-                        Placeholder::make('convidador.name')
+                        Placeholder::make('referrer.name')
                             ->label('Invited by')
                             ->content(
-                                fn($record) => $record?->convidador
-                                    ? "{$record->convidador->name} ({$record->invitation_code})"
+                                fn($record) => $record?->referrer
+                                    ? "{$record->referrer->name} ({$record->invitation_code})"
                                     : '—'
                             )
                             ->visible(fn(string $operation): bool => $operation !== 'create'),
@@ -134,7 +134,7 @@ class UserResource extends Resource
                         $state <= 5 => 'success',
                         default => 'warning',
                     }),
-                Tables\Columns\TextColumn::make('convidador.name')
+                Tables\Columns\TextColumn::make('referrer.name')
                     ->label('Invited by')
                     ->formatStateUsing(function ($state, $record) {
                         if (!$state) {
@@ -146,7 +146,7 @@ class UserResource extends Resource
                     })
                     ->tooltip(
                         fn($state, $record) =>
-                        $state ? "{$record->convidador->name} ({$record->invitation_code})" : null
+                        $state ? "{$record->referrer->name} ({$record->invitation_code})" : null
                     ),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime(format: 'd/m/Y H:i:s')
@@ -204,8 +204,8 @@ class UserResource extends Resource
         // Superadmin
         if ($user->hasRole('Superadmin')) {
             return parent::getEloquentQuery()
-                ->with(['convidador'])
-                ->withCount('convidadosDiretos');
+                ->with(['referrer'])
+                ->withCount('firstLevelGuests');
         }
 
         // Admin
@@ -216,18 +216,18 @@ class UserResource extends Resource
                     fn(Builder $query) =>
                     $query->whereIn('name', ['Admin', 'Embaixador', 'Membro'])
                 )
-                ->with(['convidador'])
+                ->with(['referrer'])
                 ->where('is_add_email', true)
-                ->withCount('convidadosDiretos');
+                ->withCount('firstLevelGuests');
         }
 
         // Embaixador or Membro
         if ($user->hasRole('Embaixador') || $user->hasRole('Membro')) {
             return parent::getEloquentQuery()
                 ->where('invitation_code', $user->code)
-                ->with(['convidador'])
+                ->with(['referrer'])
                 ->where('is_add_email', true)
-                ->withCount('convidadosDiretos');
+                ->withCount('firstLevelGuests');
         }
 
         // fallback
