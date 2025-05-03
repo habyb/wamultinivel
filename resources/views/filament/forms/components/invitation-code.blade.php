@@ -6,7 +6,7 @@
 @if ($code === '—')
     <span>{{ $code }}</span>
 @else
-    <label class="fi-fo-field-wrp-label inline-flex items-center gap-x-3" for="data.convidados_diretos_count">
+    <label class="fi-fo-field-wrp-label inline-flex items-center gap-x-3" for="data.first_level_guests_count">
         <span class="text-sm font-medium leading-6 text-gray-950 dark:text-white">
             {{ __('Invitation ID') }}
         </span>

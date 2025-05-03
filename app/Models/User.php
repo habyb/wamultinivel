@@ -62,7 +62,7 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasMany(User::class, 'invitation_code', 'code');
     }
 
-    public function referrer()
+    public function referrerGuest()
     {
         return $this->belongsTo(User::class, 'invitation_code', 'code');
     }

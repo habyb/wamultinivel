@@ -47,15 +47,15 @@ class UserResource extends Resource
                             ->label('Invitation ID')
                             ->view('filament.forms.components.invitation-code')
                             ->visible(fn(string $operation): bool => $operation !== 'create'),
-                        Placeholder::make('convidados_diretos_count')
+                        Placeholder::make('first_level_guests_count')
                             ->label('Number of guests')
-                            ->content(fn($record) => $record?->convidados_diretos_count ?? 0)
+                            ->content(fn($record) => $record?->first_level_guests_count ?? 0)
                             ->visible(fn(string $operation): bool => $operation !== 'create'),
-                        Placeholder::make('referrer.name')
+                        Placeholder::make('referrerGuest.name')
                             ->label('Invited by')
                             ->content(
-                                fn($record) => $record?->referrer
-                                    ? "{$record->referrer->name} ({$record->invitation_code})"
+                                fn($record) => $record?->referrerGuest
+                                    ? "{$record->referrerGuest->name} ({$record->invitation_code})"
                                     : '—'
                             )
                             ->visible(fn(string $operation): bool => $operation !== 'create'),
@@ -125,7 +125,7 @@ class UserResource extends Resource
                     ->searchable()
                     ->badge()
                     ->separator(', '),
-                TextColumn::make('convidados_diretos_count')
+                TextColumn::make('first_level_guests_count')
                     ->label('Number of guests')
                     ->badge()
                     ->sortable()
@@ -134,7 +134,7 @@ class UserResource extends Resource
                         $state <= 5 => 'success',
                         default => 'warning',
                     }),
-                Tables\Columns\TextColumn::make('referrer.name')
+                Tables\Columns\TextColumn::make('referrerGuest.name')
                     ->label('Invited by')
                     ->formatStateUsing(function ($state, $record) {
                         if (!$state) {
@@ -146,7 +146,7 @@ class UserResource extends Resource
                     })
                     ->tooltip(
                         fn($state, $record) =>
-                        $state ? "{$record->referrer->name} ({$record->invitation_code})" : null
+                        $state ? "{$record->referrerGuest->name} ({$record->invitation_code})" : null
                     ),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime(format: 'd/m/Y H:i:s')
@@ -204,7 +204,7 @@ class UserResource extends Resource
         // Superadmin
         if ($user->hasRole('Superadmin')) {
             return parent::getEloquentQuery()
-                ->with(['referrer'])
+                ->with(['referrerGuest'])
                 ->withCount('firstLevelGuests');
         }
 
@@ -216,7 +216,7 @@ class UserResource extends Resource
                     fn(Builder $query) =>
                     $query->whereIn('name', ['Admin', 'Embaixador', 'Membro'])
                 )
-                ->with(['referrer'])
+                ->with(['referrerGuest'])
                 ->where('is_add_email', true)
                 ->withCount('firstLevelGuests');
         }
@@ -225,7 +225,7 @@ class UserResource extends Resource
         if ($user->hasRole('Embaixador') || $user->hasRole('Membro')) {
             return parent::getEloquentQuery()
                 ->where('invitation_code', $user->code)
-                ->with(['referrer'])
+                ->with(['referrerGuest'])
                 ->where('is_add_email', true)
                 ->withCount('firstLevelGuests');
         }
