@@ -13,7 +13,17 @@ class UsersStatsWidget extends BaseWidget
 
     public function getColumns(): int
     {
-        return 4;
+        $user = Auth::user();
+
+        if ($user->hasRole('Superadmin') || $user->hasRole('Admin')) {
+            $column = 4;
+        } else if ($user->hasRole('Embaixador') || $user->hasRole('Membro')) {
+            $column = 3;
+        } else {
+            $column = 1;
+        }
+
+        return $column;
     }
 
     // protected int | string | array $columnSpan = 'full';
@@ -25,12 +35,19 @@ class UsersStatsWidget extends BaseWidget
      */
     protected function getStats(): array
     {
-        return [
-            Stat::make(__('Total Registration'), $this->getTotalUsersRegistrationCompleted())
+        $user = Auth::user();
+        $total_registration = '';
+
+        if ($user->hasRole('Superadmin') || $user->hasRole('Admin')) {
+            $total_registration = Stat::make(__('Total Registration'), $this->getTotalUsersRegistrationCompleted())
                 ->description(__('Total users who completed the registration'))
                 ->icon('heroicon-o-users')
-                ->color('primary'),
+                ->color('primary');
+        }
 
+        return [
+
+            $total_registration,
             Stat::make(__('Direct registrations'), $this->getTotalDirectRegistrations())
                 ->description(__('Total users registered directly'))
                 ->icon('heroicon-o-users')

@@ -11,6 +11,7 @@ use Illuminate\Notifications\Notifiable;
 use Filament\Models\Contracts\FilamentUser;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Support\Collection;
 
 class User extends Authenticatable implements FilamentUser
 {
@@ -60,6 +61,24 @@ class User extends Authenticatable implements FilamentUser
     public function firstLevelGuests()
     {
         return $this->hasMany(User::class, 'invitation_code', 'code');
+    }
+
+    public function allGuests(): Collection
+    {
+        $allGuests = collect();
+
+        // Pega os convidados diretos
+        $directGuests = $this->firstLevelGuests()->get();
+
+        // Adiciona os diretos à collection
+        $allGuests = $allGuests->merge($directGuests);
+
+        // Para cada direto, busca recursivamente os indiretos
+        foreach ($directGuests as $guest) {
+            $allGuests = $allGuests->merge($guest->allGuests());
+        }
+
+        return $allGuests;
     }
 
     public function referrerGuest()

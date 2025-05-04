@@ -18,6 +18,12 @@ use Filament\Http\Middleware\Authenticate;
 use App\Filament\Widgets\CustomAccountWidget;
 use App\Filament\Widgets\InviteLinkWidget;
 use App\Filament\Widgets\UsersStatsWidget;
+use App\Filament\Widgets\TopCitiesChart;
+use App\Filament\Widgets\TopNeighborhoodsPieChart;
+use App\Filament\Widgets\GenderPieChart;
+use App\Filament\Widgets\Concern01PieChart;
+use App\Filament\Widgets\Concern02PieChart;
+use App\Filament\Widgets\AgeGroupPieChart;
 use Filament\Forms\Components\Placeholder;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -54,6 +60,12 @@ class AdminPanelProvider extends PanelProvider
                 CustomAccountWidget::class,
                 InviteLinkWidget::class,
                 UsersStatsWidget::class,
+                TopCitiesChart::class,
+                TopNeighborhoodsPieChart::class,
+                GenderPieChart::class,
+                Concern01PieChart::class,
+                Concern02PieChart::class,
+                AgeGroupPieChart::class,
             ])
             ->bootUsing(function () {
                 Section::configureUsing(function (Section $field) {
