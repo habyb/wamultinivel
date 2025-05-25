@@ -62,11 +62,13 @@ class AssignEmbaixadorRoleToUsers extends Command
                     // Send message via WhatsApp with email and password
                     $password = generate_custom_alphanumeric_password(8, true, true, true, true);
                     $number = fix_whatsapp_number(preg_replace('/\D/', '', $user->remoteJid));
+                    $number_without_ddi = remove_ddi_whatsapp_number($number);
+
                     $text = "🥳 Parabéns *$user->name*!\n";
                     $text .= "Agora você faz parte do nosso time de Embaixadores!\n";
                     $text .= "Para acompanhar o crescimento da sua rede de convidados, acesse o link abaixo e insira seus dados para login.\n\n";
                     $text .= "https://convite.andrecorrea.com.br\n";
-                    $text .= "*WhatsApp:* $number\n";
+                    $text .= "*WhatsApp:* $number_without_ddi\n";
                     $text .= "*Senha:* $password";
 
                     $user->forceFill([

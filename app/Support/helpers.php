@@ -102,6 +102,51 @@ if (!function_exists('fix_whatsapp_number')) {
     }
 }
 
+if (!function_exists('remove_ddi_whatsapp_number')) {
+    /**
+     * Remove DDI WhatsApp Number
+     *
+     * @param string $number
+     * @return string
+     *
+     * @throws \InvalidArgumentException
+     */
+    function remove_ddi_whatsapp_number(string $number): string
+    {
+        // Remove the sufix "@s.whatsapp.net"
+        $number = explode('@', $number)[0];
+
+        // If is Brazil number, it retorns with to change
+        if (str_starts_with($number, '55')) { // 5521999888777
+            return substr($number, 2);
+        } else {
+            return $number;
+        }
+    }
+}
+
+if (!function_exists('remove_third_digit')) {
+    /**
+     * Remove the 3rd digit from a numeric string.
+     *
+     * @param int|string $number The number to process.
+     * @return string The number with the 3rd digit removed.
+     */
+    function remove_third_digit(int|string $number): string
+    {
+        // Ensure the number is treated as a string
+        $number = (string) $number;
+
+        // If the number has less than 3 digits, return it unchanged
+        if (strlen($number) < 3) {
+            return $number;
+        }
+
+        // Remove the character at index 2 (3rd digit, since index starts at 0)
+        return substr($number, 0, 2) . substr($number, 3);
+    }
+}
+
 if (! function_exists('format_phone_number')) {
     /**
      * Format a phone number with DDI 55 (Brazil) into standard format.
