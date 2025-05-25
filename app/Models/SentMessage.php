@@ -1,0 +1,33 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class SentMessage extends Model
+{
+    protected $fillable = [
+        'title',
+        'cities',
+        'neighborhoods',
+        'genders',
+        'age_groups',
+        'concerns_01',
+        'concerns_02',
+        'status',
+        'sent_at',
+        'type',
+        'path',
+        'description',
+    ];
+
+    protected $casts = [
+        'sent_at' => 'datetime',
+        'cities' => 'array',
+        'neighborhoods' => 'array',
+        'genders' => 'array',
+        'age_groups' => 'array',
+        'concerns_01' => 'array',
+        'concerns_02' => 'array',
+    ];
+}

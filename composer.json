@@ -12,7 +12,8 @@
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.10.1",
         "spatie/laravel-permission": "^6.16",
-        "stechstudio/filament-impersonate": "^3.15"
+        "stechstudio/filament-impersonate": "^3.15",
+        "tangodev-it/filament-emoji-picker": "^1.0"
     },
     "require-dev": {
         "barryvdh/laravel-debugbar": "^3.15",
