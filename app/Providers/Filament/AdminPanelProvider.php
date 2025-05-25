@@ -34,6 +34,8 @@ use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
+use App\Filament\Auth\CustomLogin;
+use App\Filament\Auth\PasswordReset\CustomRequestPasswordReset;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -43,8 +45,8 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->login()
-            ->passwordReset()
+            ->login(CustomLogin::class)
+            ->passwordReset(CustomRequestPasswordReset::class)
             ->sidebarFullyCollapsibleOnDesktop()
             ->colors([
                 'primary' => Color::Blue,
