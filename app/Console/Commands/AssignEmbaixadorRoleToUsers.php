@@ -66,7 +66,7 @@ class AssignEmbaixadorRoleToUsers extends Command
                     $text .= "Agora você faz parte do nosso time de Embaixadores!\n";
                     $text .= "Para acompanhar o crescimento da sua rede de convidados, acesse o link abaixo e insira seus dados para login.\n\n";
                     $text .= "https://convite.andrecorrea.com.br\n";
-                    $text .= "*Email:* $user->email\n";
+                    $text .= "*WhatsApp:* $number\n";
                     $text .= "*Senha:* $password";
 
                     $user->forceFill([
