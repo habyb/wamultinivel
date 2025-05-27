@@ -4,9 +4,11 @@ namespace App\Filament\Pages;
 
 use Filament\Pages\Page;
 use Filament\Tables;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 
 class DirectRegistrations extends Page implements HasTable
@@ -25,8 +27,7 @@ class DirectRegistrations extends Page implements HasTable
      */
     protected function getTableQuery(): Builder
     {
-        /** @var \App\Models\User $user */
-        $user = auth()->user();
+        $user = Auth::user();
 
         return $user->firstLevelGuests()->getQuery();
     }
@@ -47,6 +48,9 @@ class DirectRegistrations extends Page implements HasTable
                 })
                 ->label('WhatsApp')
                 ->searchable(),
+            TextColumn::make('first_level_guests_count')
+                ->label('Número de convidados')
+                ->counts('firstLevelGuests'), // Conta os registros da relação 'guests'
         ];
     }
 }
