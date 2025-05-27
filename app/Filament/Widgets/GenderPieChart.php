@@ -23,7 +23,7 @@ class GenderPieChart extends ChartWidget
         $allGuests = $user->allGuests();
 
         $genders = $allGuests
-            ->where('is_add_email', true)
+            ->where('is_add_date_of_birth', true)
             ->groupBy('gender')
             ->map(fn($genders) => $genders->count())
             ->sortDesc()

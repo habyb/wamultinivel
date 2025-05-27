@@ -72,21 +72,21 @@ class UsersStatsWidget extends BaseWidget
 
         // Superadmin
         if ($user->hasRole('Superadmin')) {
-            return User::query()->where('is_add_email', true)->count();
+            return User::query()->where('is_add_date_of_birth', true)->count();
         }
 
         // Admin
         if ($user->hasRole('Admin')) {
-            return User::query()->where('is_add_email', true)->count();
+            return User::query()->where('is_add_date_of_birth', true)->count();
         }
 
         // Embaixador or Membro
         if ($user->hasRole('Embaixador') || $user->hasRole('Membro')) {
-            return User::query()->where('is_add_email', true)->where('invitation_code', $user->code)->count();
+            return User::query()->where('is_add_date_of_birth', true)->where('invitation_code', $user->code)->count();
         }
 
         // fallback
-        return parent::getEloquentQuery()->whereRaw('0 = 1')->where('is_add_email', true);
+        return parent::getEloquentQuery()->whereRaw('0 = 1')->where('is_add_date_of_birth', true);
     }
 
     private function getTotalDirectRegistrations(): int

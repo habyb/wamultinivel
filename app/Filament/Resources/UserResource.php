@@ -217,7 +217,7 @@ class UserResource extends Resource
                     $query->whereIn('name', ['Admin', 'Embaixador', 'Membro'])
                 )
                 ->with(['referrerGuest'])
-                ->where('is_add_email', true)
+                ->where('is_add_date_of_birth', true)
                 ->withCount('firstLevelGuests');
         }
 
@@ -226,11 +226,11 @@ class UserResource extends Resource
             return parent::getEloquentQuery()
                 ->where('invitation_code', $user->code)
                 ->with(['referrerGuest'])
-                ->where('is_add_email', true)
+                ->where('is_add_date_of_birth', true)
                 ->withCount('firstLevelGuests');
         }
 
         // fallback
-        return parent::getEloquentQuery()->whereRaw('0 = 1')->where('is_add_email', true);
+        return parent::getEloquentQuery()->whereRaw('0 = 1')->where('is_add_date_of_birth', true);
     }
 }

@@ -46,7 +46,7 @@ class AgeGroupPieChart extends ChartWidget
         // filter and process
         $filteredGuests = $allGuests
             ->filter(function ($guest) {
-                return $guest->is_add_email === true && !empty($guest->date_of_birth);
+                return $guest->is_add_date_of_birth === true && !empty($guest->date_of_birth);
             });
 
         foreach ($filteredGuests as $guest) {

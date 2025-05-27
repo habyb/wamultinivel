@@ -23,7 +23,7 @@ class Concern02PieChart extends ChartWidget
         $allGuests = $user->allGuests();
 
         $concerns = $allGuests
-            ->where('is_add_email', true)
+            ->where('is_add_date_of_birth', true)
             ->groupBy('concern_02')
             ->map(fn($concerns) => $concerns->count())
             ->sortDesc()
