@@ -49,8 +49,23 @@ class DirectRegistrations extends Page implements HasTable
                 ->label('WhatsApp')
                 ->searchable(),
             TextColumn::make('first_level_guests_count')
-                ->label('Número de convidados')
-                ->counts('firstLevelGuests'), // Conta os registros da relação 'guests'
+                ->label('Number of guests')
+                ->counts('firstLevelGuests')
+                ->badge()
+                ->sortable()
+                ->color(fn(string $state): string => match (true) {
+                    $state == 0 => 'gray',
+                    $state <= 5 => 'success',
+                    default => 'warning',
+                }),
+            Tables\Columns\TextColumn::make('created_at')
+                ->dateTime(format: 'd/m/Y H:i:s')
+                ->sortable()
+                ->toggleable(isToggledHiddenByDefault: true),
+            Tables\Columns\TextColumn::make('updated_at')
+                ->dateTime(format: 'd/m/Y H:i:s')
+                ->sortable()
+                ->toggleable(isToggledHiddenByDefault: true),
         ];
     }
 }
