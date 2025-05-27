@@ -50,6 +50,7 @@ class UsersStatsWidget extends BaseWidget
             $total_registration,
             Stat::make(__('Direct registrations'), $this->getTotalDirectRegistrations())
                 ->description(__('Total users registered directly'))
+                ->url(route('filament.admin.pages.direct-registrations'))
                 ->icon('heroicon-o-users')
                 ->color('primary'),
 
