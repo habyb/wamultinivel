@@ -9,7 +9,7 @@ use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
-use App\Models\User;
+use Illuminate\Support\Str;
 
 class DirectRegistrations extends Page implements HasTable
 {
@@ -38,6 +38,7 @@ class DirectRegistrations extends Page implements HasTable
     protected function getTableColumns(): array
     {
         return [
+            Tables\Columns\TextColumn::make('code')->label('Invitation ID'),
             Tables\Columns\TextColumn::make('name')
                 ->label('Name')
                 ->sortable()
@@ -48,6 +49,11 @@ class DirectRegistrations extends Page implements HasTable
                 })
                 ->label('WhatsApp')
                 ->searchable(),
+            Tables\Columns\TextColumn::make('roles.name')
+                ->sortable()
+                ->searchable()
+                ->badge()
+                ->separator(', '),
             TextColumn::make('first_level_guests_count')
                 ->label('Number of guests')
                 ->counts('firstLevelGuests')
@@ -58,6 +64,20 @@ class DirectRegistrations extends Page implements HasTable
                     $state <= 5 => 'success',
                     default => 'warning',
                 }),
+            Tables\Columns\TextColumn::make('referrerGuest.name')
+                ->label('Invited by')
+                ->formatStateUsing(function ($state, $record) {
+                    if (!$state) {
+                        return '—';
+                    }
+
+                    $nomeLimitado = Str::limit($state, 10, '...');
+                    return "{$nomeLimitado} ({$record->invitation_code})";
+                })
+                ->tooltip(
+                    fn($state, $record) =>
+                    $state ? "{$record->referrerGuest->name} ({$record->invitation_code})" : null
+                ),
             Tables\Columns\TextColumn::make('created_at')
                 ->dateTime(format: 'd/m/Y H:i:s')
                 ->sortable()
