@@ -12,6 +12,7 @@ use Filament\Models\Contracts\FilamentUser;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 
 class User extends Authenticatable implements FilamentUser
 {
@@ -60,7 +61,9 @@ class User extends Authenticatable implements FilamentUser
 
     public function firstLevelGuests()
     {
-        return $this->hasMany(User::class, 'invitation_code', 'code');
+        return $this->hasMany(User::class, 'invitation_code', 'code')
+            ->where('is_add_date_of_birth', true)
+            ->orderBy('created_at', 'desc');
     }
 
     public function allGuests(): Collection
@@ -98,5 +101,65 @@ class User extends Authenticatable implements FilamentUser
         $countIndirectGuests = $this->whereIn('invitation_code', $firstLevelIds)->count();
 
         return $countFirstLevel + $countIndirectGuests;
+    }
+
+    /**
+     * Get the query for users that belong to this user's network (first and second levels).
+     *
+     */
+    public function networkGuestsQuery()
+    {
+        // Get the first-level guest codes
+        $firstLevelCodes = $this->firstLevelGuests()->pluck('code')->toArray();
+
+        // First-level guests: invited directly
+        // Second-level guests: invited by first-level guests
+        return static::query()
+            ->where('is_add_date_of_birth', true)
+            ->where('invitation_code', $this->code) // first-level
+            ->orWhereIn('invitation_code', $firstLevelCodes) // second-level
+            ->orderBy('created_at', 'desc');
+    }
+
+    /**
+     * Get a query for listing users with the Embaixador role, scoped by current user's permission.
+     *
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public static function embaixadoresQuery()
+    {
+        $user = Auth::user();
+
+        $query = static::role('Embaixador')->where('is_add_date_of_birth', true);
+
+        if ($user->hasRole('Superadmin') || $user->hasRole('Admin')) {
+            return $query->orderBy('created_at', 'desc');
+        }
+
+        return $query->where('invitation_code', $user->code)->orderBy('created_at', 'desc');
+    }
+
+    /**
+     * Query to get users who completed registration (is_add_date_of_birth = true),
+     * scoped by the current user's role.
+     *
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public static function completedRegistrationsQuery()
+    {
+        $user = Auth::user();
+
+        $query = static::query()->where('is_add_date_of_birth', true);
+
+        if ($user->hasRole('Superadmin') || $user->hasRole('Admin')) {
+            return $query;
+        }
+
+        if ($user->hasRole('Embaixador') || $user->hasRole('Membro')) {
+            return $query->where('invitation_code', $user->code);
+        }
+
+        // fallback seguro: nenhum resultado
+        return static::query()->whereRaw('0 = 1');
     }
 }

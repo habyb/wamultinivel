@@ -39,9 +39,10 @@ class UsersStatsWidget extends BaseWidget
         $total_registration = '';
 
         if ($user->hasRole('Superadmin') || $user->hasRole('Admin')) {
-            $total_registration = Stat::make(__('Total Registration'), $this->getTotalUsersRegistrationCompleted())
+            $total_registration = Stat::make(__('Complete registrations'), $this->getTotalUsersRegistrationCompleted())
                 ->description(__('Total users who completed the registration'))
-                ->icon('heroicon-o-users')
+                ->url(route('filament.admin.pages.users-registration-completed'))
+                ->icon('heroicon-o-user-group')
                 ->color('primary');
         }
 
@@ -51,17 +52,19 @@ class UsersStatsWidget extends BaseWidget
             Stat::make(__('Direct registrations'), $this->getTotalDirectRegistrations())
                 ->description(__('Total users registered directly'))
                 ->url(route('filament.admin.pages.direct-registrations'))
-                ->icon('heroicon-o-users')
+                ->icon('heroicon-o-user-plus')
                 ->color('primary'),
 
             Stat::make(__('My Network'), $this->getTotalUsersMyNetwork())
                 ->description(__('Total users who belong to your network'))
-                ->icon('heroicon-o-users')
+                ->url(route('filament.admin.pages.my-network'))
+                ->icon('heroicon-o-globe-americas')
                 ->color('primary'),
 
             Stat::make(__('Total users ambassadors'), $this->getTotalUsersEmbaixadorRole())
                 ->description(__('Total users with the ambassador role'))
-                ->icon('heroicon-o-users')
+                ->url(route('filament.admin.pages.total-embaixadores'))
+                ->icon('heroicon-o-user-group')
                 ->color('primary'),
         ];
     }

@@ -37,6 +37,9 @@ use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use App\Filament\Auth\CustomLogin;
 use App\Filament\Auth\PasswordReset\CustomRequestPasswordReset;
 use App\Filament\Pages\DirectRegistrations;
+use App\Filament\Pages\MyNetwork;
+use App\Filament\Pages\TotalEmbaixadores;
+use App\Filament\Pages\UsersRegistrationCompleted;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -58,6 +61,9 @@ class AdminPanelProvider extends PanelProvider
             ->pages([
                 Pages\Dashboard::class,
                 DirectRegistrations::class,
+                MyNetwork::class,
+                TotalEmbaixadores::class,
+                UsersRegistrationCompleted::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([

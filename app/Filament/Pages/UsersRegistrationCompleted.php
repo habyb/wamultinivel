@@ -8,16 +8,15 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
-class DirectRegistrations extends Page implements HasTable
+class UsersRegistrationCompleted extends Page implements HasTable
 {
     use InteractsWithTable;
 
-    protected static ?string $navigationIcon = 'heroicon-o-user-plus';
-    protected static string $view = 'filament.pages.direct-registrations';
-    protected static ?int $navigationSort = 2;
+    protected static ?string $navigationIcon = 'heroicon-o-user-group';
+    protected static string $view = 'filament.pages.users-registrations-completed';
+    protected static ?int $navigationSort = 1;
 
     public static function getNavigationGroup(): string
     {
@@ -26,12 +25,12 @@ class DirectRegistrations extends Page implements HasTable
 
     public static function getNavigationLabel(): string
     {
-        return __(key: 'Direct Registrations');
+        return __(key: 'Complete registrations');
     }
 
     public function getTitle(): string
     {
-        return __(key: 'Direct Registrations');
+        return __(key: 'Complete registrations');
     }
 
     /**
@@ -39,9 +38,7 @@ class DirectRegistrations extends Page implements HasTable
      */
     protected function getTableQuery(): Builder
     {
-        $user = Auth::user();
-
-        return $user->firstLevelGuests()->getQuery();
+        return auth()->user()->completedRegistrationsQuery();
     }
 
     /**
@@ -99,5 +96,13 @@ class DirectRegistrations extends Page implements HasTable
                 ->sortable()
                 ->toggleable(isToggledHiddenByDefault: true),
         ];
+    }
+
+    /**
+     * Restrict access to Superadmin and Admin roles only.
+     */
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->hasAnyRole(['Superadmin', 'Admin']);
     }
 }

@@ -8,16 +8,15 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
-class DirectRegistrations extends Page implements HasTable
+class MyNetwork extends Page implements HasTable
 {
     use InteractsWithTable;
 
-    protected static ?string $navigationIcon = 'heroicon-o-user-plus';
-    protected static string $view = 'filament.pages.direct-registrations';
-    protected static ?int $navigationSort = 2;
+    protected static ?string $navigationIcon = 'heroicon-o-globe-americas';
+    protected static string $view = 'filament.pages.my-network';
+    protected static ?int $navigationSort = 3;
 
     public static function getNavigationGroup(): string
     {
@@ -26,12 +25,12 @@ class DirectRegistrations extends Page implements HasTable
 
     public static function getNavigationLabel(): string
     {
-        return __(key: 'Direct Registrations');
+        return __(key: 'My Network');
     }
 
     public function getTitle(): string
     {
-        return __(key: 'Direct Registrations');
+        return __(key: 'My Network');
     }
 
     /**
@@ -39,9 +38,7 @@ class DirectRegistrations extends Page implements HasTable
      */
     protected function getTableQuery(): Builder
     {
-        $user = Auth::user();
-
-        return $user->firstLevelGuests()->getQuery();
+        return auth()->user()->networkGuestsQuery();
     }
 
     /**

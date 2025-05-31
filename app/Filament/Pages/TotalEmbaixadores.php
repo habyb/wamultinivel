@@ -8,16 +8,16 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
+use App\Models\User;
 
-class DirectRegistrations extends Page implements HasTable
+class TotalEmbaixadores extends Page implements HasTable
 {
     use InteractsWithTable;
 
-    protected static ?string $navigationIcon = 'heroicon-o-user-plus';
-    protected static string $view = 'filament.pages.direct-registrations';
-    protected static ?int $navigationSort = 2;
+    protected static ?string $navigationIcon = 'heroicon-o-user-circle';
+    protected static string $view = 'filament.pages.total-embaixadores';
+    protected static ?int $navigationSort = 4;
 
     public static function getNavigationGroup(): string
     {
@@ -26,12 +26,12 @@ class DirectRegistrations extends Page implements HasTable
 
     public static function getNavigationLabel(): string
     {
-        return __(key: 'Direct Registrations');
+        return __(key: 'Total Embaixadores');
     }
 
     public function getTitle(): string
     {
-        return __(key: 'Direct Registrations');
+        return __(key: 'Total Embaixadores');
     }
 
     /**
@@ -39,9 +39,7 @@ class DirectRegistrations extends Page implements HasTable
      */
     protected function getTableQuery(): Builder
     {
-        $user = Auth::user();
-
-        return $user->firstLevelGuests()->getQuery();
+        return User::embaixadoresQuery();
     }
 
     /**
@@ -61,11 +59,6 @@ class DirectRegistrations extends Page implements HasTable
                 })
                 ->label('WhatsApp')
                 ->searchable(),
-            Tables\Columns\TextColumn::make('roles.name')
-                ->sortable()
-                ->searchable()
-                ->badge()
-                ->separator(', '),
             TextColumn::make('first_level_guests_count')
                 ->label('Number of guests')
                 ->counts('firstLevelGuests')
