@@ -62,8 +62,6 @@ class CustomLogin extends Login
             } else {
                 $data['login'] = '@';
             }
-
-            // dd($data['login']);
         }
 
         return [
