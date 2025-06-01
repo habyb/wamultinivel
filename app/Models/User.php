@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Carbon;
 
 class User extends Authenticatable implements FilamentUser
 {
@@ -161,5 +162,17 @@ class User extends Authenticatable implements FilamentUser
 
         // fallback seguro: nenhum resultado
         return static::query()->whereRaw('0 = 1');
+    }
+
+    /**
+     * Retorna data formatada como Carbon para uso interno (filtros, cálculo de idade).
+     */
+    public function getParsedDateOfBirth(): ?Carbon
+    {
+        try {
+            return Carbon::createFromFormat('d/m/Y', $this->date_of_birth);
+        } catch (\Exception $e) {
+            return null;
+        }
     }
 }
