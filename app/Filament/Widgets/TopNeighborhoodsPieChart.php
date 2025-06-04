@@ -25,6 +25,7 @@ class TopNeighborhoodsPieChart extends ChartWidget
         $neighborhoods = $allGuests
             ->where('city', 'Rio de Janeiro')
             ->where('is_add_date_of_birth', true)
+            ->where('neighborhood', '!=', '')
             ->groupBy('neighborhood')
             ->map(fn($neighborhoods) => $neighborhoods->count())
             ->sortDesc()
