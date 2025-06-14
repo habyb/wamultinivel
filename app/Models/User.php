@@ -134,10 +134,10 @@ class User extends Authenticatable implements FilamentUser
         $query = static::role('Embaixador')->where('is_add_date_of_birth', true);
 
         if ($user->hasRole('Superadmin') || $user->hasRole('Admin')) {
-            return $query->orderBy('created_at', 'desc');
+            return $query;
         }
 
-        return $query->where('invitation_code', $user->code)->orderBy('created_at', 'desc');
+        return $query->where('invitation_code', $user->code);
     }
 
     /**
