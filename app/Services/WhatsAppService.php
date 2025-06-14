@@ -25,6 +25,32 @@ class WhatsAppService
     }
 
     /**
+     * Sends image, video or document
+     *
+     * @param string $number
+     * @param string $mediatype
+     * @param string $mimetype
+     * @param string $caption
+     * @param string $media
+     * @param string $fileName
+     */
+    public function sendMediaUrl(string $number, string $mediatype, string $mimetype, string $caption, string $media, string $fileName)
+    {
+        $response = Http::withHeaders([
+            'apikey' => config('services.evulution.token'),
+            'Accept' => 'application/json',
+        ])
+            ->post(config('services.evulution.url') . '/message/sendMedia/' . config('services.evulution.instance'), [
+                'number' => $number,
+                'mediatype' => $mediatype,
+                'mimetype' => $mimetype,
+                'caption' => $caption,
+                'media' => $media,
+                'fileName' => $fileName,
+            ]);
+    }
+
+    /**
      * Returns remote jid
      *
      * @param string $phone

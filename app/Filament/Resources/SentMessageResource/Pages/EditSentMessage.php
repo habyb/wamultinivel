@@ -2,14 +2,15 @@
 
 namespace App\Filament\Resources\SentMessageResource\Pages;
 
-use App\Filament\Resources\SentMessageResource;
-use Filament\Actions;
-use Filament\Resources\Pages\EditRecord;
 use App\Models\User;
+use Filament\Actions;
 use App\Models\SentMessage;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
+use Filament\Resources\Pages\EditRecord;
+use App\Filament\Resources\SentMessageResource;
+use Filament\Actions\Action;
 
 class EditSentMessage extends EditRecord
 {
@@ -55,7 +56,7 @@ class EditSentMessage extends EditRecord
                     }
                 });
             })
-            ->select('id', 'name', 'date_of_birth')
+            ->select('id', 'name', 'remoteJid')
             ->get()
             ->filter(function ($user) use ($ageGroups) {
                 // check age group
@@ -86,10 +87,26 @@ class EditSentMessage extends EditRecord
             })
             ->values();
 
+        $data['contacts_result'] = $users->map(function ($user) {
+            return [
+                'id' => $user->id,
+                'name' => $user->name,
+                'remoteJid' => $user->remoteJid ?? null
+            ];
+        })->values()->toArray();
+
+        $data['contacts_count'] = count($data['contacts_result']);
+
         logger()->info('Total de usuários filtrados: ' . $users->count());
         logger()->info('Contatos filtrados:', $users->toArray());
         logger()->info('Data:', $data);
 
         return $data;
     }
+
+    // protected function getSaveFormAction(): Action
+    // {
+    //     return parent::getSaveFormAction()
+    //         ->disabled(fn() => $this->record->status === 'sent');
+    // }
 }

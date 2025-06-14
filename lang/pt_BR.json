@@ -250,6 +250,13 @@
   "Reports": "Relatórios",
   "Direct Registrations": "Cadastros Diretos",
   "Total Embaixadores": "Total de Embaixadores",
+  "Pending": "Pendente",
+  "Sent": "Enviado",
+  "Failed": "Falhou",
+  "Contacts": "Contatos",
+  "Contacts found": "Contatos Encontrados",
+  "Select one or more secondary concerns for destination.": "Selecione um ou mais preocupações secundárias para destino.",
+  "Select one or more main concerns for destination.": "Selecione um ou mais preocupações principais para destino.",
   "xxx": "xxx",
   "": ""
 }

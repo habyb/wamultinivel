@@ -2,19 +2,23 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\SentMessageResource\Pages;
-use App\Filament\Resources\SentMessageResource\RelationManagers;
-use App\Models\SentMessage;
 use Filament\Forms;
-use Filament\Forms\Form;
-use Filament\Resources\Resource;
-use Filament\Tables;
-use Filament\Tables\Table;
-use Filament\Tables\Columns\TextColumn;
 use App\Models\User;
+use Filament\Tables;
 use Filament\Forms\Get;
+use Filament\Forms\Form;
+use Filament\Tables\Table;
+use App\Models\SentMessage;
+use Filament\Resources\Resource;
+use Filament\Forms\Components\Grid;
 use Illuminate\Validation\Rules\File;
+use Filament\Tables\Columns\TextColumn;
+use Illuminate\Support\Facades\Storage;
+use Filament\Forms\Components\Placeholder;
+use App\Filament\Resources\SentMessageResource\Pages;
 use TangoDevIt\FilamentEmojiPicker\EmojiPickerAction;
+use App\Filament\Resources\SentMessageResource\RelationManagers;
+use Carbon\Carbon;
 
 class SentMessageResource extends Resource
 {
@@ -39,7 +43,7 @@ class SentMessageResource extends Resource
             ->schema([
                 Forms\Components\TextInput::make('title')
                     ->label('Title')
-                    ->helperText('Esse título será visível para o contato no WhatsApp.')
+                    ->helperText('Esse título NÃO será visível para o contato no WhatsApp. Este campo é utilizado apenas para identificação.')
                     ->required()
                     ->minLength(5)
                     ->maxLength(255)
@@ -49,6 +53,8 @@ class SentMessageResource extends Resource
                     ->label('Cities')
                     ->helperText('Selecione uma ou mais cidades para destino.')
                     ->multiple()
+                    ->reactive()
+                    ->live()
                     ->native(false)
                     ->dehydrated(true)
                     ->options(function () {
@@ -59,12 +65,55 @@ class SentMessageResource extends Resource
                             ->filter()
                             ->toArray();
                     })
-                    ->searchable(),
+                    ->searchable()
+                    ->afterStateUpdated(function ($state, callable $get, callable $set) {
+                        $ageGroups = $get('age_groups');
+
+                        $count = \App\Models\User::query()
+                            ->when($get('cities'), fn($q) => $q->whereIn('city', $get('cities')))
+                            ->when($get('neighborhoods'), fn($q) => $q->whereIn('neighborhood', $get('neighborhoods')))
+                            ->when($get('genders'), fn($q) => $q->whereIn('gender', $get('genders')))
+                            ->when($get('concerns_01'), fn($q) => $q->whereIn('concern_01', $get('concerns_01')))
+                            ->when($get('concerns_02'), fn($q) => $q->whereIn('concern_02', $get('concerns_02')))
+                            ->get()
+                            ->filter(function ($user) use ($ageGroups) {
+                                // check age group
+                                if (!empty($ageGroups)) {
+                                    $birth = $user->getParsedDateOfBirth();
+
+                                    if (!$birth) {
+                                        return false;
+                                    }
+
+                                    $age = $birth->age;
+
+                                    foreach ($ageGroups as $group) {
+                                        if (preg_match('/^(\d{2})-(\d{2})$/', $group, $m)) {
+                                            $min = (int) $m[1];
+                                            $max = (int) $m[2];
+
+                                            if ($age >= $min && $age <= $max) {
+                                                return true;
+                                            }
+                                        }
+                                    }
+
+                                    return false; // age is not within any track
+                                }
+
+                                return true; // no age filter, keep user
+                            })
+                            ->count();
+
+                        $set('contacts_count_preview', "{$count} contatos");
+                    }),
 
                 Forms\Components\Select::make('neighborhoods')
                     ->label('Neighborhoods')
                     ->helperText('Selecione um ou mais bairros para destino.')
                     ->multiple()
+                    ->reactive()
+                    ->live()
                     ->options(function () {
                         return User::select('neighborhood')
                             ->distinct()
@@ -73,12 +122,55 @@ class SentMessageResource extends Resource
                             ->filter()
                             ->toArray();
                     })
-                    ->searchable(),
+                    ->searchable()
+                    ->afterStateUpdated(function ($state, callable $get, callable $set) {
+                        $ageGroups = $get('age_groups');
+
+                        $count = \App\Models\User::query()
+                            ->when($get('cities'), fn($q) => $q->whereIn('city', $get('cities')))
+                            ->when($get('neighborhoods'), fn($q) => $q->whereIn('neighborhood', $get('neighborhoods')))
+                            ->when($get('genders'), fn($q) => $q->whereIn('gender', $get('genders')))
+                            ->when($get('concerns_01'), fn($q) => $q->whereIn('concern_01', $get('concerns_01')))
+                            ->when($get('concerns_02'), fn($q) => $q->whereIn('concern_02', $get('concerns_02')))
+                            ->get()
+                            ->filter(function ($user) use ($ageGroups) {
+                                // check age group
+                                if (!empty($ageGroups)) {
+                                    $birth = $user->getParsedDateOfBirth();
+
+                                    if (!$birth) {
+                                        return false;
+                                    }
+
+                                    $age = $birth->age;
+
+                                    foreach ($ageGroups as $group) {
+                                        if (preg_match('/^(\d{2})-(\d{2})$/', $group, $m)) {
+                                            $min = (int) $m[1];
+                                            $max = (int) $m[2];
+
+                                            if ($age >= $min && $age <= $max) {
+                                                return true;
+                                            }
+                                        }
+                                    }
+
+                                    return false; // age is not within any track
+                                }
+
+                                return true; // no age filter, keep user
+                            })
+                            ->count();
+
+                        $set('contacts_count_preview', "{$count} contatos");
+                    }),
 
                 Forms\Components\Select::make('genders')
                     ->label('Genders')
                     ->helperText('Selecione um ou mais gêneros para destino.')
                     ->multiple()
+                    ->reactive()
+                    ->live()
                     ->options(function () {
                         return User::select('gender')
                             ->distinct()
@@ -87,12 +179,56 @@ class SentMessageResource extends Resource
                             ->filter()
                             ->toArray();
                     })
-                    ->searchable(),
+                    ->searchable()
+                    ->searchable()
+                    ->afterStateUpdated(function ($state, callable $get, callable $set) {
+                        $ageGroups = $get('age_groups');
+
+                        $count = \App\Models\User::query()
+                            ->when($get('cities'), fn($q) => $q->whereIn('city', $get('cities')))
+                            ->when($get('neighborhoods'), fn($q) => $q->whereIn('neighborhood', $get('neighborhoods')))
+                            ->when($get('genders'), fn($q) => $q->whereIn('gender', $get('genders')))
+                            ->when($get('concerns_01'), fn($q) => $q->whereIn('concern_01', $get('concerns_01')))
+                            ->when($get('concerns_02'), fn($q) => $q->whereIn('concern_02', $get('concerns_02')))
+                            ->get()
+                            ->filter(function ($user) use ($ageGroups) {
+                                // check age group
+                                if (!empty($ageGroups)) {
+                                    $birth = $user->getParsedDateOfBirth();
+
+                                    if (!$birth) {
+                                        return false;
+                                    }
+
+                                    $age = $birth->age;
+
+                                    foreach ($ageGroups as $group) {
+                                        if (preg_match('/^(\d{2})-(\d{2})$/', $group, $m)) {
+                                            $min = (int) $m[1];
+                                            $max = (int) $m[2];
+
+                                            if ($age >= $min && $age <= $max) {
+                                                return true;
+                                            }
+                                        }
+                                    }
+
+                                    return false; // age is not within any track
+                                }
+
+                                return true; // no age filter, keep user
+                            })
+                            ->count();
+
+                        $set('contacts_count_preview', "{$count} contatos");
+                    }),
 
                 Forms\Components\Select::make('age_groups')
                     ->label('Age groups')
                     ->helperText('Selecione uma ou mais faixas etárias.')
                     ->multiple()
+                    ->reactive()
+                    ->live()
                     ->native(false)
                     ->dehydrated(true)
                     ->options([
@@ -102,12 +238,55 @@ class SentMessageResource extends Resource
                         '51-60' => '51-60',
                         '60+'   => '60+',
                     ])
-                    ->searchable(),
+                    ->searchable()
+                    ->afterStateUpdated(function ($state, callable $get, callable $set) {
+                        $ageGroups = $get('age_groups');
+
+                        $count = \App\Models\User::query()
+                            ->when($get('cities'), fn($q) => $q->whereIn('city', $get('cities')))
+                            ->when($get('neighborhoods'), fn($q) => $q->whereIn('neighborhood', $get('neighborhoods')))
+                            ->when($get('genders'), fn($q) => $q->whereIn('gender', $get('genders')))
+                            ->when($get('concerns_01'), fn($q) => $q->whereIn('concern_01', $get('concerns_01')))
+                            ->when($get('concerns_02'), fn($q) => $q->whereIn('concern_02', $get('concerns_02')))
+                            ->get()
+                            ->filter(function ($user) use ($ageGroups) {
+                                // check age group
+                                if (!empty($ageGroups)) {
+                                    $birth = $user->getParsedDateOfBirth();
+
+                                    if (!$birth) {
+                                        return false;
+                                    }
+
+                                    $age = $birth->age;
+
+                                    foreach ($ageGroups as $group) {
+                                        if (preg_match('/^(\d{2})-(\d{2})$/', $group, $m)) {
+                                            $min = (int) $m[1];
+                                            $max = (int) $m[2];
+
+                                            if ($age >= $min && $age <= $max) {
+                                                return true;
+                                            }
+                                        }
+                                    }
+
+                                    return false; // age is not within any track
+                                }
+
+                                return true; // no age filter, keep user
+                            })
+                            ->count();
+
+                        $set('contacts_count_preview', "{$count} contatos");
+                    }),
 
                 Forms\Components\Select::make('concerns_01')
                     ->label('Main concerns')
-                    ->helperText('Selecione um ou mais preocupações principais para destino.')
+                    ->helperText(__('Select one or more main concerns for destination.'))
                     ->multiple()
+                    ->reactive()
+                    ->live()
                     ->options(function () {
                         return User::select('concern_01')
                             ->distinct()
@@ -116,12 +295,55 @@ class SentMessageResource extends Resource
                             ->filter()
                             ->toArray();
                     })
-                    ->searchable(),
+                    ->searchable()
+                    ->afterStateUpdated(function ($state, callable $get, callable $set) {
+                        $ageGroups = $get('age_groups');
+
+                        $count = \App\Models\User::query()
+                            ->when($get('cities'), fn($q) => $q->whereIn('city', $get('cities')))
+                            ->when($get('neighborhoods'), fn($q) => $q->whereIn('neighborhood', $get('neighborhoods')))
+                            ->when($get('genders'), fn($q) => $q->whereIn('gender', $get('genders')))
+                            ->when($get('concerns_01'), fn($q) => $q->whereIn('concern_01', $get('concerns_01')))
+                            ->when($get('concerns_02'), fn($q) => $q->whereIn('concern_02', $get('concerns_02')))
+                            ->get()
+                            ->filter(function ($user) use ($ageGroups) {
+                                // check age group
+                                if (!empty($ageGroups)) {
+                                    $birth = $user->getParsedDateOfBirth();
+
+                                    if (!$birth) {
+                                        return false;
+                                    }
+
+                                    $age = $birth->age;
+
+                                    foreach ($ageGroups as $group) {
+                                        if (preg_match('/^(\d{2})-(\d{2})$/', $group, $m)) {
+                                            $min = (int) $m[1];
+                                            $max = (int) $m[2];
+
+                                            if ($age >= $min && $age <= $max) {
+                                                return true;
+                                            }
+                                        }
+                                    }
+
+                                    return false; // age is not within any track
+                                }
+
+                                return true; // no age filter, keep user
+                            })
+                            ->count();
+
+                        $set('contacts_count_preview', "{$count} contatos");
+                    }),
 
                 Forms\Components\Select::make('concerns_02')
                     ->label('Secondary concerns')
-                    ->helperText('Selecione um ou mais preocupações secundárias para destino.')
+                    ->helperText(__('Select one or more secondary concerns for destination.'))
                     ->multiple()
+                    ->reactive()
+                    ->live()
                     ->options(function () {
                         return User::select('concern_02')
                             ->distinct()
@@ -130,62 +352,151 @@ class SentMessageResource extends Resource
                             ->filter()
                             ->toArray();
                     })
-                    ->searchable(),
+                    ->searchable()
+                    ->afterStateUpdated(function ($state, callable $get, callable $set) {
+                        $ageGroups = $get('age_groups');
+
+                        $count = \App\Models\User::query()
+                            ->when($get('cities'), fn($q) => $q->whereIn('city', $get('cities')))
+                            ->when($get('neighborhoods'), fn($q) => $q->whereIn('neighborhood', $get('neighborhoods')))
+                            ->when($get('genders'), fn($q) => $q->whereIn('gender', $get('genders')))
+                            ->when($get('concerns_01'), fn($q) => $q->whereIn('concern_01', $get('concerns_01')))
+                            ->when($get('concerns_02'), fn($q) => $q->whereIn('concern_02', $get('concerns_02')))
+                            ->get()
+                            ->filter(function ($user) use ($ageGroups) {
+                                // check age group
+                                if (!empty($ageGroups)) {
+                                    $birth = $user->getParsedDateOfBirth();
+
+                                    if (!$birth) {
+                                        return false;
+                                    }
+
+                                    $age = $birth->age;
+
+                                    foreach ($ageGroups as $group) {
+                                        if (preg_match('/^(\d{2})-(\d{2})$/', $group, $m)) {
+                                            $min = (int) $m[1];
+                                            $max = (int) $m[2];
+
+                                            if ($age >= $min && $age <= $max) {
+                                                return true;
+                                            }
+                                        }
+                                    }
+
+                                    return false; // age is not within any track
+                                }
+
+                                return true; // no age filter, keep user
+                            })
+                            ->count();
+
+                        $set('contacts_count_preview', "{$count} contatos");
+                    }),
 
                 Forms\Components\Select::make('type')
+                    ->columnSpan(1)
                     ->label('Message type')
                     ->options([
                         'text' => __('Text message'),
                         'image' => __('Image with description'),
-                        'doc' => __('Document with description'),
+                        'document' => __('Document with description'),
                         'video' => __('Video with description'),
                         'audio' => __('Audio'),
                     ])
-                    ->live()
+                    ->reactive()
                     ->required(),
 
-                Forms\Components\Group::make()
-                    ->columnSpanFull()
+                // image, document, video, audio
+                Grid::make(1)
                     ->schema([
-                        // File upload (image, doc, video, audio)
-                        Forms\Components\FileUpload::make('path')
-                            ->required()
-                            ->label('File')
-                            ->visible(fn(Get $get) => in_array($get('type'), ['image', 'doc', 'video', 'audio']))
-                            ->disk('public')
-                            ->directory('messages')
-                            ->preserveFilenames()
-                            ->maxFiles(1)
-                            ->acceptedFileTypes(function (Get $get) {
-                                return match ($get('type')) {
-                                    'image' => ['image/jpeg', 'image/png', 'image/jpg'],
-                                    'doc' => [
+                        Grid::make()
+                            ->schema([
+                                // image
+                                Forms\Components\FileUpload::make('path')
+                                    ->label('Imagem')
+                                    ->acceptedFileTypes(['image/jpeg', 'image/png'])
+                                    ->disk('public')
+                                    ->directory('messages')
+                                    ->preserveFilenames()
+                                    ->deleteUploadedFileUsing(function (string $file) {
+                                        Storage::disk('public')->delete($file);
+                                    })
+                                    ->visible(fn(callable $get) => $get('type') === 'image')
+                                    ->required(fn(callable $get) => $get('type') === 'image'),
+
+                                // document
+                                Forms\Components\FileUpload::make('path')
+                                    ->label('Documento')
+                                    ->acceptedFileTypes([
                                         'application/msword',
                                         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
                                         'application/vnd.ms-excel',
                                         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                                         'application/vnd.ms-powerpoint',
                                         'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-                                    ],
-                                    'video' => ['video/mp4'],
-                                    'audio' => ['audio/mpeg'], // mp3
-                                    default => [],
-                                };
-                            }),
+                                        'application/pdf',
+                                    ])
+                                    ->disk('public')
+                                    ->directory('messages')
+                                    ->preserveFilenames()
+                                    ->deleteUploadedFileUsing(function (string $file) {
+                                        Storage::disk('public')->delete($file);
+                                    })
+                                    ->visible(fn(callable $get) => $get('type') === 'document')
+                                    ->required(fn(callable $get) => $get('type') === 'document'),
 
-                        // Description (text, image, doc, video)
-                        Forms\Components\Textarea::make('description')
-                            ->required()
-                            ->label('Description')
-                            ->minLength(5)
-                            ->maxLength(5000)
-                            ->extraAttributes(['id' => 'data.description'])
-                            ->hintAction(
-                                EmojiPickerAction::make('emoji-description')
-                                    ->icon('heroicon-o-face-smile')
-                                    ->label(__('Choose an emoji'))
-                            )
-                            ->visible(fn(Get $get) => in_array($get('type'), ['text', 'image', 'doc', 'video'])),
+                                // video
+                                Forms\Components\FileUpload::make('path')
+                                    ->label('Arquivo de Vídeo')
+                                    ->acceptedFileTypes(['video/mp4'])
+                                    ->disk('public')
+                                    ->directory('messages')
+                                    ->preserveFilenames()
+                                    ->deleteUploadedFileUsing(function (string $file) {
+                                        Storage::disk('public')->delete($file);
+                                    })
+                                    ->visible(fn(callable $get) => $get('type') === 'video')
+                                    ->required(fn(callable $get) => $get('type') === 'video'),
+
+                                // audio
+                                Forms\Components\FileUpload::make('path')
+                                    ->label('Arquivo de Áudio')
+                                    ->acceptedFileTypes(['audio/mpeg'])
+                                    ->disk('public')
+                                    ->directory('messages')
+                                    ->preserveFilenames()
+                                    ->deleteUploadedFileUsing(function (string $file) {
+                                        Storage::disk('public')->delete($file);
+                                    })
+                                    ->maxSize(10240) // 10 MB
+                                    ->visible(fn(callable $get) => $get('type') === 'audio')
+                                    ->required(fn(callable $get) => $get('type') === 'audio'),
+                            ])
+                            ->columnSpan(1),
+                    ]),
+
+                // description (text, image, document, video)
+                Grid::make(1)
+                    ->schema([
+                        Grid::make()
+                            ->schema([
+                                Forms\Components\Textarea::make('description')
+                                    ->columnSpan(1)
+                                    ->required()
+                                    ->label('Description')
+                                    ->minLength(5)
+                                    ->maxLength(5000)
+                                    ->extraAttributes(['id' => 'data.description'])
+                                    ->hintAction(
+                                        EmojiPickerAction::make('emoji-description')
+                                            ->icon('heroicon-o-face-smile')
+                                            ->label(__('Choose an emoji'))
+                                    )
+                                    ->visible(fn(Get $get) => in_array($get('type'), ['text', 'image', 'document', 'video'])),
+                            ])
+                            ->columnSpan(1),
                     ]),
 
                 Forms\Components\DateTimePicker::make('sent_at')
@@ -194,24 +505,78 @@ class SentMessageResource extends Resource
                     ->suffixIcon('heroicon-m-calendar')
                     ->seconds(false)
                     ->native(false)
-                    ->nullable(),
+                    ->nullable()
+                    ->displayFormat('d/m/Y H:i')
+                    ->rule(function () {
+                        return function ($attribute, $value, $fail) {
+                            if ($value && Carbon::parse($value)->lt(now()->addMinutes(2))) {
+                                $fail('A data e hora devem ser pelo menos 2 minutos no futuro.');
+                            }
+                        };
+                    }),
+
+                Forms\Components\TextInput::make('contacts_count_preview')
+                    ->label('Contacts found')
+                    ->disabled()
+                    ->dehydrated(false)
+                    ->afterStateHydrated(function ($state, callable $get, callable $set) {
+                        $ageGroups = $get('age_groups');
+
+                        $count = \App\Models\User::query()
+                            ->when($get('cities'), fn($q) => $q->whereIn('city', $get('cities')))
+                            ->when($get('neighborhoods'), fn($q) => $q->whereIn('neighborhood', $get('neighborhoods')))
+                            ->when($get('genders'), fn($q) => $q->whereIn('gender', $get('genders')))
+                            ->when($get('concerns_01'), fn($q) => $q->whereIn('concern_01', $get('concerns_01')))
+                            ->when($get('concerns_02'), fn($q) => $q->whereIn('concern_02', $get('concerns_02')))
+                            ->get()
+                            ->filter(function ($user) use ($ageGroups) {
+                                // check age group
+                                if (!empty($ageGroups)) {
+                                    $birth = $user->getParsedDateOfBirth();
+
+                                    if (!$birth) {
+                                        return false;
+                                    }
+
+                                    $age = $birth->age;
+
+                                    foreach ($ageGroups as $group) {
+                                        if (preg_match('/^(\d{2})-(\d{2})$/', $group, $m)) {
+                                            $min = (int) $m[1];
+                                            $max = (int) $m[2];
+
+                                            if ($age >= $min && $age <= $max) {
+                                                return true;
+                                            }
+                                        }
+                                    }
+
+                                    return false; // age is not within any track
+                                }
+
+                                return true; // no age filter, keep user
+                            })
+                            ->count();
+
+                        $set('contacts_count_preview', "{$count} contatos");
+                    })
             ]);
     }
 
     public static function rules(): array
     {
         return [
-            'type' => ['required', 'in:text,image,doc,video,audio'],
+            'type' => ['required', 'in:text,image,document,video,audio'],
             'description' => ['nullable', 'string'],
             'path' => [
                 'nullable',
                 function (File $file) {
-                    return $file->when(fn($input) => in_array($input['type'], ['image', 'doc', 'video', 'audio']), function ($rule, $value, $fail) use (&$input) {
+                    return $file->when(fn($input) => in_array($input['type'], ['image', 'document', 'video', 'audio']), function ($rule, $value, $fail) use (&$input) {
                         $type = $input['type'] ?? null;
 
                         match ($type) {
                             'image' => $rule->mimes(['jpg', 'jpeg', 'png']),
-                            'doc' => $rule->mimes(['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx']),
+                            'document' => $rule->mimes(['document', 'docx', 'xls', 'xlsx', 'ppt', 'pptx']),
                             'video' => $rule->mimes(['mp4']),
                             'audio' => $rule->mimes(['mp3']),
                             default => null,
@@ -227,14 +592,31 @@ class SentMessageResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('title')->sortable()->searchable(),
-                TextColumn::make('status')
+                TextColumn::make('contacts_count')
+                    ->label('Contacts')
                     ->badge()
+                    ->sortable()
+                    ->color(fn(string $state): string => match (true) {
+                        $state == 0 => 'gray',
+                        $state <= 5 => 'success',
+                        default => 'warning',
+                    }),
+                TextColumn::make('status')
+                    ->label('Status')
+                    ->sortable()
                     ->colors([
-                        'primary' => 'pending',
+                        'gray' => 'pending',
                         'success' => 'sent',
                         'danger' => 'failed',
                     ])
-                    ->sortable(),
+                    ->formatStateUsing(function (string $state): string {
+                        return match ($state) {
+                            'pending' => __('Pending'),
+                            'sent' => __('Sent'),
+                            'failed' => __('Failed'),
+                            default => ucfirst($state),
+                        };
+                    }),
                 TextColumn::make('sent_at')
                     ->label('Sent at')
                     ->dateTime(format: 'd/m/Y H:i')

@@ -19,6 +19,8 @@ class SentMessage extends Model
         'type',
         'path',
         'description',
+        'contacts_result',
+        'contacts_count',
     ];
 
     protected $casts = [
@@ -29,5 +31,6 @@ class SentMessage extends Model
         'age_groups' => 'array',
         'concerns_01' => 'array',
         'concerns_02' => 'array',
+        'contacts_result' => 'array',
     ];
 }
