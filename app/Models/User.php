@@ -63,8 +63,7 @@ class User extends Authenticatable implements FilamentUser
     public function firstLevelGuests()
     {
         return $this->hasMany(User::class, 'invitation_code', 'code')
-            ->where('is_add_date_of_birth', true)
-            ->orderBy('created_at', 'desc');
+            ->where('is_add_date_of_birth', true);
     }
 
     public function allGuests(): Collection
