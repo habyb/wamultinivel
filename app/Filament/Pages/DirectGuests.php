@@ -35,6 +35,7 @@ class DirectGuests extends Page implements HasTable
     {
         return User::query()
             ->where('invitation_code', $this->user->code)
+            ->where('is_add_date_of_birth', true)
             ->with('roles')
             ->withCount('firstLevelGuests');
     }
