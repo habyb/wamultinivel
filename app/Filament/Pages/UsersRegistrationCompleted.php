@@ -55,7 +55,9 @@ class UsersRegistrationCompleted extends Page implements HasTable
                 ->color('success')
                 ->requiresConfirmation()
                 ->deselectRecordsAfterCompletion()
-                ->action(function ($records): StreamedResponse {
+                ->action(function ($records) {
+                    $records = $records->loadCount('firstLevelGuests');
+
                     $filename = 'contatos_' . now()->format('Ymd_His') . '.csv';
 
                     return response()->streamDownload(function () use ($records) {
