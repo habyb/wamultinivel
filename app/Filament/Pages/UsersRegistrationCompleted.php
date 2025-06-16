@@ -168,7 +168,6 @@ class UsersRegistrationCompleted extends Page implements HasTable
                 ->counts('firstLevelGuests')
                 ->badge()
                 ->sortable()
-                ->searchable()
                 ->alignment('right')
                 ->color(fn(string $state): string => match (true) {
                     $state == 0 => 'gray',

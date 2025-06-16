@@ -147,7 +147,6 @@ class DirectGuests extends Page implements HasTable
                 ->label('Convidados')
                 ->alignment('right')
                 ->sortable()
-                ->searchable()
                 ->badge()->color(fn(string $state): string => match (true) {
                     $state == 0 => 'gray',
                     $state <= 5 => 'success',
