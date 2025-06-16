@@ -22,6 +22,7 @@ class DirectGuests extends Page implements HasTable
     protected static string $view = 'filament.pages.direct-guests';
     protected static ?string $title = 'Convidados';
     protected static ?string $slug = 'direct-guests';
+    protected static bool $shouldRegisterNavigation = false;
 
     public ?User $user = null;
 
