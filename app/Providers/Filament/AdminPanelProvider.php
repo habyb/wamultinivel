@@ -40,6 +40,7 @@ use App\Filament\Pages\DirectRegistrations;
 use App\Filament\Pages\MyNetwork;
 use App\Filament\Pages\TotalEmbaixadores;
 use App\Filament\Pages\UsersRegistrationCompleted;
+use App\Filament\Pages\DirectGuests;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -64,6 +65,7 @@ class AdminPanelProvider extends PanelProvider
                 MyNetwork::class,
                 TotalEmbaixadores::class,
                 UsersRegistrationCompleted::class,
+                DirectGuests::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([

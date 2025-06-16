@@ -3,50 +3,40 @@
 namespace App\Filament\Pages;
 
 use Filament\Pages\Page;
-use Filament\Tables;
-use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Concerns\InteractsWithTable;
+use Filament\Tables\Columns\TextColumn;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
+use Filament\Tables\Actions\BulkAction;
 use Filament\Tables\Actions\Action;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Illuminate\Support\Facades\Auth;
 use App\Models\User;
-use Filament\Tables\Actions\BulkAction;
 use Carbon\Carbon;
 
-class DirectRegistrations extends Page implements HasTable
+class DirectGuests extends Page implements HasTable
 {
     use InteractsWithTable;
 
-    protected static ?string $navigationIcon = 'heroicon-o-user-plus';
-    protected static string $view = 'filament.pages.direct-registrations';
-    protected static ?int $navigationSort = 2;
+    protected static ?string $navigationIcon = 'heroicon-o-users';
+    protected static string $view = 'filament.pages.direct-guests';
+    protected static ?string $title = 'Convidados';
+    protected static ?string $slug = 'direct-guests';
 
-    public static function getNavigationGroup(): string
+    public ?User $user = null;
+
+    public function mount(): void
     {
-        return __(key: 'Reports');
+        $userId = request()->query('user');
+        $this->user = User::findOrFail($userId);
     }
 
-    public static function getNavigationLabel(): string
-    {
-        return __(key: 'Direct Registrations');
-    }
-
-    public function getTitle(): string
-    {
-        return __(key: 'Direct Registrations');
-    }
-
-    /**
-     * Get the table query.
-     */
     protected function getTableQuery(): Builder
     {
-        $user = Auth::user();
-
-        return $user->firstLevelGuests()->getQuery();
+        return User::query()
+            ->where('invitation_code', $this->user->code)
+            ->with('roles')
+            ->withCount('firstLevelGuests');
     }
 
     public function getTableBulkActions(): array
@@ -66,7 +56,6 @@ class DirectRegistrations extends Page implements HasTable
 
                         fputcsv($handle, [
                             __('Created at'),
-                            __('Updated at'),
                             __('Invitation ID'),
                             __('Nome'),
                             'WhatsApp',
@@ -99,7 +88,6 @@ class DirectRegistrations extends Page implements HasTable
 
                             fputcsv($handle, [
                                 $user->created_at?->format('d/m/Y H:i:s'),
-                                $user->updated_at?->format('d/m/Y H:i:s'),
                                 $user->code,
                                 $user->name,
                                 format_phone_number(fix_whatsapp_number($user->remoteJid)),
@@ -122,13 +110,11 @@ class DirectRegistrations extends Page implements HasTable
         ];
     }
 
-    /**
-     * Define table columns.
-     */
     protected function getTableColumns(): array
     {
         return [
             TextColumn::make('created_at')
+                ->label('Created at')
                 ->dateTime(format: 'd/m/Y H:i:s')
                 ->sortable()
                 ->toggleable(isToggledHiddenByDefault: true),
@@ -136,46 +122,35 @@ class DirectRegistrations extends Page implements HasTable
                 ->dateTime(format: 'd/m/Y H:i:s')
                 ->sortable()
                 ->toggleable(isToggledHiddenByDefault: true),
-            TextColumn::make('code')->label('Invitation ID'),
-            TextColumn::make('name')
-                ->label('Name')
+            TextColumn::make('code')
+                ->label('Invitation ID')
+                ->sortable()
+                ->searchable(),
+            TextColumn::make('name')->label('Nome')
                 ->sortable()
                 ->searchable(),
             TextColumn::make('remoteJid')
+                ->label('WhatsApp')
+                ->sortable()
+                ->searchable()
                 ->formatStateUsing(function (string $state): string {
                     return format_phone_number(fix_whatsapp_number($state));
-                })
-                ->label('WhatsApp')
-                ->searchable(),
+                }),
             TextColumn::make('roles.name')
                 ->sortable()
                 ->searchable()
                 ->badge()
                 ->separator(', '),
             TextColumn::make('first_level_guests_count')
-                ->label('Number of guests')
-                ->counts('firstLevelGuests')
-                ->badge()
+                ->label('Convidados')
+                ->alignment('right')
                 ->sortable()
-                ->color(fn(string $state): string => match (true) {
+                ->searchable()
+                ->badge()->color(fn(string $state): string => match (true) {
                     $state == 0 => 'gray',
                     $state <= 5 => 'success',
                     default => 'warning',
                 }),
-            TextColumn::make('referrerGuest.name')
-                ->label('Invited by')
-                ->formatStateUsing(function ($state, $record) {
-                    if (!$state) {
-                        return '—';
-                    }
-
-                    $nomeLimitado = Str::limit($state, 10, '...');
-                    return "{$nomeLimitado} ({$record->invitation_code})";
-                })
-                ->tooltip(
-                    fn($state, $record) =>
-                    $state ? "{$record->referrerGuest->name} ({$record->invitation_code})" : null
-                ),
             TextColumn::make('gender')
                 ->label('Gender')
                 ->sortable()
@@ -218,11 +193,10 @@ class DirectRegistrations extends Page implements HasTable
                 ->icon('heroicon-o-arrow-down-tray')
                 ->color('success')
                 ->action(function (): StreamedResponse {
-                    $user = Auth::user();
                     $records = User::with(['roles', 'referrerGuest'])
                         ->withCount('firstLevelGuests')
                         ->where('is_add_date_of_birth', true)
-                        ->where('invitation_code', $user->code)
+                        ->where('invitation_code', $this->user->code)
                         ->orderBy('name')
                         ->get();
 
@@ -233,7 +207,6 @@ class DirectRegistrations extends Page implements HasTable
 
                         fputcsv($handle, [
                             __('Created at'),
-                            __('Updated at'),
                             __('Invitation ID'),
                             __('Nome'),
                             'WhatsApp',
@@ -266,7 +239,6 @@ class DirectRegistrations extends Page implements HasTable
 
                             fputcsv($handle, [
                                 $user->created_at?->format('d/m/Y H:i:s'),
-                                $user->updated_at?->format('d/m/Y H:i:s'),
                                 $user->code,
                                 $user->name,
                                 format_phone_number(fix_whatsapp_number($user->remoteJid)),
@@ -287,5 +259,21 @@ class DirectRegistrations extends Page implements HasTable
                     }, $filename);
                 }),
         ];
+    }
+
+    public function getTableRecordUrlUsing(): ?\Closure
+    {
+        return fn($record) =>
+        $record->first_level_guests_count > 0
+            ? DirectGuests::getUrl(['user' => $record->id])
+            : null;
+    }
+
+    /**
+     * Restrict access to Superadmin and Admin roles only.
+     */
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->hasAnyRole(['Superadmin', 'Admin']);
     }
 }

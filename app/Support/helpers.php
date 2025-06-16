@@ -1,5 +1,7 @@
 <?php
 
+use function PHPUnit\Framework\isEmpty;
+
 if (!function_exists('generate_custom_alphanumeric_password')) {
     /**
      * Generate a custom secure alphanumeric password.
@@ -78,8 +80,12 @@ if (!function_exists('fix_whatsapp_number')) {
      *
      * @throws \InvalidArgumentException
      */
-    function fix_whatsapp_number(string $remoteJid): string
+    function fix_whatsapp_number($remoteJid)
     {
+        if ($remoteJid == '' || $remoteJid == null) {
+            return '';
+        }
+
         // Remove the sufix "@s.whatsapp.net"
         $number = explode('@', $remoteJid)[0];
 

@@ -257,6 +257,12 @@
   "Contacts found": "Contatos Encontrados",
   "Select one or more secondary concerns for destination.": "Selecione um ou mais preocupações secundárias para destino.",
   "Select one or more main concerns for destination.": "Selecione um ou mais preocupações principais para destino.",
+  "City": "Cidade",
+  "Neighborhood": "Bairro",
+  "Date of Birth": "Data de Nascimento",
+  "Age": "Idade",
+  "Export all": "Exportar Todos",
+  "Export CSV": "Exportar CSV",
   "xxx": "xxx",
   "": ""
 }
