@@ -71,6 +71,7 @@ class UsersRegistrationCompleted extends Page implements HasTable
                             'WhatsApp',
                             __('Role'),
                             __('Number of guests'),
+                            __('Network'),
                             __('Invited by'),
                             __('Gender'),
                             __('Date of Birth'),
@@ -104,6 +105,7 @@ class UsersRegistrationCompleted extends Page implements HasTable
                                 format_phone_number(fix_whatsapp_number($user->remoteJid)),
                                 $user->getRoleNames()->join(', '),
                                 $user->first_level_guests_count ?? 0,
+                                $user->total_network_count,
                                 optional($user->referrerGuest)->name . ' - ' . $user->invitation_code,
                                 $user->gender,
                                 $user->date_of_birth,
@@ -174,6 +176,17 @@ class UsersRegistrationCompleted extends Page implements HasTable
                 ->color(fn(string $state): string => match (true) {
                     $state == 0 => 'gray',
                     $state <= 5 => 'success',
+                    default => 'warning',
+                }),
+            TextColumn::make('total_network_count')
+                ->label('Network')
+                ->badge()
+                ->sortable()
+                ->alignment('right')
+                ->color(fn(int $state) => match (true) {
+                    $state === 0 => 'gray',
+                    $state <= 10 => 'primary',
+                    $state <= 50 => 'success',
                     default => 'warning',
                 }),
             TextColumn::make('referrerGuest.name')
@@ -253,6 +266,7 @@ class UsersRegistrationCompleted extends Page implements HasTable
                             'WhatsApp',
                             __('Role'),
                             __('Number of guests'),
+                            __('Network'),
                             __('Invited by'),
                             __('Gender'),
                             __('Date of Birth'),
@@ -286,6 +300,7 @@ class UsersRegistrationCompleted extends Page implements HasTable
                                 format_phone_number(fix_whatsapp_number($user->remoteJid)),
                                 $user->getRoleNames()->join(', '),
                                 $user->first_level_guests_count ?? 0,
+                                $user->total_network_count,
                                 optional($user->referrerGuest)->name . ' - ' . $user->invitation_code,
                                 $user->gender,
                                 $user->date_of_birth,

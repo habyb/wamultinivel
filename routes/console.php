@@ -20,3 +20,5 @@ Artisan::command('send:scheduled-messages', function () {
 Schedule::command('send:scheduled-messages')->everyMinute();
 
 Schedule::command('app:prune-livewire-temp')->everyMinute();
+
+Schedule::command('app:update-network-count')->everyMinute();

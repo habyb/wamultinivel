@@ -174,4 +174,33 @@ class User extends Authenticatable implements FilamentUser
             return null;
         }
     }
+
+    public function firstLevelGuestsNetwork()
+    {
+        return $this->hasMany(User::class, 'invitation_code', 'code');
+    }
+
+    public function myNetwork(): Collection
+    {
+        return $this->load('firstLevelGuestsNetwork')->getRecursiveNetWork($this);
+    }
+
+    public function getRecursiveNetWork(User $user, &$ids = []): Collection
+    {
+        foreach ($user->firstLevelGuestsNetwork as $filho) {
+            if (!in_array($filho->id, $ids)) {
+                $ids[] = $filho->id;
+                $this->getRecursiveNetWork($filho, $ids);
+            }
+        }
+
+        return collect($ids);
+    }
+
+    public function updateNetworkCount(): void
+    {
+        $ids = $this->getRecursiveNetWork($this);
+        $this->total_network_count = $ids->count();
+        $this->save();
+    }
 }
