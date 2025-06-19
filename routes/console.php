@@ -33,3 +33,5 @@ Schedule::command('send:scheduled-messages')
 Schedule::command('app:prune-livewire-temp')->everyMinute();
 
 Schedule::command('app:update-network-count')->everyMinute();
+
+Schedule::command('app:fix-city-users')->everyFiveMinutes();
