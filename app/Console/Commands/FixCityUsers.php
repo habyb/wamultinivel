@@ -94,7 +94,7 @@ class FixCityUsers extends Command
             'Rio Claro' => ['Rio claro', 'rio claro'],
             'Rio das Flores' => ['Rio das flores', 'rio das flores'],
             'Rio das Ostras' => ['Rio das ostras', 'rio das ostras'],
-            'Rio de Janeiro' => ['Rio de janeiro', 'rio de janeiro', 'RIO DE JANEIRO', 'Río de Janeiro', 'Río de janeiro', 'RJ', 'rj', 'Rj', 'Campo Grande. RJ', 'rio de janeiro, campo grande'],
+            'Rio de Janeiro' => ['Rio de janeiro', 'rio de janeiro', 'RIO DE JANEIRO', 'Río de Janeiro', 'Río de janeiro', 'RJ', 'rj', 'Rj', 'Campo Grande. RJ', 'rio de janeiro, campo grande', 'Campo Grande RJ', 'Campo Grande Rio de Janeiro'],
             'Santa Maria Madalena' => ['Santa maria madalena', 'Santa Maria madalena', 'santa maria madalena'],
             'Santo Antônio de Pádua' => ['santo antônio de pádua', 'santo antonio de padua'],
             'São Fidélis' => ['são fidélis', 'sao fidelis'],
