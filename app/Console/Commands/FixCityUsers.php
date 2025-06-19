@@ -115,7 +115,7 @@ class FixCityUsers extends Command
             'Teresópolis' => ['Teresópolis rj', 'Teresópolis RJ', 'teresópolis', 'teresopolis'],
             'Trajano de Moraes' => ['trajano de moraes'],
             'Três Rios' => ['três rios', 'tres rios'],
-            'Valença' => ['Valença RJ', 'Valença Rj', 'Valença rj', 'valença', 'valenca', 'Valença-RJ', 'Valença-Rj', 'Valença - RJ', 'Valenca Rj', 'Valenca rj', 'Santa Isabel do Rio Preto - Valença', 'Valença E d R'],
+            'Valença' => ['Valença RJ', 'Valença Rj', 'Valença rj', 'valença', 'valenca', 'Valença-RJ', 'Valença-Rj', 'Valença - RJ', 'Valenca Rj', 'Valenca rj', 'Santa Isabel do Rio Preto - Valença', 'Valença E d R', 'Valença Estado do Rio .'],
             'Varre-Sai' => ['varre-sai', 'varre sai'],
             'Vassouras' => ['vassouras'],
             'Volta Redonda' => ['volta redonda'],
