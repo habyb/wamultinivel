@@ -203,4 +203,19 @@ class User extends Authenticatable implements FilamentUser
         $this->total_network_count = $ids->count();
         $this->save();
     }
+
+    public function allNetworkIds(): Collection
+    {
+        $collected = collect([$this->code]);
+        $toProcess = collect([$this->code]);
+
+        while ($toProcess->isNotEmpty()) {
+            $nextCodes = User::whereIn('invitation_code', $toProcess)->pluck('code');
+            $new = $nextCodes->diff($collected);
+            $collected = $collected->merge($new);
+            $toProcess = $new;
+        }
+
+        return User::whereIn('invitation_code', $collected)->pluck('id');
+    }
 }

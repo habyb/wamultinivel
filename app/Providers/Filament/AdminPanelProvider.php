@@ -24,6 +24,7 @@ use App\Filament\Widgets\GenderPieChart;
 use App\Filament\Widgets\Concern01PieChart;
 use App\Filament\Widgets\Concern02PieChart;
 use App\Filament\Widgets\AgeGroupPieChart;
+use App\Filament\Widgets\WeeklyInvitationsChart;
 use Filament\Forms\Components\Placeholder;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -78,6 +79,7 @@ class AdminPanelProvider extends PanelProvider
                 Concern01PieChart::class,
                 Concern02PieChart::class,
                 AgeGroupPieChart::class,
+                WeeklyInvitationsChart::class,
             ])
             ->bootUsing(function () {
                 Section::configureUsing(function (Section $field) {
