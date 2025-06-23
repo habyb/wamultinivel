@@ -4,6 +4,7 @@ use Carbon\Carbon;
 use App\Models\SentMessage;
 use Illuminate\Foundation\Inspiring;
 use App\Jobs\SendScheduledMessagesJob;
+use App\Jobs\SendPasswordMessageJob;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
 use Illuminate\Foundation\Console\ClosureCommand;
@@ -29,6 +30,11 @@ Schedule::command('send:scheduled-messages')
             })
             ->doesntExist();
     });
+
+Artisan::command('send:password-message {number} {password}', function (string $number, string $password) {
+    dispatch(new SendPasswordMessageJob($number, $password))
+        ->delay(now()->addSeconds(3));
+})->describe('Envia mensagem de senha para um número com atraso');
 
 Schedule::command('app:prune-livewire-temp')->everyMinute();
 
