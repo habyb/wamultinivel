@@ -30,6 +30,8 @@ Schedule::command('send:scheduled-messages')
             ->doesntExist();
     });
 
+Schedule::command('send:send:scheduled-passwords')->everyMinute();
+
 Schedule::command('app:prune-livewire-temp')->everyMinute();
 
 Schedule::command('app:update-network-count')->everyMinute();

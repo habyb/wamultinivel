@@ -17,6 +17,7 @@ use Exception;
 use App\Models\User;
 use App\Services\WhatsAppServiceBusinessApi;
 use App\Jobs\SendPasswordMessageJob;
+use Illuminate\Support\Facades\Artisan;
 
 class CustomRequestPasswordReset extends RequestPasswordReset
 {
@@ -142,7 +143,9 @@ class CustomRequestPasswordReset extends RequestPasswordReset
 
                 sleep(1);
 
-                dispatch(new SendPasswordMessageJob($number, $password))->delay(now()->addSeconds(3));
+                Artisan::command('send:scheduled-passwords', function ($number, $password) {
+                    dispatch(new SendPasswordMessageJob($number, $password))->delay(now()->addSeconds(3));
+                })->describe('Send password');
 
                 Notification::make()
                     ->title(__('We sent your new password by WhatsApp'))
