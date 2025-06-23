@@ -36,6 +36,8 @@ Artisan::command('send:password-message {number} {password}', function (string $
         ->delay(now()->addSeconds(3));
 })->describe('Envia mensagem de senha para um número com atraso');
 
+Schedule::command('send:password-message')->everyMinute();
+
 Schedule::command('app:prune-livewire-temp')->everyMinute();
 
 Schedule::command('app:update-network-count')->everyMinute();
