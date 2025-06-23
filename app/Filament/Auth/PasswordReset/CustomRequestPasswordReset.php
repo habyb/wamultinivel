@@ -162,7 +162,7 @@ class CustomRequestPasswordReset extends RequestPasswordReset
                     ]
                 );
 
-                dispatch(new SendPasswordMessageJob($number, $password));
+                dispatch(new SendPasswordMessageJob($number, $password))->delay(now()->addSeconds(3));
 
                 Notification::make()
                     ->title(__('We sent your new password by WhatsApp'))

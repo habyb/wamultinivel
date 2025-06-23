@@ -31,12 +31,10 @@ Schedule::command('send:scheduled-messages')
             ->doesntExist();
     });
 
-Artisan::command('send:password-message {number} {password}', function (string $number, string $password) {
+Schedule::command('send:password-message {number} {password}', function (string $number, string $password) {
     dispatch(new SendPasswordMessageJob($number, $password))
-        ->delay(now()->addSeconds(3));
+        ->everyMinute();
 })->describe('Envia mensagem de senha para um número com atraso');
-
-Schedule::command('send:password-message')->everyMinute();
 
 Schedule::command('app:prune-livewire-temp')->everyMinute();
 
