@@ -97,16 +97,12 @@ class EditSentMessage extends EditRecord
 
         $data['contacts_count'] = count($data['contacts_result']);
 
-        logger()->info('Total de usuários filtrados: ' . $users->count());
-        logger()->info('Contatos filtrados:', $users->toArray());
-        logger()->info('Data:', $data);
-
         return $data;
     }
 
-    // protected function getSaveFormAction(): Action
-    // {
-    //     return parent::getSaveFormAction()
-    //         ->disabled(fn() => $this->record->status === 'sent');
-    // }
+    protected function getSaveFormAction(): Action
+    {
+        return parent::getSaveFormAction()
+            ->disabled(fn() => $this->record->status === 'sent');
+    }
 }

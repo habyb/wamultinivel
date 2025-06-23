@@ -35,10 +35,18 @@ return [
         ],
     ],
 
-    'evulution' => [
+    'evolution' => [
         'url' => env('EVULUTION_API_URL'),
         'instance' => env('EVULUTION_API_INSTANCE'),
         'token' => env('EVULUTION_API_TOKEN'),
+    ],
+
+    'business' => [
+        'url' => env('BUSINESS_API_URL'),
+        'version' => env('BUSINESS_API_VERSION'),
+        'access_token' => env('BUSINESS_API_ACCESS_TOKEN'),
+        'phone_number_id' => env('BUSINESS_API_PHONE_NUMBER_ID'),
+        'phone_account_id' => env('USINESS_API_PHONE_ACCOUNT_ID'),
     ],
 
 ];

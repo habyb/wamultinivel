@@ -2,22 +2,25 @@
 
 namespace App\Filament\Resources;
 
-use Carbon\Carbon;
 use Filament\Forms;
 use App\Models\User;
 use Filament\Tables;
+use Filament\Forms\Get;
 use Filament\Forms\Form;
 use Filament\Tables\Table;
 use App\Models\SentMessage;
 use Filament\Resources\Resource;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Hidden;
-use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\Grid;
+use Illuminate\Validation\Rules\File;
 use Filament\Tables\Columns\TextColumn;
-use App\Services\WhatsAppServiceBusinessApi;
+use Illuminate\Support\Facades\Storage;
+use Filament\Forms\Components\Placeholder;
 use App\Filament\Resources\SentMessageResource\Pages;
+use TangoDevIt\FilamentEmojiPicker\EmojiPickerAction;
+use App\Filament\Resources\SentMessageResource\RelationManagers;
+use Carbon\Carbon;
 
-class SentMessageResource extends Resource
+class SentMessageResourceV1 extends Resource
 {
     protected static ?string $model = SentMessage::class;
 
@@ -32,14 +35,6 @@ class SentMessageResource extends Resource
     public static function getNavigationGroup(): string
     {
         return __('Messages');
-    }
-
-    protected static function getApprovedTemplates(): array
-    {
-        return collect(app(WhatsAppServiceBusinessApi::class)->getTemplate())
-            ->where('status', 'APPROVED')
-            ->pluck('name', 'name')
-            ->toArray();
     }
 
     public static function form(Form $form): Form
@@ -400,98 +395,125 @@ class SentMessageResource extends Resource
                         $set('contacts_count_preview', "{$count} contatos");
                     }),
 
-                Select::make('template_name')
-                    ->label('Template')
-                    ->searchable()
-                    ->reactive() // torna o campo reativo
-                    ->options(
-                        fn() => collect(app(WhatsAppServiceBusinessApi::class)->getTemplate())
-                            ->where('status', 'APPROVED')
-                            ->pluck('name', 'name')
-                            ->toArray()
-                    )
-                    ->afterStateUpdated(function ($state, callable $set) {
-                        $template = collect(app(WhatsAppServiceBusinessApi::class)->getTemplate())
-                            ->firstWhere('name', $state);
-
-                        $header = collect($template['components'] ?? [])->firstWhere('type', 'HEADER')['text'] ?? '';
-                        $body = collect($template['components'] ?? [])->firstWhere('type', 'BODY')['text'] ?? '';
-                        $footer = collect($template['components'] ?? [])->firstWhere('type', 'FOOTER')['text'] ?? '';
-
-                        $preview = "{$header}\n\n{$body}\n\n_{$footer}_";
-
-                        $set('template_preview', $preview);
-
-                        if ($template) {
-                            $set('template_id', $template['id'] ?? null);
-                            $set('template_language', $template['language'] ?? null);
-                            $set('template_components', $template['components'] ?? null);
-                        }
-                    })
-                    ->afterStateHydrated(function ($state, callable $set) {
-                        if (! $state) return;
-
-                        $template = collect(app(\App\Services\WhatsAppServiceBusinessApi::class)->getTemplate())
-                            ->firstWhere('name', $state);
-
-                        if (! $template) {
-                            $set('template_preview', 'Template não encontrado.');
-                            return;
-                        }
-
-                        $header = collect($template['components'])->firstWhere('type', 'HEADER')['text'] ?? '';
-                        $body   = collect($template['components'])->firstWhere('type', 'BODY')['text'] ?? '';
-                        $footer = collect($template['components'])->firstWhere('type', 'FOOTER')['text'] ?? '';
-
-                        $preview = <<<TEXT
-{$header}
-
-{$body}
-
-{$footer}
-TEXT;
-
-                        $set('template_preview', $preview);
-                    })
+                Forms\Components\Select::make('type')
+                    ->columnSpan(1)
+                    ->label('Message type')
+                    ->options([
+                        'text' => __('Text message'),
+                        'image' => __('Image with description'),
+                        'document' => __('Document with description'),
+                        'video' => __('Video with description'),
+                        'audio' => __('Audio'),
+                    ])
+                    ->reactive()
                     ->required(),
 
-                Textarea::make('template_preview')
-                    ->label('Preview of the template')
-                    ->hint(__('Select a template first'))
-                    ->disabled()
-                    ->rows(10)
-                    ->columnSpan(1)
-                    ->reactive(),
+                // image, document, video, audio
+                Grid::make(1)
+                    ->schema([
+                        Grid::make()
+                            ->schema([
+                                // image
+                                Forms\Components\FileUpload::make('path')
+                                    ->label('Imagem')
+                                    ->acceptedFileTypes(['image/jpeg', 'image/png'])
+                                    ->disk('public')
+                                    ->directory('messages')
+                                    ->preserveFilenames()
+                                    ->deleteUploadedFileUsing(function (string $file) {
+                                        Storage::disk('public')->delete($file);
+                                    })
+                                    ->visible(fn(callable $get) => $get('type') === 'image')
+                                    ->required(fn(callable $get) => $get('type') === 'image'),
+
+                                // document
+                                Forms\Components\FileUpload::make('path')
+                                    ->label('Documento')
+                                    ->acceptedFileTypes([
+                                        'application/msword',
+                                        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                                        'application/vnd.ms-excel',
+                                        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                                        'application/vnd.ms-powerpoint',
+                                        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                                        'application/pdf',
+                                    ])
+                                    ->disk('public')
+                                    ->directory('messages')
+                                    ->preserveFilenames()
+                                    ->deleteUploadedFileUsing(function (string $file) {
+                                        Storage::disk('public')->delete($file);
+                                    })
+                                    ->visible(fn(callable $get) => $get('type') === 'document')
+                                    ->required(fn(callable $get) => $get('type') === 'document'),
+
+                                // video
+                                Forms\Components\FileUpload::make('path')
+                                    ->label('Arquivo de Vídeo')
+                                    ->acceptedFileTypes(['video/mp4'])
+                                    ->disk('public')
+                                    ->directory('messages')
+                                    ->preserveFilenames()
+                                    ->deleteUploadedFileUsing(function (string $file) {
+                                        Storage::disk('public')->delete($file);
+                                    })
+                                    ->visible(fn(callable $get) => $get('type') === 'video')
+                                    ->required(fn(callable $get) => $get('type') === 'video'),
+
+                                // audio
+                                Forms\Components\FileUpload::make('path')
+                                    ->label('Arquivo de Áudio')
+                                    ->acceptedFileTypes(['audio/mpeg'])
+                                    ->disk('public')
+                                    ->directory('messages')
+                                    ->preserveFilenames()
+                                    ->deleteUploadedFileUsing(function (string $file) {
+                                        Storage::disk('public')->delete($file);
+                                    })
+                                    ->maxSize(10240) // 10 MB
+                                    ->visible(fn(callable $get) => $get('type') === 'audio')
+                                    ->required(fn(callable $get) => $get('type') === 'audio'),
+                            ])
+                            ->columnSpan(1),
+                    ]),
+
+                // description (text, image, document, video)
+                Grid::make(1)
+                    ->schema([
+                        Grid::make()
+                            ->schema([
+                                Forms\Components\Textarea::make('description')
+                                    ->columnSpan(1)
+                                    ->required()
+                                    ->label('Description')
+                                    ->minLength(5)
+                                    ->maxLength(5000)
+                                    ->extraAttributes(['id' => 'data.description'])
+                                    ->hintAction(
+                                        EmojiPickerAction::make('emoji-description')
+                                            ->icon('heroicon-o-face-smile')
+                                            ->label(__('Choose an emoji'))
+                                    )
+                                    ->visible(fn(Get $get) => in_array($get('type'), ['text', 'image', 'document', 'video'])),
+                            ])
+                            ->columnSpan(1),
+                    ]),
 
                 Forms\Components\DateTimePicker::make('sent_at')
-                    ->label(__('Schedule'))
-                    ->helperText(__('Select shipping date and time at least 2 minutes in the future.'))
+                    ->label('Agendar envio para')
+                    ->helperText('Selecione data e hora do envio. Pode ser deixado em branco.')
                     ->suffixIcon('heroicon-m-calendar')
                     ->seconds(false)
                     ->native(false)
                     ->nullable()
-                    ->required()
                     ->displayFormat('d/m/Y H:i')
                     ->rule(function () {
                         return function ($attribute, $value, $fail) {
                             if ($value && Carbon::parse($value)->lt(now()->addMinutes(2))) {
-                                $fail(__('The date and time should be at least 2 minutes in the future.'));
+                                $fail('A data e hora devem ser pelo menos 2 minutos no futuro.');
                             }
                         };
                     }),
-
-                Hidden::make('template_id')
-                    ->dehydrated(true)
-                    ->default(null),
-
-                Hidden::make('template_language')
-                    ->dehydrated(true)
-                    ->default(null),
-
-                Hidden::make('template_components')
-                    ->dehydrated(true)
-                    ->default(null),
-
 
                 Forms\Components\TextInput::make('contacts_count_preview')
                     ->label('Contacts found')
@@ -541,19 +563,34 @@ TEXT;
             ]);
     }
 
+    public static function rules(): array
+    {
+        return [
+            'type' => ['required', 'in:text,image,document,video,audio'],
+            'description' => ['nullable', 'string'],
+            'path' => [
+                'nullable',
+                function (File $file) {
+                    return $file->when(fn($input) => in_array($input['type'], ['image', 'document', 'video', 'audio']), function ($rule, $value, $fail) use (&$input) {
+                        $type = $input['type'] ?? null;
+
+                        match ($type) {
+                            'image' => $rule->mimes(['jpg', 'jpeg', 'png']),
+                            'document' => $rule->mimes(['document', 'docx', 'xls', 'xlsx', 'ppt', 'pptx']),
+                            'video' => $rule->mimes(['mp4']),
+                            'audio' => $rule->mimes(['mp3']),
+                            default => null,
+                        };
+                    });
+                },
+            ],
+        ];
+    }
+
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
-                TextColumn::make('sent_at')
-                    ->label('Sent at')
-                    ->dateTime(format: 'd/m/Y H:i')
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: false),
-                TextColumn::make('created_at')
-                    ->label('Created at')
-                    ->dateTime()
-                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('title')->sortable()->searchable(),
                 TextColumn::make('contacts_count')
                     ->label('Contacts')
@@ -580,6 +617,15 @@ TEXT;
                             default => ucfirst($state),
                         };
                     }),
+                TextColumn::make('sent_at')
+                    ->label('Sent at')
+                    ->dateTime(format: 'd/m/Y H:i')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: false),
+                TextColumn::make('created_at')
+                    ->label('Created at')
+                    ->dateTime()
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->defaultSort('created_at', 'desc')
             ->filters([

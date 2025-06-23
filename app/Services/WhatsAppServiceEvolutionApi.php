@@ -4,7 +4,7 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
 
-class WhatsAppService
+class WhatsAppServiceEvolutionApi
 {
     /**
      * Sends message
@@ -15,10 +15,10 @@ class WhatsAppService
     public function sendText(string $phone, string $text)
     {
         $response = Http::withHeaders([
-            'apikey' => config('services.evulution.token'),
+            'apikey' => config('services.evolution.token'),
             'Accept' => 'application/json',
         ])
-            ->post(config('services.evulution.url') . '/message/sendText/' . config('services.evulution.instance'), [
+            ->post(config('services.evolution.url') . '/message/sendText/' . config('services.evolution.instance'), [
                 'number' => $phone,
                 'text' => $text,
             ]);
@@ -37,10 +37,10 @@ class WhatsAppService
     public function sendMediaUrl(string $number, string $mediatype, string $mimetype, string $caption, string $media, string $fileName)
     {
         $response = Http::withHeaders([
-            'apikey' => config('services.evulution.token'),
+            'apikey' => config('services.evolution.token'),
             'Accept' => 'application/json',
         ])
-            ->post(config('services.evulution.url') . '/message/sendMedia/' . config('services.evulution.instance'), [
+            ->post(config('services.evolution.url') . '/message/sendMedia/' . config('services.evolution.instance'), [
                 'number' => $number,
                 'mediatype' => $mediatype,
                 'mimetype' => $mimetype,
@@ -60,10 +60,10 @@ class WhatsAppService
     public function getRemoteJid(string $phone, string $text): ?string
     {
         $response = Http::withHeaders([
-            'apikey' => config('services.evulution.token'),
+            'apikey' => config('services.evolution.token'),
             'Accept' => 'application/json',
         ])
-            ->post(config('services.evulution.url') . '/message/sendText/' . config('services.evulution.instance'), [
+            ->post(config('services.evolution.url') . '/message/sendText/' . config('services.evolution.instance'), [
                 'number' => $phone,
                 'text' => $text,
             ]);

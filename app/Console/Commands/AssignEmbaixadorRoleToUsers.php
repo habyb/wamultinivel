@@ -5,7 +5,8 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
-use App\Services\WhatsAppService;
+use App\Services\WhatsAppServiceBusinessApi;
+use App\Jobs\SendPasswordMessageJob;
 
 class AssignEmbaixadorRoleToUsers extends Command
 {
@@ -23,7 +24,7 @@ class AssignEmbaixadorRoleToUsers extends Command
      */
     protected $description = 'Assigns the Embaixador role to users who have one or more guests';
 
-    public function __construct(protected WhatsAppService $whatsAppService)
+    public function __construct(protected WhatsAppServiceBusinessApi $whatsAppService)
     {
         parent::__construct();
     }
@@ -62,20 +63,28 @@ class AssignEmbaixadorRoleToUsers extends Command
                     // Send message via WhatsApp with email and password
                     $password = generate_custom_alphanumeric_password(8, true, true, true, true);
                     $number = fix_whatsapp_number(preg_replace('/\D/', '', $user->remoteJid));
-                    $number_without_ddi = remove_ddi_whatsapp_number($number);
-
-                    $text = "🥳 Parabéns *$user->name*!\n";
-                    $text .= "Agora você faz parte do nosso time de Embaixadores!\n";
-                    $text .= "Para acompanhar o crescimento da sua rede de convidados, acesse o link abaixo e insira seus dados para login.\n\n";
-                    $text .= "https://convite.andrecorrea.com.br\n";
-                    $text .= "*WhatsApp:* $number_without_ddi\n";
-                    $text .= "*Senha:* $password";
 
                     $user->forceFill([
                         'password' => bcrypt($password),
                     ])->saveQuietly();
 
-                    $this->whatsAppService->sendText($number, $text);
+                    app(WhatsAppServiceBusinessApi::class)->sendText(
+                        phone: $number,
+                        template: 'parabens',
+                        language: 'pt_BR',
+                        params: [
+                            [
+                                'type' => 'body',
+                                'parameters' => [
+                                    ['type' => 'text', "parameter_name" => "name", 'text' => $user->name]
+                                ],
+                            ]
+                        ]
+                    );
+
+                    sleep(1);
+
+                    dispatch(new SendPasswordMessageJob($number, $password))->delay(now()->addSeconds(3));
                 }
             }
         });

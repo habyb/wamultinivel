@@ -15,7 +15,8 @@ use Filament\Actions\Action;
 use DanHarrin\LivewireRateLimiting\Exceptions\TooManyRequestsException;
 use Exception;
 use App\Models\User;
-use App\Services\WhatsAppService;
+use App\Services\WhatsAppServiceBusinessApi;
+use App\Jobs\SendPasswordMessageJob;
 
 class CustomRequestPasswordReset extends RequestPasswordReset
 {
@@ -120,20 +121,28 @@ class CustomRequestPasswordReset extends RequestPasswordReset
                 // Send message via WhatsApp with email and password
                 $password = generate_custom_alphanumeric_password(8, true, true, true, true);
                 $number = fix_whatsapp_number(preg_replace('/\D/', '', $user->remoteJid));
-                $text = "🔐 *Esqueceu sua senha?*\n\n";
-                $text .= "🙂 Olá *$user->name*! Reecebemos sua solicitação de redefinição de senha.\n";
-                $text .= "Acesse o link abaixo e insira seu WhatsApp e sua nova Senha para login.\n\n";
-                $text .= "🔗 " . env('APP_URL') . "\n";
-                $text .= "📱 *WhatsApp:* $emailOrWhatsapp\n";
-                $text .= "🔑 *Senha:* $password\n\n";
-                $text .= "Atenciosamente,\n";
-                $text .= env('APP_NAME');
 
                 $user->forceFill([
                     'password' => bcrypt($password),
                 ])->saveQuietly();
 
-                app(WhatsAppService::class)->sendText($number, $text);
+                app(WhatsAppServiceBusinessApi::class)->sendText(
+                    phone: $number,
+                    template: 'solicitacao_obrigado',
+                    language: 'pt_BR',
+                    params: [
+                        [
+                            'type' => 'body',
+                            'parameters' => [
+                                ['type' => 'text', "parameter_name" => "name", 'text' => $user->name]
+                            ],
+                        ]
+                    ]
+                );
+
+                sleep(1);
+
+                dispatch(new SendPasswordMessageJob($number, $password))->delay(now()->addSeconds(3));
 
                 Notification::make()
                     ->title(__('We sent your new password by WhatsApp'))

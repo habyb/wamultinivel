@@ -269,6 +269,12 @@
   "Last 30 days": "Últimos 30 dias",
   "This year": "Este Ano",
   "Registrations in my network": "Cadastros na Minha Rede",
+  "Preview of the template": "Previsualização do modelo",
+  "Select a template first": "Selecione primeiro um modelo",
+  "Template": "Modelo",
+  "Select shipping date and time at least 2 minutes in the future.": "Selecione data e hora do envio pelo menos 2 minutos no futuro.",
+  "The date and time should be at least 2 minutes in the future.": "A data e hora devem ser pelo menos 2 minutos no futuro.",
+  "Schedule": "Agendar envio para",
   "xxx": "xxx",
   "": ""
 }

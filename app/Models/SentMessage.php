@@ -21,6 +21,10 @@ class SentMessage extends Model
         'description',
         'contacts_result',
         'contacts_count',
+        'template_id',
+        'template_name',
+        'template_language',
+        'template_components',
     ];
 
     protected $casts = [
@@ -32,5 +36,6 @@ class SentMessage extends Model
         'concerns_01' => 'array',
         'concerns_02' => 'array',
         'contacts_result' => 'array',
+        'template_components' => 'array',
     ];
 }

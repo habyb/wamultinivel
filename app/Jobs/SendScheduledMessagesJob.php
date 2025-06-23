@@ -3,12 +3,11 @@
 namespace App\Jobs;
 
 use App\Models\SentMessage;
-use App\Services\WhatsAppService;
+use App\Services\WhatsAppServiceBusinessApi;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -36,7 +35,7 @@ class SendScheduledMessagesJob implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(WhatsAppService $whatsAppService): void
+    public function handle(): void
     {
         $messages = SentMessage::where('status', 'pending')
             ->where(function ($query) {
@@ -46,13 +45,6 @@ class SendScheduledMessagesJob implements ShouldQueue
             ->get();
 
         foreach ($messages as $message) {
-            $mimetype = '';
-            $url = Storage::url($message->path);
-
-            if (Storage::disk('public')->exists($message->path)) {
-                $mimetype = Storage::disk('public')->mimeType($message->path);
-            }
-
             try {
                 $users = is_string($message->contacts_result)
                     ? collect(json_decode($message->contacts_result, true))
@@ -60,46 +52,20 @@ class SendScheduledMessagesJob implements ShouldQueue
 
                 foreach ($users as $user) {
                     $number = fix_whatsapp_number($user['remoteJid']);
-                    $mediatype = $message->type;
-                    $mimetype = $mimetype;
-                    $caption = $message->description;
-                    $media = env('APP_URL') . $url;
-                    $fileName = basename($media);
 
-                    logger()->info("Mensagem enviada para usuário {$user['id']} ({$user['name']})");
-
-                    switch ($message->type) {
-                        case 'text':
-                            logger()->info("number: $number, text: $message->description");
-                            // $whatsAppService->sendText($user->phone, $message->description);
-                            break;
-                        case 'image':
-                            logger()->info("number: $number, mediatype: $mediatype, mimetype: $mimetype, caption: $caption, media: $media, fileName: $fileName");
-                            // $whatsAppService->sendMediaUrl(
-                            //     $number,
-                            //     $mediatype,
-                            //     $mimetype,
-                            //     $caption,
-                            //     $media,
-                            //     $fileName
-                            // );
-                            break;
-                        case 'document':
-                            logger()->info("number: $number, mediatype: $mediatype, mimetype: $mimetype, caption: $caption, media: $media, fileName: $fileName");
-                            # code...
-                            break;
-                        case 'video':
-                            logger()->info("number: $number, mediatype: $mediatype, mimetype: $mimetype, caption: $caption, media: $media, fileName: $fileName");
-                            # code...
-                            break;
-                        case 'audio':
-                            logger()->info("number: $number, mediatype: $mediatype, mimetype: $mimetype, caption: $caption, media: $media, fileName: $fileName");
-                            # code...
-                            break;
-                        default:
-                            # code...
-                            break;
-                    }
+                    app(WhatsAppServiceBusinessApi::class)->sendText(
+                        phone: $number,
+                        template: $message->template_name,
+                        language: $message->template_language,
+                        params: [
+                            [
+                                'type' => 'body',
+                                'parameters' => [
+                                    ['type' => 'text', "parameter_name" => "name", 'text' => $user['name']]
+                                ],
+                            ]
+                        ]
+                    );
                 }
 
                 $message->update([
