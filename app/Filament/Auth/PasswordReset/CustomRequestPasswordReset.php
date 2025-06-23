@@ -16,8 +16,6 @@ use DanHarrin\LivewireRateLimiting\Exceptions\TooManyRequestsException;
 use Exception;
 use App\Models\User;
 use App\Services\WhatsAppServiceBusinessApi;
-use App\Jobs\SendPasswordMessageJob;
-use Illuminate\Support\Facades\Artisan;
 
 class CustomRequestPasswordReset extends RequestPasswordReset
 {
@@ -141,11 +139,29 @@ class CustomRequestPasswordReset extends RequestPasswordReset
                     ]
                 );
 
-                sleep(1);
+                sleep(2);
 
-                Artisan::command('send:scheduled-passwords', function ($number, $password) {
-                    dispatch(new SendPasswordMessageJob($number, $password))->delay(now()->addSeconds(3));
-                })->describe('Send password');
+                app(WhatsAppServiceBusinessApi::class)->sendText(
+                    phone: $this->number,
+                    template: 'senha',
+                    language: 'pt_BR',
+                    params: [
+                        [
+                            'type' => 'body',
+                            'parameters' => [
+                                ['type' => 'text', 'text' => $this->password]
+                            ],
+                        ],
+                        [
+                            'type' => 'button',
+                            'sub_type' => 'url',
+                            'index' => 0,
+                            'parameters' => [
+                                ['type' => 'text', 'text' => $this->password]
+                            ]
+                        ]
+                    ]
+                );
 
                 Notification::make()
                     ->title(__('We sent your new password by WhatsApp'))
