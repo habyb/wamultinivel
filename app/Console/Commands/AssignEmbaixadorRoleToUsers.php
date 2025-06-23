@@ -82,9 +82,27 @@ class AssignEmbaixadorRoleToUsers extends Command
                         ]
                     );
 
-                    sleep(1);
-
-                    dispatch(new SendPasswordMessageJob($number, $password))->delay(now()->addSeconds(3));
+                    app(WhatsAppServiceBusinessApi::class)->sendText(
+                        phone: $number,
+                        template: 'senha',
+                        language: 'pt_BR',
+                        params: [
+                            [
+                                'type' => 'body',
+                                'parameters' => [
+                                    ['type' => 'text', 'text' => $password]
+                                ],
+                            ],
+                            [
+                                'type' => 'button',
+                                'sub_type' => 'url',
+                                'index' => 0,
+                                'parameters' => [
+                                    ['type' => 'text', 'text' => $password]
+                                ]
+                            ]
+                        ]
+                    );
                 }
             }
         });
