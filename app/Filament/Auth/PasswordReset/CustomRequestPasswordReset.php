@@ -17,6 +17,8 @@ use Exception;
 use App\Models\User;
 use App\Services\WhatsAppServiceBusinessApi;
 use App\Jobs\SendPasswordMessageJob;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schedule;
 
 class CustomRequestPasswordReset extends RequestPasswordReset
 {
@@ -126,28 +128,6 @@ class CustomRequestPasswordReset extends RequestPasswordReset
                     'password' => bcrypt($password),
                 ])->saveQuietly();
 
-                // app(WhatsAppServiceBusinessApi::class)->sendText(
-                //     phone: $number,
-                //     template: 'senha',
-                //     language: 'pt_BR',
-                //     params: [
-                //         [
-                //             'type' => 'body',
-                //             'parameters' => [
-                //                 ['type' => 'text', 'text' => $password]
-                //             ],
-                //         ],
-                //         [
-                //             'type' => 'button',
-                //             'sub_type' => 'url',
-                //             'index' => 0,
-                //             'parameters' => [
-                //                 ['type' => 'text', 'text' => $password]
-                //             ]
-                //         ]
-                //     ]
-                // );
-
                 app(WhatsAppServiceBusinessApi::class)->sendText(
                     phone: $number,
                     template: 'solicitacao_obrigado',
@@ -162,7 +142,27 @@ class CustomRequestPasswordReset extends RequestPasswordReset
                     ]
                 );
 
-                dispatch(new SendPasswordMessageJob($number, $password))->delay(now()->addSeconds(3));
+                app(WhatsAppServiceBusinessApi::class)->sendText(
+                    phone: $number,
+                    template: 'senha',
+                    language: 'pt_BR',
+                    params: [
+                        [
+                            'type' => 'body',
+                            'parameters' => [
+                                ['type' => 'text', 'text' => $password]
+                            ],
+                        ],
+                        [
+                            'type' => 'button',
+                            'sub_type' => 'url',
+                            'index' => 0,
+                            'parameters' => [
+                                ['type' => 'text', 'text' => $password]
+                            ]
+                        ]
+                    ]
+                );
 
                 Notification::make()
                     ->title(__('We sent your new password by WhatsApp'))
