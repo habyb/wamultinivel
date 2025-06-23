@@ -142,14 +142,14 @@ class CustomRequestPasswordReset extends RequestPasswordReset
                 sleep(2);
 
                 app(WhatsAppServiceBusinessApi::class)->sendText(
-                    phone: $this->number,
+                    phone: $number,
                     template: 'senha',
                     language: 'pt_BR',
                     params: [
                         [
                             'type' => 'body',
                             'parameters' => [
-                                ['type' => 'text', 'text' => $this->password]
+                                ['type' => 'text', 'text' => $password]
                             ],
                         ],
                         [
@@ -157,7 +157,7 @@ class CustomRequestPasswordReset extends RequestPasswordReset
                             'sub_type' => 'url',
                             'index' => 0,
                             'parameters' => [
-                                ['type' => 'text', 'text' => $this->password]
+                                ['type' => 'text', 'text' => $password]
                             ]
                         ]
                     ]
