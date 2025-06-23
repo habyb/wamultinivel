@@ -506,6 +506,7 @@ TEXT;
                             ->when($get('genders'), fn($q) => $q->whereIn('gender', $get('genders')))
                             ->when($get('concerns_01'), fn($q) => $q->whereIn('concern_01', $get('concerns_01')))
                             ->when($get('concerns_02'), fn($q) => $q->whereIn('concern_02', $get('concerns_02')))
+                            ->where('is_add_date_of_birth', true)
                             ->get()
                             ->filter(function ($user) use ($ageGroups) {
                                 // check age group
