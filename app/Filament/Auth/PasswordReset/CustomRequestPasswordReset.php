@@ -17,8 +17,6 @@ use Exception;
 use App\Models\User;
 use App\Services\WhatsAppServiceBusinessApi;
 use App\Jobs\SendPasswordMessageJob;
-use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Schedule;
 
 class CustomRequestPasswordReset extends RequestPasswordReset
 {
@@ -142,27 +140,7 @@ class CustomRequestPasswordReset extends RequestPasswordReset
                     ]
                 );
 
-                app(WhatsAppServiceBusinessApi::class)->sendText(
-                    phone: $number,
-                    template: 'senha',
-                    language: 'pt_BR',
-                    params: [
-                        [
-                            'type' => 'body',
-                            'parameters' => [
-                                ['type' => 'text', 'text' => $password]
-                            ],
-                        ],
-                        [
-                            'type' => 'button',
-                            'sub_type' => 'url',
-                            'index' => 0,
-                            'parameters' => [
-                                ['type' => 'text', 'text' => $password]
-                            ]
-                        ]
-                    ]
-                );
+                dispatch(new SendPasswordMessageJob($number, $password))->delay(now()->addSeconds(3));
 
                 Notification::make()
                     ->title(__('We sent your new password by WhatsApp'))
