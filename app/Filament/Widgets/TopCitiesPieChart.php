@@ -5,7 +5,7 @@ namespace App\Filament\Widgets;
 use Illuminate\Support\Facades\Auth;
 use Filament\Widgets\ChartWidget;
 
-class TopCitiesChart extends ChartWidget
+class TopCitiesPieChart extends ChartWidget
 {
     protected static ?int $sort = 1;
 
