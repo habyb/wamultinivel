@@ -18,7 +18,7 @@ use Filament\Http\Middleware\Authenticate;
 use App\Filament\Widgets\CustomAccountWidget;
 use App\Filament\Widgets\InviteLinkWidget;
 use App\Filament\Widgets\UsersStatsWidget;
-use App\Filament\Widgets\TopCitiesChart;
+use App\Filament\Widgets\TopCitiesPieChart;
 use App\Filament\Widgets\TopNeighborhoodsPieChart;
 use App\Filament\Widgets\GenderPieChart;
 use App\Filament\Widgets\Concern01PieChart;
@@ -73,7 +73,7 @@ class AdminPanelProvider extends PanelProvider
                 CustomAccountWidget::class,
                 InviteLinkWidget::class,
                 UsersStatsWidget::class,
-                TopCitiesChart::class,
+                TopCitiesPieChart::class,
                 TopNeighborhoodsPieChart::class,
                 GenderPieChart::class,
                 Concern01PieChart::class,
