@@ -4,6 +4,7 @@ namespace App\Filament\Resources\SentMessageResource\Pages;
 
 use App\Filament\Resources\SentMessageResource;
 use Filament\Resources\Pages\CreateRecord;
+use Filament\Actions\Action;
 use App\Models\User;
 use Illuminate\Support\Arr;
 
@@ -37,6 +38,23 @@ class CreateSentMessage extends CreateRecord
     public function getHeading(): string
     {
         return __('Send messages');
+    }
+
+    /**
+     * Customize create button.
+     *
+     * @return string
+     */
+    protected function getCreateFormAction(): Action
+    {
+        return parent::getCreateFormAction()
+            ->label(__('Send'))
+            ->icon('heroicon-o-paper-airplane');
+    }
+
+    protected function getRedirectUrl(): string
+    {
+        return static::getResource()::getUrl('index');
     }
 
     protected function mutateFormDataBeforeCreate(array $data): array
