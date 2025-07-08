@@ -25,6 +25,7 @@ class SentMessage extends Model
         'template_name',
         'template_language',
         'template_components',
+        'filter',
     ];
 
     protected $casts = [

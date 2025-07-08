@@ -3,35 +3,45 @@
 namespace App\Filament\Resources;
 
 use Carbon\Carbon;
-use Filament\Forms;
 use App\Models\User;
 use Filament\Tables;
 use Filament\Forms\Form;
 use Filament\Tables\Table;
 use App\Models\SentMessage;
+use Illuminate\Support\Arr;
 use Filament\Resources\Resource;
-use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Toggle;
+use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Textarea;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Forms\Components\TextInput;
 use App\Services\WhatsAppServiceBusinessApi;
+use Filament\Forms\Components\DateTimePicker;
 use App\Filament\Resources\SentMessageResource\Pages;
+use Filament\Tables\Actions\EditAction;
 
 class SentMessageResource extends Resource
 {
     protected static ?string $model = SentMessage::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-chat-bubble-left';
-    protected static ?string $slug = 'send-messages';
-
-    public static function getModelLabel(): string
+    public static function getNavigationLabel(): string
     {
-        return __(key: 'Send messages');
+        return __(key: 'Messages');
     }
 
-    public static function getNavigationGroup(): string
+    protected static ?string $slug = 'send-messages';
+
+    public static function getNavigationIcon(): string
     {
-        return __('Messages');
+        return 'heroicon-o-queue-list';
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('Send messages');
     }
 
     protected static function getApprovedTemplates(): array
@@ -42,443 +52,514 @@ class SentMessageResource extends Resource
             ->toArray();
     }
 
+    protected static function countFilteredContacts(callable $get): int
+    {
+        $ageGroups = $get('age_groups');
+
+        return User::query()
+            ->when($get('cities'), fn($q) => $q->whereIn('city', $get('cities')))
+            ->when($get('neighborhoods'), fn($q) => $q->whereIn('neighborhood', $get('neighborhoods')))
+            ->when($get('genders'), fn($q) => $q->whereIn('gender', $get('genders')))
+            ->when($get('concerns_01'), fn($q) => $q->whereIn('concern_01', $get('concerns_01')))
+            ->when($get('concerns_02'), fn($q) => $q->whereIn('concern_02', $get('concerns_02')))
+            ->where('is_add_date_of_birth', true)
+            ->get()
+            ->filter(function ($user) use ($ageGroups) {
+                if (!empty($ageGroups)) {
+                    $birth = $user->getParsedDateOfBirth();
+
+                    if (!$birth) {
+                        return false;
+                    }
+
+                    $age = $birth->age;
+
+                    foreach ($ageGroups as $group) {
+                        if (preg_match('/^(\d{2})-(\d{2})$/', $group, $m)) {
+                            $min = (int) $m[1];
+                            $max = (int) $m[2];
+
+                            if ($age >= $min && $age <= $max) {
+                                return true;
+                            }
+                        }
+                    }
+
+                    return false;
+                }
+
+                return true;
+            })
+            ->count();
+    }
+
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('title')
-                    ->label('Title')
-                    ->helperText('Esse título NÃO será visível para o contato no WhatsApp. Este campo é utilizado apenas para identificação.')
-                    ->required()
-                    ->minLength(5)
-                    ->maxLength(255)
-                    ->columnSpan('full'),
+                Grid::make(12)
+                    ->schema([
+                        TextInput::make('title')
+                            ->label('Title')
+                            ->helperText('Esse título NÃO será visível para o contato no WhatsApp. Este campo é utilizado apenas para identificação.')
+                            ->required()
+                            ->minLength(5)
+                            ->maxLength(255)
+                            ->columnSpan(8),
+                    ]),
 
-                Forms\Components\Select::make('cities')
-                    ->label('Cities')
-                    ->helperText('Selecione uma ou mais cidades para destino.')
-                    ->multiple()
-                    ->reactive()
-                    ->live()
-                    ->native(false)
-                    ->dehydrated(true)
-                    ->options(function () {
-                        return User::select('city')
-                            ->distinct()
-                            ->orderBy('city')
-                            ->pluck('city', 'city')
-                            ->filter()
-                            ->toArray();
-                    })
-                    ->searchable()
-                    ->afterStateUpdated(function ($state, callable $get, callable $set) {
-                        $ageGroups = $get('age_groups');
+                Grid::make(12)
+                    ->schema([
+                        Select::make('filter')
+                            ->label('Filter')
+                            ->helperText('Selecione um filtro.')
+                            ->required()
+                            ->reactive()
+                            ->live()
+                            ->native(false)
+                            ->dehydrated(true)
+                            ->options([
+                                null => 'Selecione',
+                                'questionary' => __('Questionary'),
+                                'ambassadors' => __('Ambassadors'),
+                                'contacts' => __('Contacts'),
+                            ])
+                            ->searchable()
+                            ->columnSpan(3),
+                    ]),
 
-                        $count = \App\Models\User::query()
-                            ->when($get('cities'), fn($q) => $q->whereIn('city', $get('cities')))
-                            ->when($get('neighborhoods'), fn($q) => $q->whereIn('neighborhood', $get('neighborhoods')))
-                            ->when($get('genders'), fn($q) => $q->whereIn('gender', $get('genders')))
-                            ->when($get('concerns_01'), fn($q) => $q->whereIn('concern_01', $get('concerns_01')))
-                            ->when($get('concerns_02'), fn($q) => $q->whereIn('concern_02', $get('concerns_02')))
-                            ->get()
-                            ->filter(function ($user) use ($ageGroups) {
-                                // check age group
-                                if (!empty($ageGroups)) {
-                                    $birth = $user->getParsedDateOfBirth();
+                // Questionary Section - START
+                Section::make(__('Questionary'))
+                    ->visible(fn(callable $get) => $get('filter') === 'questionary')
+                    ->schema([
+                        Grid::make(12)
+                            ->schema([
+                                Select::make('cities')
+                                    ->label('Cities')
+                                    ->helperText('Selecione uma ou mais cidades para destino.')
+                                    ->multiple()
+                                    ->reactive()
+                                    ->live()
+                                    ->native(false)
+                                    ->dehydrated(true)
+                                    ->options(function () {
+                                        return User::select('city')
+                                            ->distinct()
+                                            ->orderBy('city')
+                                            ->pluck('city', 'city')
+                                            ->filter()
+                                            ->toArray();
+                                    })
+                                    ->searchable()
+                                    ->afterStateUpdated(function ($state, callable $get, callable $set) {
+                                        $count = self::countFilteredContacts($get);
+                                        $set('contacts_count_preview', "{$count} contatos");
+                                    })
+                                    ->columnSpan(6),
 
-                                    if (!$birth) {
-                                        return false;
-                                    }
+                                Select::make('neighborhoods')
+                                    ->label('Neighborhoods')
+                                    ->helperText('Selecione um ou mais bairros para destino.')
+                                    ->multiple()
+                                    ->reactive()
+                                    ->live()
+                                    ->options(function () {
+                                        return User::select('neighborhood')
+                                            ->distinct()
+                                            ->orderBy('neighborhood')
+                                            ->pluck('neighborhood', 'neighborhood')
+                                            ->filter()
+                                            ->toArray();
+                                    })
+                                    ->searchable()
+                                    ->afterStateUpdated(function ($state, callable $get, callable $set) {
+                                        $count = self::countFilteredContacts($get);
+                                        $set('contacts_count_preview', "{$count} contatos");
+                                    })
+                                    ->columnSpan(6),
 
-                                    $age = $birth->age;
+                                Select::make('genders')
+                                    ->label('Genders')
+                                    ->helperText('Selecione um ou mais gêneros para destino.')
+                                    ->multiple()
+                                    ->reactive()
+                                    ->live()
+                                    ->options(function () {
+                                        return User::select('gender')
+                                            ->distinct()
+                                            ->orderBy('gender')
+                                            ->pluck('gender', 'gender')
+                                            ->filter()
+                                            ->toArray();
+                                    })
+                                    ->searchable()
+                                    ->searchable()
+                                    ->afterStateUpdated(function ($state, callable $get, callable $set) {
+                                        $count = self::countFilteredContacts($get);
+                                        $set('contacts_count_preview', "{$count} contatos");
+                                    })
+                                    ->columnSpan(6),
 
-                                    foreach ($ageGroups as $group) {
-                                        if (preg_match('/^(\d{2})-(\d{2})$/', $group, $m)) {
-                                            $min = (int) $m[1];
-                                            $max = (int) $m[2];
+                                Select::make('age_groups')
+                                    ->label('Age groups')
+                                    ->helperText('Selecione uma ou mais faixas etárias.')
+                                    ->multiple()
+                                    ->reactive()
+                                    ->live()
+                                    ->native(false)
+                                    ->dehydrated(true)
+                                    ->options([
+                                        '16-30' => '16-30',
+                                        '31-40' => '31-40',
+                                        '41-50' => '41-50',
+                                        '51-60' => '51-60',
+                                        '60+'   => '60+',
+                                    ])
+                                    ->searchable()
+                                    ->afterStateUpdated(function ($state, callable $get, callable $set) {
+                                        $count = self::countFilteredContacts($get);
+                                        $set('contacts_count_preview', "{$count} contatos");
+                                    })
+                                    ->columnSpan(6),
 
-                                            if ($age >= $min && $age <= $max) {
-                                                return true;
+                                Select::make('concerns_01')
+                                    ->label('Main concerns')
+                                    ->helperText(__('Select one or more main concerns for destination.'))
+                                    ->multiple()
+                                    ->reactive()
+                                    ->live()
+                                    ->options(function () {
+                                        return User::select('concern_01')
+                                            ->distinct()
+                                            ->orderBy('concern_01')
+                                            ->pluck('concern_01', 'concern_01')
+                                            ->filter()
+                                            ->toArray();
+                                    })
+                                    ->searchable()
+                                    ->afterStateUpdated(function ($state, callable $get, callable $set) {
+                                        $count = self::countFilteredContacts($get);
+                                        $set('contacts_count_preview', "{$count} contatos");
+                                    })
+                                    ->columnSpan(6),
+
+                                Select::make('concerns_02')
+                                    ->label('Secondary concerns')
+                                    ->helperText(__('Select one or more secondary concerns for destination.'))
+                                    ->multiple()
+                                    ->reactive()
+                                    ->live()
+                                    ->options(function () {
+                                        return User::select('concern_02')
+                                            ->distinct()
+                                            ->orderBy('concern_02')
+                                            ->pluck('concern_02', 'concern_02')
+                                            ->filter()
+                                            ->toArray();
+                                    })
+                                    ->searchable()
+                                    ->afterStateUpdated(function ($state, callable $get, callable $set) {
+                                        $count = self::countFilteredContacts($get);
+                                        $set('contacts_count_preview', "{$count} contatos");
+                                    })
+                                    ->columnSpan(6),
+                            ]),
+                    ]),
+                // Questionary Section - END
+
+                // Ambassadors Section - START
+                Section::make(__('Ambassadors'))
+                    ->visible(fn(callable $get) => $get('filter') === 'ambassadors')
+                    ->schema([
+                        Grid::make(12)
+                            ->schema([
+                                Select::make('ambassadors')
+                                    ->label('Ambassadors')
+                                    ->helperText('Selecione um ou mais Embaixadores para destino.')
+                                    ->required()
+                                    ->multiple()
+                                    ->reactive()
+                                    ->live()
+                                    ->native(false)
+                                    ->dehydrated(true)
+                                    ->options(function () {
+                                        return User::select('id', 'name', 'code')
+                                            ->whereHas('firstLevelGuestsNetwork')
+                                            ->where('is_add_date_of_birth', true)
+                                            ->orderBy('name')
+                                            ->get()
+                                            ->mapWithKeys(fn($user) => [$user->id => "{$user->name} ({$user->code})"])
+                                            ->toArray();
+                                    })
+                                    ->searchable()
+                                    ->afterStateUpdated(function ($state, callable $get, callable $set) {
+                                        $contacts = Arr::wrap($get('ambassadors'));
+                                        $includeNetwork = $get('include_ambassador_network');
+
+                                        $ids = collect($contacts);
+
+                                        if ($includeNetwork) {
+                                            foreach ($contacts as $contactId) {
+                                                $user = User::find($contactId);
+                                                if ($user) {
+                                                    $networkIds = $user->getRecursiveNetWork($user);
+                                                    $ids = $ids->merge($networkIds);
+                                                }
                                             }
                                         }
-                                    }
 
-                                    return false; // age is not within any track
-                                }
+                                        $ids = $ids->unique(); // garantir IDs únicos
 
-                                return true; // no age filter, keep user
-                            })
-                            ->count();
+                                        $count = User::whereIn('id', $ids)
+                                            ->where('is_add_date_of_birth', true)
+                                            ->count();
 
-                        $set('contacts_count_preview', "{$count} contatos");
-                    }),
+                                        $set('contacts_count_preview', "{$count} contatos");
+                                    })
+                                    ->columnSpan(12),
 
-                Forms\Components\Select::make('neighborhoods')
-                    ->label('Neighborhoods')
-                    ->helperText('Selecione um ou mais bairros para destino.')
-                    ->multiple()
-                    ->reactive()
-                    ->live()
-                    ->options(function () {
-                        return User::select('neighborhood')
-                            ->distinct()
-                            ->orderBy('neighborhood')
-                            ->pluck('neighborhood', 'neighborhood')
-                            ->filter()
-                            ->toArray();
-                    })
-                    ->searchable()
-                    ->afterStateUpdated(function ($state, callable $get, callable $set) {
-                        $ageGroups = $get('age_groups');
+                                Toggle::make('include_ambassador_network')
+                                    ->label('Enviar também para toda a rede de contatos selecionados.')
+                                    ->reactive()
+                                    ->afterStateUpdated(function ($state, callable $get, callable $set) {
+                                        $contactIds = collect($get('ambassadors') ?? []);
 
-                        $count = \App\Models\User::query()
-                            ->when($get('cities'), fn($q) => $q->whereIn('city', $get('cities')))
-                            ->when($get('neighborhoods'), fn($q) => $q->whereIn('neighborhood', $get('neighborhoods')))
-                            ->when($get('genders'), fn($q) => $q->whereIn('gender', $get('genders')))
-                            ->when($get('concerns_01'), fn($q) => $q->whereIn('concern_01', $get('concerns_01')))
-                            ->when($get('concerns_02'), fn($q) => $q->whereIn('concern_02', $get('concerns_02')))
-                            ->get()
-                            ->filter(function ($user) use ($ageGroups) {
-                                // check age group
-                                if (!empty($ageGroups)) {
-                                    $birth = $user->getParsedDateOfBirth();
+                                        if ($contactIds->isEmpty()) {
+                                            $set('contacts_count_preview', "0 contatos");
+                                            return;
+                                        }
 
-                                    if (!$birth) {
-                                        return false;
-                                    }
+                                        if ($state === true) {
+                                            $ids = $contactIds->values();
 
-                                    $age = $birth->age;
+                                            foreach ($contactIds as $contactId) {
+                                                $user = User::find($contactId);
+                                                if ($user) {
+                                                    $networkIds = $user->getRecursiveNetWork($user);
+                                                    $ids = $ids->merge($networkIds);
+                                                }
+                                            }
 
-                                    foreach ($ageGroups as $group) {
-                                        if (preg_match('/^(\d{2})-(\d{2})$/', $group, $m)) {
-                                            $min = (int) $m[1];
-                                            $max = (int) $m[2];
+                                            $count = User::query()
+                                                ->whereIn('id', $ids->unique())
+                                                ->where('is_add_date_of_birth', true)
+                                                ->count();
 
-                                            if ($age >= $min && $age <= $max) {
-                                                return true;
+                                            $set('contacts_count_preview', "{$count} contatos");
+                                        } else {
+                                            $count = User::query()
+                                                ->whereIn('id', $contactIds)
+                                                ->where('is_add_date_of_birth', true)
+                                                ->count();
+
+                                            $set('contacts_count_preview', "{$count} contatos");
+                                        }
+                                    })
+                                    ->columnSpan(12),
+
+                            ]),
+                    ]),
+                // Ambassadors Section - END
+
+                // Contacts Section - START
+                Section::make(__('Contacts'))
+                    ->visible(fn(callable $get) => $get('filter') === 'contacts')
+                    ->schema([
+                        Grid::make(12)
+                            ->schema([
+                                Select::make('contacts')
+                                    ->label('Contacts')
+                                    ->helperText('Selecione um ou mais Contatos para destino.')
+                                    ->required()
+                                    ->multiple()
+                                    ->reactive()
+                                    ->live()
+                                    ->native(false)
+                                    ->dehydrated(true)
+                                    ->options(function () {
+                                        return User::select('id', 'name', 'code')
+                                            ->where('is_add_date_of_birth', true)
+                                            ->orderBy('name')
+                                            ->get()
+                                            ->mapWithKeys(fn($user) => [$user->id => "{$user->name} ({$user->code})"])
+                                            ->toArray();
+                                    })
+                                    ->searchable()
+                                    ->afterStateUpdated(function ($state, callable $get, callable $set) {
+                                        $contacts = Arr::wrap($get('contacts'));
+                                        $includeNetwork = $get('include_network');
+
+                                        $ids = collect($contacts);
+
+                                        if ($includeNetwork) {
+                                            foreach ($contacts as $contactId) {
+                                                $user = User::find($contactId);
+                                                if ($user) {
+                                                    $networkIds = $user->getRecursiveNetWork($user);
+                                                    $ids = $ids->merge($networkIds);
+                                                }
                                             }
                                         }
-                                    }
 
-                                    return false; // age is not within any track
-                                }
+                                        $ids = $ids->unique(); // garantir IDs únicos
 
-                                return true; // no age filter, keep user
-                            })
-                            ->count();
+                                        $count = User::whereIn('id', $ids)
+                                            ->where('is_add_date_of_birth', true)
+                                            ->count();
 
-                        $set('contacts_count_preview', "{$count} contatos");
-                    }),
+                                        $set('contacts_count_preview', "{$count} contatos");
+                                    })
+                                    ->columnSpan(12),
 
-                Forms\Components\Select::make('genders')
-                    ->label('Genders')
-                    ->helperText('Selecione um ou mais gêneros para destino.')
-                    ->multiple()
-                    ->reactive()
-                    ->live()
-                    ->options(function () {
-                        return User::select('gender')
-                            ->distinct()
-                            ->orderBy('gender')
-                            ->pluck('gender', 'gender')
-                            ->filter()
-                            ->toArray();
-                    })
-                    ->searchable()
-                    ->searchable()
-                    ->afterStateUpdated(function ($state, callable $get, callable $set) {
-                        $ageGroups = $get('age_groups');
+                                Toggle::make('include_network')
+                                    ->label('Enviar também para toda a rede de contatos selecionados.')
+                                    ->reactive()
+                                    ->afterStateUpdated(function ($state, callable $get, callable $set) {
+                                        $contactIds = collect($get('contacts') ?? []);
 
-                        $count = \App\Models\User::query()
-                            ->when($get('cities'), fn($q) => $q->whereIn('city', $get('cities')))
-                            ->when($get('neighborhoods'), fn($q) => $q->whereIn('neighborhood', $get('neighborhoods')))
-                            ->when($get('genders'), fn($q) => $q->whereIn('gender', $get('genders')))
-                            ->when($get('concerns_01'), fn($q) => $q->whereIn('concern_01', $get('concerns_01')))
-                            ->when($get('concerns_02'), fn($q) => $q->whereIn('concern_02', $get('concerns_02')))
-                            ->get()
-                            ->filter(function ($user) use ($ageGroups) {
-                                // check age group
-                                if (!empty($ageGroups)) {
-                                    $birth = $user->getParsedDateOfBirth();
-
-                                    if (!$birth) {
-                                        return false;
-                                    }
-
-                                    $age = $birth->age;
-
-                                    foreach ($ageGroups as $group) {
-                                        if (preg_match('/^(\d{2})-(\d{2})$/', $group, $m)) {
-                                            $min = (int) $m[1];
-                                            $max = (int) $m[2];
-
-                                            if ($age >= $min && $age <= $max) {
-                                                return true;
-                                            }
+                                        if ($contactIds->isEmpty()) {
+                                            $set('contacts_count_preview', "0 contatos");
+                                            return;
                                         }
-                                    }
 
-                                    return false; // age is not within any track
-                                }
+                                        if ($state === true) {
+                                            $ids = $contactIds->values();
 
-                                return true; // no age filter, keep user
-                            })
-                            ->count();
-
-                        $set('contacts_count_preview', "{$count} contatos");
-                    }),
-
-                Forms\Components\Select::make('age_groups')
-                    ->label('Age groups')
-                    ->helperText('Selecione uma ou mais faixas etárias.')
-                    ->multiple()
-                    ->reactive()
-                    ->live()
-                    ->native(false)
-                    ->dehydrated(true)
-                    ->options([
-                        '16-30' => '16-30',
-                        '31-40' => '31-40',
-                        '41-50' => '41-50',
-                        '51-60' => '51-60',
-                        '60+'   => '60+',
-                    ])
-                    ->searchable()
-                    ->afterStateUpdated(function ($state, callable $get, callable $set) {
-                        $ageGroups = $get('age_groups');
-
-                        $count = \App\Models\User::query()
-                            ->when($get('cities'), fn($q) => $q->whereIn('city', $get('cities')))
-                            ->when($get('neighborhoods'), fn($q) => $q->whereIn('neighborhood', $get('neighborhoods')))
-                            ->when($get('genders'), fn($q) => $q->whereIn('gender', $get('genders')))
-                            ->when($get('concerns_01'), fn($q) => $q->whereIn('concern_01', $get('concerns_01')))
-                            ->when($get('concerns_02'), fn($q) => $q->whereIn('concern_02', $get('concerns_02')))
-                            ->get()
-                            ->filter(function ($user) use ($ageGroups) {
-                                // check age group
-                                if (!empty($ageGroups)) {
-                                    $birth = $user->getParsedDateOfBirth();
-
-                                    if (!$birth) {
-                                        return false;
-                                    }
-
-                                    $age = $birth->age;
-
-                                    foreach ($ageGroups as $group) {
-                                        if (preg_match('/^(\d{2})-(\d{2})$/', $group, $m)) {
-                                            $min = (int) $m[1];
-                                            $max = (int) $m[2];
-
-                                            if ($age >= $min && $age <= $max) {
-                                                return true;
+                                            foreach ($contactIds as $contactId) {
+                                                $user = User::find($contactId);
+                                                if ($user) {
+                                                    $networkIds = $user->getRecursiveNetWork($user);
+                                                    $ids = $ids->merge($networkIds);
+                                                }
                                             }
+
+                                            $count = User::query()
+                                                ->whereIn('id', $ids->unique())
+                                                ->where('is_add_date_of_birth', true)
+                                                ->count();
+
+                                            $set('contacts_count_preview', "{$count} contatos");
+                                        } else {
+                                            $count = User::query()
+                                                ->whereIn('id', $contactIds)
+                                                ->where('is_add_date_of_birth', true)
+                                                ->count();
+
+                                            $set('contacts_count_preview', "{$count} contatos");
                                         }
-                                    }
+                                    })
+                                    ->columnSpan(12),
 
-                                    return false; // age is not within any track
-                                }
+                            ]),
+                    ]),
+                // Contacts Section - END
 
-                                return true; // no age filter, keep user
-                            })
-                            ->count();
+                // Message Section - START
+                Section::make(__('Message'))
+                    ->schema([
+                        Grid::make(12)
+                            ->schema([
+                                Select::make('template_name')
+                                    ->label('Template')
+                                    ->searchable()
+                                    ->reactive() // torna o campo reativo
+                                    ->options(
+                                        fn() => collect(app(WhatsAppServiceBusinessApi::class)->getTemplate())
+                                            ->where('status', 'APPROVED')
+                                            ->pluck('name', 'name')
+                                            ->toArray()
+                                    )
+                                    ->afterStateUpdated(function ($state, callable $set) {
+                                        $template = collect(app(WhatsAppServiceBusinessApi::class)->getTemplate())
+                                            ->firstWhere('name', $state);
 
-                        $set('contacts_count_preview', "{$count} contatos");
-                    }),
+                                        $header = collect($template['components'] ?? [])->firstWhere('type', 'HEADER')['text'] ?? '';
+                                        $body = collect($template['components'] ?? [])->firstWhere('type', 'BODY')['text'] ?? '';
+                                        $footer = collect($template['components'] ?? [])->firstWhere('type', 'FOOTER')['text'] ?? '';
 
-                Forms\Components\Select::make('concerns_01')
-                    ->label('Main concerns')
-                    ->helperText(__('Select one or more main concerns for destination.'))
-                    ->multiple()
-                    ->reactive()
-                    ->live()
-                    ->options(function () {
-                        return User::select('concern_01')
-                            ->distinct()
-                            ->orderBy('concern_01')
-                            ->pluck('concern_01', 'concern_01')
-                            ->filter()
-                            ->toArray();
-                    })
-                    ->searchable()
-                    ->afterStateUpdated(function ($state, callable $get, callable $set) {
-                        $ageGroups = $get('age_groups');
+                                        $preview = "{$header}\n\n{$body}\n\n_{$footer}_";
 
-                        $count = \App\Models\User::query()
-                            ->when($get('cities'), fn($q) => $q->whereIn('city', $get('cities')))
-                            ->when($get('neighborhoods'), fn($q) => $q->whereIn('neighborhood', $get('neighborhoods')))
-                            ->when($get('genders'), fn($q) => $q->whereIn('gender', $get('genders')))
-                            ->when($get('concerns_01'), fn($q) => $q->whereIn('concern_01', $get('concerns_01')))
-                            ->when($get('concerns_02'), fn($q) => $q->whereIn('concern_02', $get('concerns_02')))
-                            ->get()
-                            ->filter(function ($user) use ($ageGroups) {
-                                // check age group
-                                if (!empty($ageGroups)) {
-                                    $birth = $user->getParsedDateOfBirth();
+                                        $set('template_preview', $preview);
 
-                                    if (!$birth) {
-                                        return false;
-                                    }
-
-                                    $age = $birth->age;
-
-                                    foreach ($ageGroups as $group) {
-                                        if (preg_match('/^(\d{2})-(\d{2})$/', $group, $m)) {
-                                            $min = (int) $m[1];
-                                            $max = (int) $m[2];
-
-                                            if ($age >= $min && $age <= $max) {
-                                                return true;
-                                            }
+                                        if ($template) {
+                                            $set('template_id', $template['id'] ?? null);
+                                            $set('template_language', $template['language'] ?? null);
+                                            $set('template_components', $template['components'] ?? null);
                                         }
-                                    }
+                                    })
+                                    ->afterStateHydrated(function ($state, callable $set) {
+                                        if (! $state) return;
 
-                                    return false; // age is not within any track
-                                }
+                                        $template = collect(app(\App\Services\WhatsAppServiceBusinessApi::class)->getTemplate())
+                                            ->firstWhere('name', $state);
 
-                                return true; // no age filter, keep user
-                            })
-                            ->count();
-
-                        $set('contacts_count_preview', "{$count} contatos");
-                    }),
-
-                Forms\Components\Select::make('concerns_02')
-                    ->label('Secondary concerns')
-                    ->helperText(__('Select one or more secondary concerns for destination.'))
-                    ->multiple()
-                    ->reactive()
-                    ->live()
-                    ->options(function () {
-                        return User::select('concern_02')
-                            ->distinct()
-                            ->orderBy('concern_02')
-                            ->pluck('concern_02', 'concern_02')
-                            ->filter()
-                            ->toArray();
-                    })
-                    ->searchable()
-                    ->afterStateUpdated(function ($state, callable $get, callable $set) {
-                        $ageGroups = $get('age_groups');
-
-                        $count = \App\Models\User::query()
-                            ->when($get('cities'), fn($q) => $q->whereIn('city', $get('cities')))
-                            ->when($get('neighborhoods'), fn($q) => $q->whereIn('neighborhood', $get('neighborhoods')))
-                            ->when($get('genders'), fn($q) => $q->whereIn('gender', $get('genders')))
-                            ->when($get('concerns_01'), fn($q) => $q->whereIn('concern_01', $get('concerns_01')))
-                            ->when($get('concerns_02'), fn($q) => $q->whereIn('concern_02', $get('concerns_02')))
-                            ->get()
-                            ->filter(function ($user) use ($ageGroups) {
-                                // check age group
-                                if (!empty($ageGroups)) {
-                                    $birth = $user->getParsedDateOfBirth();
-
-                                    if (!$birth) {
-                                        return false;
-                                    }
-
-                                    $age = $birth->age;
-
-                                    foreach ($ageGroups as $group) {
-                                        if (preg_match('/^(\d{2})-(\d{2})$/', $group, $m)) {
-                                            $min = (int) $m[1];
-                                            $max = (int) $m[2];
-
-                                            if ($age >= $min && $age <= $max) {
-                                                return true;
-                                            }
+                                        if (! $template) {
+                                            $set('template_preview', 'Template não encontrado.');
+                                            return;
                                         }
+
+                                        $header = collect($template['components'])->firstWhere('type', 'HEADER')['text'] ?? '';
+                                        $body   = collect($template['components'])->firstWhere('type', 'BODY')['text'] ?? '';
+                                        $footer = collect($template['components'])->firstWhere('type', 'FOOTER')['text'] ?? '';
+
+                                        $preview = <<<TEXT
+                                                {$header}
+
+                                                {$body}
+
+                                                {$footer}
+                                                TEXT;
+
+                                        $set('template_preview', $preview);
+                                    })
+                                    ->required()
+                                    ->columnSpan(6),
+
+                                Textarea::make('template_preview')
+                                    ->label('Preview of the template')
+                                    ->hint(__('Select a template first'))
+                                    ->disabled()
+                                    ->rows(10)
+                                    ->columnSpan(1)
+                                    ->reactive()
+                                    ->columnSpan(6),
+                            ]),
+                    ]),
+                // Message Section - END
+
+                Grid::make(12)
+                    ->schema([
+                        DateTimePicker::make('sent_at')
+                            ->label(__('Schedule'))
+                            ->helperText(__('Select shipping date and time at least 2 minutes in the future.'))
+                            ->suffixIcon('heroicon-m-calendar')
+                            ->seconds(false)
+                            ->native(false)
+                            ->nullable()
+                            ->required()
+                            ->displayFormat('d/m/Y H:i')
+                            ->rule(function () {
+                                return function ($attribute, $value, $fail) {
+                                    if ($value && Carbon::parse($value)->lt(now()->addMinutes(2))) {
+                                        $fail(__('The date and time should be at least 2 minutes in the future.'));
                                     }
-
-                                    return false; // age is not within any track
-                                }
-
-                                return true; // no age filter, keep user
+                                };
                             })
-                            ->count();
+                            ->columnSpan(4),
+                    ]),
 
-                        $set('contacts_count_preview', "{$count} contatos");
-                    }),
-
-                Select::make('template_name')
-                    ->label('Template')
-                    ->searchable()
-                    ->reactive() // torna o campo reativo
-                    ->options(
-                        fn() => collect(app(WhatsAppServiceBusinessApi::class)->getTemplate())
-                            ->where('status', 'APPROVED')
-                            ->pluck('name', 'name')
-                            ->toArray()
-                    )
-                    ->afterStateUpdated(function ($state, callable $set) {
-                        $template = collect(app(WhatsAppServiceBusinessApi::class)->getTemplate())
-                            ->firstWhere('name', $state);
-
-                        $header = collect($template['components'] ?? [])->firstWhere('type', 'HEADER')['text'] ?? '';
-                        $body = collect($template['components'] ?? [])->firstWhere('type', 'BODY')['text'] ?? '';
-                        $footer = collect($template['components'] ?? [])->firstWhere('type', 'FOOTER')['text'] ?? '';
-
-                        $preview = "{$header}\n\n{$body}\n\n_{$footer}_";
-
-                        $set('template_preview', $preview);
-
-                        if ($template) {
-                            $set('template_id', $template['id'] ?? null);
-                            $set('template_language', $template['language'] ?? null);
-                            $set('template_components', $template['components'] ?? null);
-                        }
-                    })
-                    ->afterStateHydrated(function ($state, callable $set) {
-                        if (! $state) return;
-
-                        $template = collect(app(\App\Services\WhatsAppServiceBusinessApi::class)->getTemplate())
-                            ->firstWhere('name', $state);
-
-                        if (! $template) {
-                            $set('template_preview', 'Template não encontrado.');
-                            return;
-                        }
-
-                        $header = collect($template['components'])->firstWhere('type', 'HEADER')['text'] ?? '';
-                        $body   = collect($template['components'])->firstWhere('type', 'BODY')['text'] ?? '';
-                        $footer = collect($template['components'])->firstWhere('type', 'FOOTER')['text'] ?? '';
-
-                        $preview = <<<TEXT
-{$header}
-
-{$body}
-
-{$footer}
-TEXT;
-
-                        $set('template_preview', $preview);
-                    })
-                    ->required(),
-
-                Textarea::make('template_preview')
-                    ->label('Preview of the template')
-                    ->hint(__('Select a template first'))
-                    ->disabled()
-                    ->rows(10)
-                    ->columnSpan(1)
-                    ->reactive(),
-
-                Forms\Components\DateTimePicker::make('sent_at')
-                    ->label(__('Schedule'))
-                    ->helperText(__('Select shipping date and time at least 2 minutes in the future.'))
-                    ->suffixIcon('heroicon-m-calendar')
-                    ->seconds(false)
-                    ->native(false)
-                    ->nullable()
-                    ->required()
-                    ->displayFormat('d/m/Y H:i')
-                    ->rule(function () {
-                        return function ($attribute, $value, $fail) {
-                            if ($value && Carbon::parse($value)->lt(now()->addMinutes(2))) {
-                                $fail(__('The date and time should be at least 2 minutes in the future.'));
-                            }
-                        };
-                    }),
+                Grid::make(12)
+                    ->schema([
+                        TextInput::make('contacts_count_preview')
+                            ->label('Contacts found')
+                            ->disabled()
+                            ->dehydrated(false)
+                            ->afterStateHydrated(function ($state, callable $get, callable $set) {
+                                $count = self::countFilteredContacts($get);
+                                $set('contacts_count_preview', "{$count} contatos");
+                            })
+                            ->columnSpan(3),
+                    ]),
 
                 Hidden::make('template_id')
                     ->dehydrated(true)
@@ -491,54 +572,6 @@ TEXT;
                 Hidden::make('template_components')
                     ->dehydrated(true)
                     ->default(null),
-
-
-                Forms\Components\TextInput::make('contacts_count_preview')
-                    ->label('Contacts found')
-                    ->disabled()
-                    ->dehydrated(false)
-                    ->afterStateHydrated(function ($state, callable $get, callable $set) {
-                        $ageGroups = $get('age_groups');
-
-                        $count = \App\Models\User::query()
-                            ->when($get('cities'), fn($q) => $q->whereIn('city', $get('cities')))
-                            ->when($get('neighborhoods'), fn($q) => $q->whereIn('neighborhood', $get('neighborhoods')))
-                            ->when($get('genders'), fn($q) => $q->whereIn('gender', $get('genders')))
-                            ->when($get('concerns_01'), fn($q) => $q->whereIn('concern_01', $get('concerns_01')))
-                            ->when($get('concerns_02'), fn($q) => $q->whereIn('concern_02', $get('concerns_02')))
-                            ->where('is_add_date_of_birth', true)
-                            ->get()
-                            ->filter(function ($user) use ($ageGroups) {
-                                // check age group
-                                if (!empty($ageGroups)) {
-                                    $birth = $user->getParsedDateOfBirth();
-
-                                    if (!$birth) {
-                                        return false;
-                                    }
-
-                                    $age = $birth->age;
-
-                                    foreach ($ageGroups as $group) {
-                                        if (preg_match('/^(\d{2})-(\d{2})$/', $group, $m)) {
-                                            $min = (int) $m[1];
-                                            $max = (int) $m[2];
-
-                                            if ($age >= $min && $age <= $max) {
-                                                return true;
-                                            }
-                                        }
-                                    }
-
-                                    return false; // age is not within any track
-                                }
-
-                                return true; // no age filter, keep user
-                            })
-                            ->count();
-
-                        $set('contacts_count_preview', "{$count} contatos");
-                    })
             ]);
     }
 
@@ -547,13 +580,14 @@ TEXT;
         return $table
             ->columns([
                 TextColumn::make('sent_at')
-                    ->label('Sent at')
+                    ->label(__('Scheduled at'))
                     ->dateTime(format: 'd/m/Y H:i')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: false),
                 TextColumn::make('created_at')
                     ->label('Created at')
-                    ->dateTime()
+                    ->dateTime(format: 'd/m/Y H:i')
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('title')->sortable()->searchable(),
                 TextColumn::make('contacts_count')
@@ -593,6 +627,12 @@ TEXT;
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
+            ])
+            ->actions([
+                EditAction::make()
+                    ->label(__('View')) // Novo texto
+                    ->icon('heroicon-o-eye') // Novo ícone (ex: ícone de lápis)
+                    ->color('warning'), // opcional: muda a cor do botão
             ]);
     }
 
