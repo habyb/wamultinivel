@@ -52,12 +52,27 @@ class SendScheduledMessagesJob implements ShouldQueue
 
                 foreach ($users as $user) {
                     $number = fix_whatsapp_number($user['remoteJid']);
+                    $param_type_header = [];
+
+                    if ($message->type == 'image' || $message->type == 'video') {
+                        $url = asset('storage/' . $message->path);
+
+                        $param_type_header = [
+                            'type' => 'header',
+                            'parameters' => [
+                                ['type' => $message->type, $message->type => [
+                                    'link' => $url
+                                ]]
+                            ],
+                        ];
+                    }
 
                     app(WhatsAppServiceBusinessApi::class)->sendText(
                         phone: $number,
                         template: $message->template_name,
                         language: $message->template_language,
                         params: [
+                            $param_type_header,
                             [
                                 'type' => 'body',
                                 'parameters' => [

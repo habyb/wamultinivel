@@ -16,12 +16,14 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Textarea;
+use Filament\Tables\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
+use Illuminate\Support\Facades\Storage;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\FileUpload;
 use App\Services\WhatsAppServiceBusinessApi;
 use Filament\Forms\Components\DateTimePicker;
 use App\Filament\Resources\SentMessageResource\Pages;
-use Filament\Tables\Actions\EditAction;
 
 class SentMessageResource extends Resource
 {
@@ -273,6 +275,21 @@ class SentMessageResource extends Resource
                     ->schema([
                         Grid::make(12)
                             ->schema([
+                                Toggle::make('all_ambassadors')
+                                    ->label('Selecionar todos os Embaixadores')
+                                    ->reactive()
+                                    ->afterStateUpdated(function ($state, callable $set) {
+                                        if ($state === true) {
+                                            $count = User::whereHas('firstLevelGuestsNetwork')->where('is_add_date_of_birth', true)->count();
+                                            $set('contacts_count_preview', "{$count} contatos");
+                                            $set('include_ambassador_network', false);
+                                            $set('ambassadors', []);
+                                        } else {
+                                            $set('contacts_count_preview', '0 contatos');
+                                        }
+                                    })
+                                    ->columnSpan(12),
+
                                 Select::make('ambassadors')
                                     ->label('Ambassadors')
                                     ->helperText('Selecione um ou mais Embaixadores para destino.')
@@ -316,6 +333,7 @@ class SentMessageResource extends Resource
 
                                         $set('contacts_count_preview', "{$count} contatos");
                                     })
+                                    ->disabled(fn(callable $get) => $get('all_ambassadors') === true)
                                     ->columnSpan(12),
 
                                 Toggle::make('include_ambassador_network')
@@ -355,8 +373,8 @@ class SentMessageResource extends Resource
                                             $set('contacts_count_preview', "{$count} contatos");
                                         }
                                     })
+                                    ->disabled(fn(callable $get) => $get('all_ambassadors') === true)
                                     ->columnSpan(12),
-
                             ]),
                     ]),
                 // Ambassadors Section - END
@@ -457,6 +475,49 @@ class SentMessageResource extends Resource
                 // Message Section - START
                 Section::make(__('Message'))
                     ->schema([
+                        Grid::make(12)
+                            ->schema([
+                                Select::make('type')
+                                    ->columnSpan(1)
+                                    ->label('Message type')
+                                    ->options([
+                                        'text' => __('Text message'),
+                                        'image' => __('Image with description'),
+                                        'video' => __('Video with description'),
+                                    ])
+                                    ->reactive()
+                                    ->required()
+                                    ->columnSpan(6),
+
+                                // image
+                                FileUpload::make('path')
+                                    ->label('Imagem')
+                                    ->acceptedFileTypes(['image/jpeg', 'image/png'])
+                                    ->disk('public')
+                                    ->directory('messages')
+                                    ->preserveFilenames()
+                                    ->deleteUploadedFileUsing(function (string $file) {
+                                        Storage::disk('public')->delete($file);
+                                    })
+                                    ->visible(fn(callable $get) => $get('type') === 'image')
+                                    ->required(fn(callable $get) => $get('type') === 'image')
+                                    ->columnSpan(6),
+
+                                // video
+                                FileUpload::make('path')
+                                    ->label('Arquivo de Vídeo')
+                                    ->acceptedFileTypes(['video/mp4'])
+                                    ->disk('public')
+                                    ->directory('messages')
+                                    ->preserveFilenames()
+                                    ->deleteUploadedFileUsing(function (string $file) {
+                                        Storage::disk('public')->delete($file);
+                                    })
+                                    ->visible(fn(callable $get) => $get('type') === 'video')
+                                    ->required(fn(callable $get) => $get('type') === 'video')
+                                    ->columnSpan(6),
+                            ]),
+
                         Grid::make(12)
                             ->schema([
                                 Select::make('template_name')
