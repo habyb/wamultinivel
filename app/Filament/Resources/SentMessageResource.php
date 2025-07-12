@@ -503,18 +503,10 @@ class SentMessageResource extends Resource
                                     ->visible(fn(callable $get) => $get('type') === 'image')
                                     ->required(fn(callable $get) => $get('type') === 'image')
                                     ->columnSpan(6)
-                                    ->maxSize(102400) // 100 MB
+                                    ->maxSize(5120) // 5 MB
                                     ->saveUploadedFileUsing(function (\Illuminate\Http\UploadedFile $file, $record) {
                                         try {
-                                            Log::debug('Arquivo recebido para upload', [
-                                                'nome' => $file->getClientOriginalName(),
-                                                'tipo' => $file->getMimeType(),
-                                                'tamanho_kb' => $file->getSize() / 1024,
-                                            ]);
-
                                             $path = $file->storePubliclyAs('messages', $file->hashName(), 'public');
-
-                                            Log::debug('Arquivo salvo com sucesso', ['path' => $path]);
 
                                             return $path;
                                         } catch (\Throwable $e) {
@@ -526,7 +518,7 @@ class SentMessageResource extends Resource
                                             throw $e; // rethrow para que Filament trate corretamente
                                         }
                                     })
-                                    ->helperText('Tamanho máximo permitido: 100MB'),
+                                    ->helperText('Tamanho máximo permitido: 5 MB'),
 
                                 // video
                                 FileUpload::make('path')
@@ -540,7 +532,23 @@ class SentMessageResource extends Resource
                                     })
                                     ->visible(fn(callable $get) => $get('type') === 'video')
                                     ->required(fn(callable $get) => $get('type') === 'video')
-                                    ->columnSpan(6),
+                                    ->columnSpan(6)
+                                    ->maxSize(16384) // 16 MB
+                                    ->saveUploadedFileUsing(function (\Illuminate\Http\UploadedFile $file, $record) {
+                                        try {
+                                            $path = $file->storePubliclyAs('messages', $file->hashName(), 'public');
+
+                                            return $path;
+                                        } catch (\Throwable $e) {
+                                            Log::error('Erro no upload de mídia', [
+                                                'erro' => $e->getMessage(),
+                                                'arquivo' => $file->getClientOriginalName(),
+                                                'tamanho' => $file->getSize(),
+                                            ]);
+                                            throw $e; // rethrow para que Filament trate corretamente
+                                        }
+                                    })
+                                    ->helperText('Tamanho máximo permitido: 16 MB'),
                             ]),
 
                         Grid::make(12)
