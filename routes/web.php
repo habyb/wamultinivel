@@ -6,7 +6,3 @@ use App\Http\Controllers\InviteRedirectController;
 Route::redirect('/', '/admin');
 
 Route::get('/{codigo}', [InviteRedirectController::class, 'handle']);
-
-Route::get('/phpinfo/test', function () {
-    phpinfo();
-});
