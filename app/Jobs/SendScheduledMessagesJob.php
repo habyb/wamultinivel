@@ -37,95 +37,68 @@ class SendScheduledMessagesJob implements ShouldQueue
      */
     public function handle(): void
     {
-        $number = '50760215163'; // Substitua por um número de teste
-        $user = ['name' => 'Habyb Fernandes'];
-
-        $param_type_header = [
-            'type' => 'header',
-            'parameters' => [
-                ['type' => 'video', 'video' => [
-                    'link' => 'https://convite.andrecorrea.com.br/storage/messages/sample-mp4-file-small.mp4'
-                ]]
-            ],
-        ];
-
-        $response = app(\App\Services\WhatsAppServiceBusinessApi::class)->sendText(
-            phone: $number,
-            template: 'teste_gabinete',
-            language: 'pt_BR',
-            params: [
-                $param_type_header,
-                [
-                    'type' => 'body',
-                    'parameters' => [
-                        ['type' => 'text', 'parameter_name' => 'name', 'text' => $user['name']]
-                    ],
-                ]
-            ]
-        );
-
         Log::info('Job SendScheduledMessagesJob iniciado');
 
         file_put_contents(storage_path('logs/debug-job.txt'), now() . " - Job rodando\n", FILE_APPEND);
 
-        // $messages = SentMessage::where('status', 'pending')
-        //     ->where(function ($query) {
-        //         $query->whereNull('sent_at')
-        //             ->orWhere('sent_at', '<=', Carbon::now());
-        //     })
-        //     ->get();
+        $messages = SentMessage::where('status', 'pending')
+            ->where(function ($query) {
+                $query->whereNull('sent_at')
+                    ->orWhere('sent_at', '<=', Carbon::now());
+            })
+            ->get();
 
-        // foreach ($messages as $message) {
-        //     try {
-        //         $users = is_string($message->contacts_result)
-        //             ? collect(json_decode($message->contacts_result, true))
-        //             : collect($message->contacts_result ?? []);
+        foreach ($messages as $message) {
+            try {
+                $users = is_string($message->contacts_result)
+                    ? collect(json_decode($message->contacts_result, true))
+                    : collect($message->contacts_result ?? []);
 
-        //         foreach ($users as $user) {
-        //             $number = fix_whatsapp_number($user['remoteJid']);
-        //             $param_type_header = [];
+                foreach ($users as $user) {
+                    $number = fix_whatsapp_number($user['remoteJid']);
+                    $param_type_header = [];
 
-        //             if ($message->type == 'image' || $message->type == 'video') {
-        //                 $url = asset('storage/' . $message->path);
+                    if ($message->type == 'image' || $message->type == 'video') {
+                        $url = asset('storage/' . $message->path);
 
-        //                 $param_type_header = [
-        //                     'type' => 'header',
-        //                     'parameters' => [
-        //                         ['type' => $message->type, $message->type => [
-        //                             'link' => 'https://convite.andrecorrea.com.br/storage/messages/sample-mp4-file-small.mp4'
-        //                         ]]
-        //                     ],
-        //                 ];
-        //             }
+                        $param_type_header = [
+                            'type' => 'header',
+                            'parameters' => [
+                                ['type' => $message->type, $message->type => [
+                                    'link' => 'https://convite.andrecorrea.com.br/storage/messages/sample-mp4-file-small.mp4'
+                                ]]
+                            ],
+                        ];
+                    }
 
-        //             $response = app(WhatsAppServiceBusinessApi::class)->sendText(
-        //                 phone: $number,
-        //                 template: $message->template_name,
-        //                 language: $message->template_language,
-        //                 params: [
-        //                     $param_type_header,
-        //                     [
-        //                         'type' => 'body',
-        //                         'parameters' => [
-        //                             ['type' => 'text', "parameter_name" => "name", 'text' => $user['name']]
-        //                         ],
-        //                     ]
-        //                 ]
-        //             );
+                    $response = app(WhatsAppServiceBusinessApi::class)->sendText(
+                        phone: $number,
+                        template: $message->template_name,
+                        language: $message->template_language,
+                        params: [
+                            $param_type_header,
+                            [
+                                'type' => 'body',
+                                'parameters' => [
+                                    ['type' => 'text', "parameter_name" => "name", 'text' => $user['name']]
+                                ],
+                            ]
+                        ]
+                    );
 
-        //             Log::info('Resposta da API WhatsApp:', ['resposta' => $response]);
-        //         }
+                    Log::info('Resposta da API WhatsApp:', ['resposta' => $response]);
+                }
 
-        //         $message->update([
-        //             'status' => 'sent',
-        //             'contacts_count' => $users->count(),
-        //         ]);
+                $message->update([
+                    'status' => 'sent',
+                    'contacts_count' => $users->count(),
+                ]);
 
-        //         Log::debug('Message:', $message);
-        //     } catch (\Throwable $e) {
-        //         Log::error("Erro ao enviar mensagem #{$message->id}: " . $e->getMessage());
-        //         $message->update(['status' => 'failed']);
-        //     }
-        // }
+                Log::debug('Message:', $message);
+            } catch (\Throwable $e) {
+                Log::error("Erro ao enviar mensagem #{$message->id}: " . $e->getMessage());
+                $message->update(['status' => 'failed']);
+            }
+        }
     }
 }
