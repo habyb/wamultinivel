@@ -44,53 +44,55 @@ class SendScheduledMessagesJob implements ShouldQueue
             })
             ->get();
 
-        // foreach ($messages as $message) {
-        //     try {
-        //         $users = is_string($message->contacts_result)
-        //             ? collect(json_decode($message->contacts_result, true))
-        //             : collect($message->contacts_result ?? []);
+        foreach ($messages as $message) {
+            try {
+                $users = is_string($message->contacts_result)
+                    ? collect(json_decode($message->contacts_result, true))
+                    : collect($message->contacts_result ?? []);
 
-        // foreach ($users as $user) {
-        // $number = fix_whatsapp_number($user['remoteJid']);
-        // $param_type_header = [];
+                foreach ($users as $user) {
+                    $number = fix_whatsapp_number($user['remoteJid']);
+                    $param_type_header = [];
 
-        // if ($message->type == 'image' || $message->type == 'video') {
-        //     $url = asset('storage/' . $message->path);
+                    if ($message->type == 'image' || $message->type == 'video') {
+                        $url = asset('storage/' . $message->path);
 
-        $param_type_header = [
-            'type' => 'header',
-            'parameters' => [
-                ['type' => 'video', 'video' => [
-                    'link' => 'https://convite.andrecorrea.com.br/storage/messages/sample-mp4-file-small.mp4'
-                ]]
-            ],
-        ];
-        // }
+                        $param_type_header = [
+                            'type' => 'header',
+                            'parameters' => [
+                                ['type' => $message->type, $message->type => [
+                                    'link' => 'https://convite.andrecorrea.com.br/storage/messages/sample-mp4-file-small.mp4'
+                                ]]
+                            ],
+                        ];
+                    }
 
-        app(WhatsAppServiceBusinessApi::class)->sendText(
-            phone: '50760215163',
-            template: 'teste_gabinete',
-            language: 'pt_BR',
-            params: [
-                $param_type_header,
-                [
-                    'type' => 'body',
-                    'parameters' => [
-                        ['type' => 'text', "parameter_name" => "name", 'text' => 'Habyb Fernandes']
-                    ],
-                ]
-            ]
-        );
-        // }
+                    $response = app(WhatsAppServiceBusinessApi::class)->sendText(
+                        phone: $number,
+                        template: $message->template_name,
+                        language: $message->template_language,
+                        params: [
+                            $param_type_header,
+                            [
+                                'type' => 'body',
+                                'parameters' => [
+                                    ['type' => 'text', "parameter_name" => "name", 'text' => $user['name']]
+                                ],
+                            ]
+                        ]
+                    );
 
-        // $message->update([
-        //     'status' => 'sent',
-        //     'contacts_count' => $users->count(),
-        // ]);
-        // } catch (\Throwable $e) {
-        //     Log::error("Erro ao enviar mensagem #{$message->id}: " . $e->getMessage());
-        //     $message->update(['status' => 'failed']);
-        // }
-        // }
+                    Log::debug('API:', $response);
+                }
+
+                $message->update([
+                    'status' => 'sent',
+                    'contacts_count' => $users->count(),
+                ]);
+            } catch (\Throwable $e) {
+                Log::error("Erro ao enviar mensagem #{$message->id}: " . $e->getMessage());
+                $message->update(['status' => 'failed']);
+            }
+        }
     }
 }
