@@ -39,6 +39,8 @@ class SendScheduledMessagesJob implements ShouldQueue
     {
         Log::info('Job SendScheduledMessagesJob iniciado');
 
+        file_put_contents(storage_path('logs/debug-job.txt'), now() . " - Job rodando\n", FILE_APPEND);
+
         $messages = SentMessage::where('status', 'pending')
             ->where(function ($query) {
                 $query->whereNull('sent_at')
