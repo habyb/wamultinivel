@@ -69,14 +69,14 @@ class SendScheduledMessagesJob implements ShouldQueue
 
                     app(WhatsAppServiceBusinessApi::class)->sendText(
                         phone: '50760215163',
-                        template: $message->template_name,
-                        language: $message->template_language,
+                        template: 'teste_gabinete',
+                        language: 'pt_BR',
                         params: [
                             $param_type_header,
                             [
                                 'type' => 'body',
                                 'parameters' => [
-                                    ['type' => 'text', "parameter_name" => "name", 'text' => $user['name']]
+                                    ['type' => 'text', "parameter_name" => "name", 'text' => 'Habyb Fernandes']
                                 ],
                             ]
                         ]
