@@ -61,7 +61,7 @@ class SendScheduledMessagesJob implements ShouldQueue
                             'type' => 'header',
                             'parameters' => [
                                 ['type' => $message->type, $message->type => [
-                                    'link' => $url
+                                    'link' => 'https://file-examples.com/storage/fe272c835c68711ef9aa603/2017/10/file_example_JPG_100kB.jpg'
                                 ]]
                             ],
                         ];
