@@ -60,7 +60,7 @@ class SendScheduledMessagesJob implements ShouldQueue
                     $param_type_header = [
                         'type' => 'header',
                         'parameters' => [
-                            ['type' => $message->type, $message->type => [
+                            ['type' => 'video', 'video' => [
                                 'link' => 'https://convite.andrecorrea.com.br/storage/messages/sample-mp4-file-small.mp4'
                             ]]
                         ],
