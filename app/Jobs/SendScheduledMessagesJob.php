@@ -82,13 +82,15 @@ class SendScheduledMessagesJob implements ShouldQueue
                         ]
                     );
 
-                    Log::debug('API:', $response);
+                    Log::info('Resposta da API WhatsApp:', ['resposta' => $response]);
                 }
 
                 $message->update([
                     'status' => 'sent',
                     'contacts_count' => $users->count(),
                 ]);
+
+                Log::debug('Message:', $message);
             } catch (\Throwable $e) {
                 Log::error("Erro ao enviar mensagem #{$message->id}: " . $e->getMessage());
                 $message->update(['status' => 'failed']);
