@@ -37,10 +37,6 @@ class SendScheduledMessagesJob implements ShouldQueue
      */
     public function handle(): void
     {
-        Log::info('Job SendScheduledMessagesJob iniciado');
-
-        file_put_contents(storage_path('logs/debug-job.txt'), now() . " - Job rodando\n", FILE_APPEND);
-
         $messages = SentMessage::where('status', 'pending')
             ->where(function ($query) {
                 $query->whereNull('sent_at')
@@ -65,13 +61,13 @@ class SendScheduledMessagesJob implements ShouldQueue
                             'type' => 'header',
                             'parameters' => [
                                 ['type' => $message->type, $message->type => [
-                                    'link' => 'https://convite.andrecorrea.com.br/storage/messages/sample-mp4-file-small.mp4'
+                                    'link' => $url
                                 ]]
                             ],
                         ];
                     }
 
-                    $response = app(WhatsAppServiceBusinessApi::class)->sendText(
+                    app(WhatsAppServiceBusinessApi::class)->sendText(
                         phone: $number,
                         template: $message->template_name,
                         language: $message->template_language,
@@ -85,16 +81,12 @@ class SendScheduledMessagesJob implements ShouldQueue
                             ]
                         ]
                     );
-
-                    Log::info('Resposta da API WhatsApp:', ['resposta' => $response]);
                 }
 
                 $message->update([
                     'status' => 'sent',
                     'contacts_count' => $users->count(),
                 ]);
-
-                Log::debug('Message:', $message);
             } catch (\Throwable $e) {
                 Log::error("Erro ao enviar mensagem #{$message->id}: " . $e->getMessage());
                 $message->update(['status' => 'failed']);
