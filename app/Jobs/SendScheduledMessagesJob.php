@@ -54,18 +54,18 @@ class SendScheduledMessagesJob implements ShouldQueue
                     $number = fix_whatsapp_number($user['remoteJid']);
                     $param_type_header = [];
 
-                    if ($message->type == 'image' || $message->type == 'video') {
-                        $url = asset('storage/' . $message->path);
+                    // if ($message->type == 'image' || $message->type == 'video') {
+                    //     $url = asset('storage/' . $message->path);
 
-                        $param_type_header = [
-                            'type' => 'header',
-                            'parameters' => [
-                                ['type' => $message->type, $message->type => [
-                                    'link' => 'https://convite.andrecorrea.com.br/storage/messages/sample-mp4-file-small.mp4'
-                                ]]
-                            ],
-                        ];
-                    }
+                    $param_type_header = [
+                        'type' => 'header',
+                        'parameters' => [
+                            ['type' => $message->type, $message->type => [
+                                'link' => 'https://convite.andrecorrea.com.br/storage/messages/sample-mp4-file-small.mp4'
+                            ]]
+                        ],
+                    ];
+                    // }
 
                     app(WhatsAppServiceBusinessApi::class)->sendText(
                         phone: $number,
