@@ -2,16 +2,17 @@
 
 namespace App\Jobs;
 
+use Carbon\Carbon;
 use App\Models\SentMessage;
-use App\Services\WhatsAppServiceBusinessApi;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
-use Carbon\Carbon;
+use Illuminate\Foundation\Queue\Queueable;
 
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Foundation\Bus\Dispatchable;
+use App\Services\WhatsAppServiceBusinessApi;
 
 class SendScheduledMessagesJob implements ShouldQueue
 {
@@ -67,7 +68,7 @@ class SendScheduledMessagesJob implements ShouldQueue
                         ];
                     }
 
-                    app(WhatsAppServiceBusinessApi::class)->sendText(
+                    $response = app(WhatsAppServiceBusinessApi::class)->sendText(
                         phone: $number,
                         template: $message->template_name,
                         language: $message->template_language,
@@ -81,6 +82,17 @@ class SendScheduledMessagesJob implements ShouldQueue
                             ]
                         ]
                     );
+
+                    // Sent messages logs
+                    $status = $response['messages'][0]['message_status'] ?? null;
+
+                    DB::table('sent_messages_logs')->insert([
+                        'sent_message_id' => $message->id,
+                        'contact_name'    => $user['name'],
+                        'remote_jid'      => $number,
+                        'message_status'  => $status,
+                        'sent_at'         => now(),
+                    ]);
                 }
 
                 $message->update([
