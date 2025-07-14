@@ -36,6 +36,7 @@ class SentMessagesLogTable extends BaseWidget
                 ->label('Status')
                 ->badge()
                 ->color(fn(string $state) => match ($state) {
+                    'accepted'  => 'success',
                     'sent'      => 'success',
                     'delivered' => 'success',
                     'queued'    => 'warning',
@@ -44,6 +45,7 @@ class SentMessagesLogTable extends BaseWidget
                     default     => 'gray',
                 })
                 ->formatStateUsing(fn(string $state): string => match ($state) {
+                    'accepted'    => __('Accepted'),
                     'queued'    => __('Queued'),
                     'sent'      => __('Sent'),
                     'delivered' => __('Delivered'),
