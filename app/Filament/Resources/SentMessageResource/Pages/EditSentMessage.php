@@ -57,13 +57,13 @@ class EditSentMessage extends EditRecord
     protected function getSaveFormAction(): Action
     {
         return parent::getSaveFormAction()
-            ->hidden(fn() => $this->record->status === 'sent');
+            ->hidden(true);
     }
 
     protected function getCancelFormAction(): Action
     {
         return parent::getCancelFormAction()
-            ->hidden(fn() => $this->record->status === 'sent');
+            ->hidden(true);
     }
 
     protected function getFooterWidgets(): array
