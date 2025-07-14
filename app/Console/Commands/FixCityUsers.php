@@ -39,7 +39,7 @@ class FixCityUsers extends Command
             'Armação dos Búzios' => ['armacao dos buzios', 'armação dos búzios', 'ARMAÇÃO DOS BÚZIOS', 'buzios'],
             'Arraial do Cabo' => ['arraial do cabo', 'ARRAIAL DO CABO'],
             'Barra do Piraí' => ['barra do piraí', 'barra do pirai', 'BARRA DO PIRAÍ', 'Barra do pirai', 'BARRA DO PIRAI', 'Barra do Pirai !', 'Barra do Piraí e Rio das flores'],
-            'Barra Mansa' => ['barra mansa', 'BARRA MANSA', 'Barra Mansa, Siderlandia', 'Barra Mansa.'],
+            'Barra Mansa' => ['barra mansa', 'BARRA MANSA', 'Barra Mansa, Siderlandia', 'Barra Mansa.', 'BarraMansa'],
             'Belford Roxo' => ['belford roxo', 'BELFORD ROXO', 'belford roxo RJ centro'],
             'Bom Jardim' => ['bom jardim', 'BOM JARDIM'],
             'Bom Jesus do Itabapoana' => ['bom jesus do itabapoana', 'bom jesus do ita'],
