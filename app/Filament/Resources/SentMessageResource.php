@@ -506,7 +506,6 @@ class SentMessageResource extends Resource
                                 ->visible(fn(callable $get) => $get('type') === 'image')
                                 ->required(fn(callable $get) => $get('type') === 'image')
                                 ->columnSpan(6)
-                                ->maxSize(5120) // 5 MB
                                 ->saveUploadedFileUsing(function (\Illuminate\Http\UploadedFile $file, $record) {
                                     try {
                                         $path = $file->storePubliclyAs('messages', $file->hashName(), 'public');
@@ -536,7 +535,6 @@ class SentMessageResource extends Resource
                                 ->visible(fn(callable $get) => $get('type') === 'video')
                                 ->required(fn(callable $get) => $get('type') === 'video')
                                 ->columnSpan(6)
-                                ->maxSize(20000) // 16 MB
                                 ->saveUploadedFileUsing(function (\Illuminate\Http\UploadedFile $file, $record) {
                                     try {
                                         $path = $file->storePubliclyAs('messages', $file->hashName(), 'public');
