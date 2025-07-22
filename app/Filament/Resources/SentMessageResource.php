@@ -295,7 +295,7 @@ class SentMessageResource extends Resource
                             Select::make('ambassadors')
                                 ->label('Ambassadors')
                                 ->helperText('Selecione um ou mais Embaixadores para destino.')
-                                ->required()
+                                ->required(fn(callable $get) => $get('all_ambassadors') !== true)
                                 ->multiple()
                                 ->reactive()
                                 ->live()
