@@ -376,6 +376,7 @@ class SentMessageResource extends Resource
                                         $set('contacts_count_preview', "{$count} contatos");
                                     }
                                 })
+                                ->dehydrated(fn(callable $get) => $get('all_ambassadors') === false)
                                 ->disabled(fn(callable $get) => $get('all_ambassadors') === true)
                                 ->default(false)
                                 ->columnSpan(12),

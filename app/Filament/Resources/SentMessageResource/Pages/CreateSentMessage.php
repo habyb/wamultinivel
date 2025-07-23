@@ -126,7 +126,7 @@ class CreateSentMessage extends CreateRecord
             // Ambassadors Filter
         } elseif ($data['filter'] == 'ambassadors') {
             // Network
-            if ($data['include_ambassador_network'] == true) {
+            if (($data['include_ambassador_network'] ?? false) === true) {
                 $contactIds = collect(Arr::wrap($data['ambassadors'] ?? []));
 
                 $ids = $contactIds->values();
