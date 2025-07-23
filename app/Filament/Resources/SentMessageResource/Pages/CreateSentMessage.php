@@ -148,10 +148,8 @@ class CreateSentMessage extends CreateRecord
                     ->where('is_add_date_of_birth', true)
                     ->get();
             } else {
-                $contacts = Arr::wrap($data['ambassadors'] ?? []);
-
-                $users = User::query()->select('id', 'name', 'remoteJid')->whereIn('id', $contacts)
-                    ->where('is_add_date_of_birth', true)->get();
+                // All ambassadors
+                $users = User::query()->select('id', 'name', 'remoteJid')->whereHas('firstLevelGuestsNetwork')->where('is_add_date_of_birth', true)->get();
             }
             // Contacts Filter
         } elseif ($data['filter'] == 'contacts') {
