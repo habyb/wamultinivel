@@ -290,6 +290,7 @@ class SentMessageResource extends Resource
                                         $set('contacts_count_preview', '0 contatos');
                                     }
                                 })
+                                ->default(false)
                                 ->columnSpan(12),
 
                             Select::make('ambassadors')
