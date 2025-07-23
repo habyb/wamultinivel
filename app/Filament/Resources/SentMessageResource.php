@@ -376,6 +376,7 @@ class SentMessageResource extends Resource
                                     }
                                 })
                                 ->disabled(fn(callable $get) => $get('all_ambassadors') === true)
+                                ->default(false)
                                 ->columnSpan(12),
                         ]),
                 ])
