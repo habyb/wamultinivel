@@ -19,6 +19,8 @@ use Illuminate\Support\Facades\Storage;
 use App\Services\WhatsAppServiceBusinessApi;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Get;
+use Filament\Forms\Set;
 
 class EditSentMessage extends EditRecord
 {
@@ -172,65 +174,42 @@ class EditSentMessage extends EditRecord
                         ->schema([
                             Select::make('template_name')
                                 ->label('Template')
+                                // ⚠️ Apenas cache — nada de chamada remota no render
+                                ->options(fn(WhatsAppServiceBusinessApi $svc) => $svc->getTemplate(false))
                                 ->searchable()
-                                ->reactive() // torna o campo reativo
-                                ->options(
-                                    fn() => collect(app(WhatsAppServiceBusinessApi::class)->getTemplate())
-                                        ->where('status', 'APPROVED')
-                                        ->pluck('name', 'name')
-                                        ->toArray()
-                                )
-                                ->afterStateUpdated(function ($state, callable $set) {
-                                    $template = collect(app(WhatsAppServiceBusinessApi::class)->getTemplate())
-                                        ->firstWhere('name', $state);
-
-                                    $header = collect($template['components'] ?? [])->firstWhere('type', 'HEADER')['text'] ?? '';
-                                    $body = collect($template['components'] ?? [])->firstWhere('type', 'BODY')['text'] ?? '';
-                                    $footer = collect($template['components'] ?? [])->firstWhere('type', 'FOOTER')['text'] ?? '';
-
-                                    $preview = "{$header}\n\n{$body}\n\n_{$footer}_";
-
-                                    $set('template_preview', $preview);
-
-                                    if ($template) {
-                                        $set('template_id', $template['id'] ?? null);
-                                        $set('template_language', $template['language'] ?? null);
-                                        $set('template_components', $template['components'] ?? null);
-                                    }
-                                })
-                                ->afterStateHydrated(function ($state, callable $set) {
-                                    if (! $state) return;
-
-                                    $template = collect(app(\App\Services\WhatsAppServiceBusinessApi::class)->getTemplate())
-                                        ->firstWhere('name', $state);
-
-                                    if (! $template) {
-                                        $set('template_preview', 'Template não encontrado.');
+                                ->preload()
+                                ->reactive()
+                                ->afterStateUpdated(function ($state, Set $set, Get $get, WhatsAppServiceBusinessApi $svc) {
+                                    if (blank($state)) {
+                                        $set('template_preview', null);
                                         return;
                                     }
-
-                                    $header = collect($template['components'])->firstWhere('type', 'HEADER')['text'] ?? '';
-                                    $body   = collect($template['components'])->firstWhere('type', 'BODY')['text'] ?? '';
-                                    $footer = collect($template['components'])->firstWhere('type', 'FOOTER')['text'] ?? '';
-
-                                    $preview = <<<TEXT
-                                                {$header}
-
-                                                {$body}
-
-                                                {$footer}
-                                                TEXT;
-
-                                    $set('template_preview', $preview);
+                                    $lang = $get('template_language'); // se tiver esse campo; senão null
+                                    $set('template_preview', $svc->getTemplatePreview($state, $lang));
+                                })
+                                ->placeholder('Selecione um modelo')
+                                // opcional: se quiser exibir só os aprovados
+                                ->options(function (WhatsAppServiceBusinessApi $svc) {
+                                    return collect($svc->getTemplate())
+                                        ->filter(fn($label) => str_contains($label, '(APPROVED)'))
+                                        ->mapWithKeys(fn($label, $name) => [$name => $name])
+                                        ->all();
                                 })
                                 ->required()
-                                ->columnSpan(6)
-                                ->disabled(),
+                                ->disabled()
+                                ->columnSpan(6),
 
                             Textarea::make('template_preview')
                                 ->label('Preview of the template')
                                 ->hint(__('Select a template first'))
                                 ->disabled()
+                                ->dehydrated(false)
+                                ->afterStateHydrated(function (Set $set, Get $get, WhatsAppServiceBusinessApi $svc) {
+                                    $name = $get('template_name');
+                                    if ($name) {
+                                        $set('template_preview', $svc->getTemplatePreview($name, $get('template_language')));
+                                    }
+                                })
                                 ->rows(10)
                                 ->columnSpan(1)
                                 ->reactive()

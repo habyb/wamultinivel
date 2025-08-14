@@ -22,8 +22,12 @@ use Filament\Tables\Columns\TextColumn;
 use Illuminate\Support\Facades\Storage;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\FileUpload;
-use App\Services\WhatsAppServiceBusinessApi;
+use Filament\Forms\Components\Actions\Action;
+use Filament\Notifications\Notification;
 use Filament\Forms\Components\DateTimePicker;
+use App\Services\WhatsAppServiceBusinessApi;
+use Filament\Forms\Get;
+use Filament\Forms\Set;
 use App\Filament\Resources\SentMessageResource\Pages;
 
 class SentMessageResource extends Resource
@@ -561,56 +565,46 @@ class SentMessageResource extends Resource
                         ->schema([
                             Select::make('template_name')
                                 ->label('Template')
+                                // ⚠️ Apenas cache — nada de chamada remota no render
+                                ->options(fn(WhatsAppServiceBusinessApi $svc) => $svc->getTemplate(false))
                                 ->searchable()
-                                ->reactive() // torna o campo reativo
-                                ->options(
-                                    fn() => collect(app(WhatsAppServiceBusinessApi::class)->getTemplate())
-                                        ->where('status', 'APPROVED')
-                                        ->pluck('name', 'name')
-                                        ->toArray()
-                                )
-                                ->afterStateUpdated(function ($state, callable $set) {
-                                    $template = collect(app(WhatsAppServiceBusinessApi::class)->getTemplate())
-                                        ->firstWhere('name', $state);
-
-                                    $header = collect($template['components'] ?? [])->firstWhere('type', 'HEADER')['text'] ?? '';
-                                    $body = collect($template['components'] ?? [])->firstWhere('type', 'BODY')['text'] ?? '';
-                                    $footer = collect($template['components'] ?? [])->firstWhere('type', 'FOOTER')['text'] ?? '';
-
-                                    $preview = "{$header}\n\n{$body}\n\n_{$footer}_";
-
-                                    $set('template_preview', $preview);
-
-                                    if ($template) {
-                                        $set('template_id', $template['id'] ?? null);
-                                        $set('template_language', $template['language'] ?? null);
-                                        $set('template_components', $template['components'] ?? null);
-                                    }
-                                })
-                                ->afterStateHydrated(function ($state, callable $set) {
-                                    if (! $state) return;
-
-                                    $template = collect(app(\App\Services\WhatsAppServiceBusinessApi::class)->getTemplate())
-                                        ->firstWhere('name', $state);
-
-                                    if (! $template) {
-                                        $set('template_preview', 'Template não encontrado.');
+                                ->preload()
+                                ->reactive()
+                                ->afterStateUpdated(function ($state, Set $set, Get $get, WhatsAppServiceBusinessApi $svc) {
+                                    if (blank($state)) {
+                                        $set('template_preview', null);
                                         return;
                                     }
+                                    $lang = $get('template_language'); // se tiver esse campo; senão null
+                                    $set('template_preview', $svc->getTemplatePreview($state, $lang));
+                                })
+                                ->placeholder('Selecione um modelo')
+                                ->hint('Sincronizados a cada 10 min. Clique no ícone “Atualizar” para renovar.')
+                                ->suffixAction(
+                                    Action::make('refreshTemplates')
+                                        ->label('Atualizar')
+                                        ->icon('heroicon-m-arrow-path')
+                                        ->action(function (WhatsAppServiceBusinessApi $svc, callable $set) {
+                                            // limpa seleção atual e força refresh do cache
+                                            $set('template_name', null);
+                                            $opts = $svc->refreshTemplatesCache();
 
-                                    $header = collect($template['components'])->firstWhere('type', 'HEADER')['text'] ?? '';
-                                    $body   = collect($template['components'])->firstWhere('type', 'BODY')['text'] ?? '';
-                                    $footer = collect($template['components'])->firstWhere('type', 'FOOTER')['text'] ?? '';
-
-                                    $preview = <<<TEXT
-                                                {$header}
-
-                                                {$body}
-
-                                                {$footer}
-                                                TEXT;
-
-                                    $set('template_preview', $preview);
+                                            Notification::make()
+                                                ->title(empty($opts) ? 'Não foi possível atualizar agora.' : 'Modelos atualizados!')
+                                                ->body(empty($opts)
+                                                    ? 'Tente novamente em alguns segundos; vou continuar usando o último cache válido.'
+                                                    : 'A lista foi recarregada. Abra o select para ver os novos modelos.')
+                                                ->success(!empty($opts))
+                                                ->warning(empty($opts))
+                                                ->send();
+                                        })
+                                )
+                                // opcional: se quiser exibir só os aprovados
+                                ->options(function (WhatsAppServiceBusinessApi $svc) {
+                                    return collect($svc->getTemplate())
+                                        ->filter(fn($label) => str_contains($label, '(APPROVED)'))
+                                        ->mapWithKeys(fn($label, $name) => [$name => $name])
+                                        ->all();
                                 })
                                 ->required()
                                 ->columnSpan(6),
@@ -619,6 +613,13 @@ class SentMessageResource extends Resource
                                 ->label('Preview of the template')
                                 ->hint(__('Select a template first'))
                                 ->disabled()
+                                ->dehydrated(false)
+                                ->afterStateHydrated(function (Set $set, Get $get, WhatsAppServiceBusinessApi $svc) {
+                                    $name = $get('template_name');
+                                    if ($name) {
+                                        $set('template_preview', $svc->getTemplatePreview($name, $get('template_language')));
+                                    }
+                                })
                                 ->rows(10)
                                 ->columnSpan(1)
                                 ->reactive()
