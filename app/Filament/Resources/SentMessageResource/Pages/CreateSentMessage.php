@@ -125,32 +125,45 @@ class CreateSentMessage extends CreateRecord
 
             // Ambassadors Filter
         } elseif ($data['filter'] == 'ambassadors') {
-            // Network
-            if (($data['include_ambassador_network'] ?? false) === true) {
-                $contactIds = collect(Arr::wrap($data['ambassadors'] ?? []));
 
-                $ids = $contactIds->values();
+            $all        = (bool) ($data['all_ambassadors'] ?? false);
+            $includeNet = (bool) ($data['include_ambassador_network'] ?? false);
 
-                foreach ($contactIds as $contactId) {
-                    $user = User::find($contactId);
-
-                    if ($user) {
-                        $networkIds = $user->getRecursiveNetWork($user);
-                        $ids = $ids->merge($networkIds);
-                    }
-                }
-
-                $ids = $ids->unique()->values();
-
-                $users = User::query()
-                    ->select('id', 'name', 'remoteJid')
-                    ->whereIn('id', $ids)
-                    ->where('is_add_date_of_birth', true)
-                    ->get();
+            // IDs base
+            if ($all) {
+                // todos os usuários que são embaixadores (ajuste o critério se necessário)
+                $baseIds = User::query()
+                    ->whereHas('firstLevelGuestsNetwork')->where('is_add_date_of_birth', true)
+                    ->pluck('id');
             } else {
-                // All ambassadors
-                $users = User::query()->select('id', 'name', 'remoteJid')->whereHas('firstLevelGuestsNetwork')->where('is_add_date_of_birth', true)->get();
+                // apenas os selecionados no select "Embaixadores"
+                $baseIds = collect(\Illuminate\Support\Arr::wrap($data['ambassadors'] ?? []))
+                    ->filter()
+                    ->unique()
+                    ->values();
             }
+
+            // Expansão da rede somente se o toggle estiver ligado
+            if ($includeNet) {
+                $ids = $baseIds->flatMap(function ($id) {
+                    $u = User::find($id);
+                    // inclui o próprio embaixador + a rede recursiva dele
+                    return $u
+                        ? collect([$id])->merge($u->getRecursiveNetWork($u))
+                        : collect([$id]);
+                })->unique()->values();
+            } else {
+                // sem rede: somente os IDs base
+                $ids = $baseIds->unique()->values();
+            }
+
+            // Carrega os destinatários finais (apenas quem tem DOB cadastrado, como no resto do código)
+            $users = User::query()
+                ->select('id', 'name', 'remoteJid')
+                ->whereIn('id', $ids)
+                ->where('is_add_date_of_birth', true)
+                ->get();
+
             // Contacts Filter
         } elseif ($data['filter'] == 'contacts') {
             // Network
@@ -183,11 +196,38 @@ class CreateSentMessage extends CreateRecord
             }
         }
 
+        $excludedRemoteJids = collect(preg_split('/\R+/', (string)($data['excluded_contacts'] ?? '')))
+            ->map(fn($line) => trim($line))
+            ->map(fn($line) => preg_replace('/\D+/', '', $line))   // somente dígitos
+            ->filter()                                              // remove vazios
+            ->map(fn($digits) => "{$digits}@s.whatsapp.net")
+            ->values();
+
+        if ($excludedRemoteJids->isNotEmpty()) {
+            // garante que $users seja uma Collection
+            $users = collect($users)->reject(function ($user) use ($excludedRemoteJids) {
+                // $user pode ser array ou objeto (dependendo do select). Cuidamos dos dois.
+                $remote = is_array($user) ? ($user['remoteJid'] ?? null) : ($user->remoteJid ?? null);
+                return $remote && $excludedRemoteJids->contains($remote);
+            })->values();
+        }
+
+        // Opcional (evita duplicidade por remoteJid, se houver)
+        $users = $users->unique(function ($user) {
+            return is_array($user) ? ($user['remoteJid'] ?? null) : ($user->remoteJid ?? null);
+        })->values();
+
+        // Mapeia para o payload final já sem os excluídos
         $data['contacts_result'] = $users->map(function ($user) {
+            // compatível com array|objeto
+            $id   = is_array($user) ? ($user['id'] ?? null)        : ($user->id ?? null);
+            $name = is_array($user) ? ($user['name'] ?? null)      : ($user->name ?? null);
+            $jid  = is_array($user) ? ($user['remoteJid'] ?? null) : ($user->remoteJid ?? null);
+
             return [
-                'id' => $user->id,
-                'name' => $user->name,
-                'remoteJid' => $user->remoteJid ?? null
+                'id'        => $id,
+                'name'      => $name,
+                'remoteJid' => $jid,
             ];
         })->values()->toArray();
 

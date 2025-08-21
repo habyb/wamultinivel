@@ -483,6 +483,35 @@ class SentMessageResource extends Resource
                 ->id('contacts'),
             // Contacts Section - END
 
+            Section::make(__('Excluded contacts'))
+                ->visible(fn(Get $get) => filled($get('filter')))
+                ->schema([
+                    Grid::make(12)
+                        ->schema([
+                            Textarea::make('excluded_contacts')
+                                ->label('Contatos excluídos')
+                                ->rows(4)
+                                ->helperText('Informe um número de WhatsApp por linha (com DDI/DDD). Ex.: 5521999999999')
+                                ->placeholder("5521999999999\n5531988887777")
+                                ->columnSpan(12)
+                                ->dehydrated(true)
+                                ->reactive()
+                                ->extraInputAttributes([
+                                    // teclado numérico no mobile e validação básica do browser
+                                    'inputmode'   => 'numeric',
+                                    'pattern'     => '[0-9]*',
+
+                                    // aceita apenas dígitos e quebras de linha no textarea
+                                    'x-on:input'  => '$el.value = $el.value.replace(/[^0-9\n]/g, "")',
+                                    'x-on:paste'  => 'setTimeout(() => { $el.value = $el.value.replace(/[^0-9\n]/g, "") }, 0)',
+
+                                    'spellcheck'  => 'false',
+                                    'autocomplete' => 'off',
+                                ])
+                        ]),
+                ])
+                ->id('excluded'),
+
             // Message Section - START
             Section::make(__('Message'))
                 ->schema([
@@ -565,7 +594,7 @@ class SentMessageResource extends Resource
                         ->schema([
                             Select::make('template_name')
                                 ->label('Template')
-                                // ⚠️ Apenas cache — nada de chamada remota no render
+                                // Apenas cache — nada de chamada remota no render
                                 ->options(fn(WhatsAppServiceBusinessApi $svc) => $svc->getTemplate(false))
                                 ->searchable()
                                 ->preload()
