@@ -256,7 +256,7 @@ class DirectGuests extends Page implements HasTable
                                 $user->created_at?->format('d/m/Y H:i:s'),
                                 $user->code,
                                 $user->name,
-                                format_phone_number(fix_whatsapp_number($user->remoteJid)),
+                                fix_whatsapp_number($user->remoteJid),
                                 $user->getRoleNames()->join(', '),
                                 $user->first_level_guests_count ?? 0,
                                 $user->total_network_count,
