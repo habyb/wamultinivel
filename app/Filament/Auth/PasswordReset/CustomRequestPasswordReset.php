@@ -9,8 +9,9 @@ use Filament\Forms\Components\TextInput;
 use Illuminate\Support\Facades\Password;
 use Filament\Facades\Filament;
 use Illuminate\Contracts\Auth\CanResetPassword;
-use Filament\Notifications\Auth\ResetPassword as ResetPasswordNotification;
-use Filament\Notifications\Notification;
+use Illuminate\Auth\Notifications\ResetPassword as ResetPasswordMail;
+use Illuminate\Support\Facades\Notification as MailNotification; // facade p/ enviar sem fila
+use Filament\Notifications\Notification; // mantém os toasts do Filament
 use Filament\Actions\Action;
 use DanHarrin\LivewireRateLimiting\Exceptions\TooManyRequestsException;
 use Exception;
@@ -76,19 +77,28 @@ class CustomRequestPasswordReset extends RequestPasswordReset
         $login_type = filter_var($emailOrWhatsapp, FILTER_VALIDATE_EMAIL) ? 'email' : 'remoteJid';
 
         if ($login_type == 'email') {
-            $status = Password::broker(Filament::getAuthPasswordBroker())->sendResetLink(
-                $data,
+            // Garante um broker válido (cai no defaults se o Panel não definir)
+            $brokerName = Filament::getAuthPasswordBroker() ?: config('auth.defaults.passwords', 'users');
+
+            $status = Password::broker($brokerName)->sendResetLink(
+                ['email' => $data['email']], // passe apenas o campo esperado
                 function (CanResetPassword $user, string $token): void {
                     if (! method_exists($user, 'notify')) {
                         $userClass = $user::class;
-
-                        throw new Exception("Model [{$userClass}] does not have a [notify()] method.");
+                        throw new \Exception("Model [{$userClass}] does not have a [notify()] method.");
                     }
 
-                    $notification = app(ResetPasswordNotification::class, ['token' => $token]);
-                    $notification->url = Filament::getResetPasswordUrl($token, $user);
+                    // Faz a notificação usar a URL do Filament para reset
+                    ResetPasswordMail::createUrlUsing(
+                        fn($notifiable, string $tok) =>
+                        Filament::getResetPasswordUrl($tok, $notifiable)
+                    );
 
-                    $user->notify($notification);
+                    // Cria a notificação nativa do Laravel
+                    $notification = new ResetPasswordMail($token);
+
+                    // Envia **agora** (síncrono), mesmo que a notificação implemente ShouldQueue
+                    MailNotification::sendNow($user, $notification);
                 },
             );
 
@@ -97,7 +107,6 @@ class CustomRequestPasswordReset extends RequestPasswordReset
                     ->title(__($status))
                     ->danger()
                     ->send();
-
                 return;
             }
 
@@ -107,6 +116,7 @@ class CustomRequestPasswordReset extends RequestPasswordReset
                 ->send();
 
             $this->form->fill();
+            return;
         } elseif ($login_type == 'remoteJid' && is_numeric($emailOrWhatsapp)) {
 
             $remoteJid = $emailOrWhatsapp . '@s.whatsapp.net';
