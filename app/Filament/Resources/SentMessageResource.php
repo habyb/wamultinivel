@@ -100,6 +100,105 @@ class SentMessageResource extends Resource
             ->count();
     }
 
+    // Normaliza texto -> remoteJid (somente se tiver >=10 dígitos)
+    protected static function normalizeToRemoteJid(?string $text): ?string
+    {
+        $digits = preg_replace('/\D+/', '', (string) $text);
+        return strlen($digits) >= 10 ? "{$digits}@s.whatsapp.net" : null;
+    }
+
+    // Extrai remoteJids válidos do textarea (únicos)
+    protected static function excludedJidsFromText(?string $text): \Illuminate\Support\Collection
+    {
+        return collect(preg_split('/\R+/', (string) $text))
+            ->map(fn($line) => static::normalizeToRemoteJid($line))
+            ->filter()
+            ->unique()
+            ->values();
+    }
+
+    // Monta os remoteJids (únicos) da base atual conforme o filtro selecionado
+    protected static function computeBaseRemoteJids(callable $get): \Illuminate\Support\Collection
+    {
+        $filter = $get('filter');
+
+        // função auxiliar para pegar remoteJid do usuário
+        $jidFromUser = function (User $u) {
+            // ajuste estes campos conforme seu projeto (whatsapp/phone/code…)
+            $digits = preg_replace('/\D+/', '', $u->whatsapp ?? $u->phone ?? $u->code ?? '');
+            return strlen($digits) >= 10 ? "{$digits}@s.whatsapp.net" : null;
+        };
+
+        if ($filter === 'questionary') {
+            $ageGroups = $get('age_groups');
+
+            $users = User::query()
+                ->when($get('cities'), fn($q) => $q->whereIn('city', $get('cities')))
+                ->when($get('neighborhoods'), fn($q) => $q->whereIn('neighborhood', $get('neighborhoods')))
+                ->when($get('genders'), fn($q) => $q->whereIn('gender', $get('genders')))
+                ->when($get('concerns_01'), fn($q) => $q->whereIn('concern_01', $get('concerns_01')))
+                ->when($get('concerns_02'), fn($q) => $q->whereIn('concern_02', $get('concerns_02')))
+                ->where('is_add_date_of_birth', true)
+                ->get()
+                ->filter(function ($user) use ($ageGroups) {
+                    if (empty($ageGroups)) return true;
+
+                    $birth = $user->getParsedDateOfBirth();
+                    if (!$birth) return false;
+
+                    $age = $birth->age;
+                    foreach ($ageGroups as $group) {
+                        if (preg_match('/^(\d{2})-(\d{2})$/', $group, $m)) {
+                            $min = (int) $m[1];
+                            $max = (int) $m[2];
+                            if ($age >= $min && $age <= $max) return true;
+                        }
+                    }
+                    return false;
+                });
+
+            return $users->map(fn($u) => $jidFromUser($u))->filter()->unique()->values();
+        }
+
+        if ($filter === 'ambassadors') {
+            if ($get('all_ambassadors') === true) {
+                return User::whereHas('firstLevelGuestsNetwork')
+                    ->where('is_add_date_of_birth', true)
+                    ->get()->map($jidFromUser)->filter()->unique()->values();
+            }
+
+            $ids = collect(Arr::wrap($get('ambassadors') ?? []));
+            if ($get('include_ambassador_network')) {
+                foreach ($ids as $id) {
+                    if ($u = User::find($id)) {
+                        $ids = $ids->merge($u->getRecursiveNetWork($u));
+                    }
+                }
+            }
+
+            return User::whereIn('id', $ids->unique())
+                ->where('is_add_date_of_birth', true)
+                ->get()->map($jidFromUser)->filter()->unique()->values();
+        }
+
+        if ($filter === 'contacts') {
+            $ids = collect(Arr::wrap($get('contacts') ?? []));
+            if ($get('include_network')) {
+                foreach ($ids as $id) {
+                    if ($u = User::find($id)) {
+                        $ids = $ids->merge($u->getRecursiveNetWork($u));
+                    }
+                }
+            }
+
+            return User::whereIn('id', $ids->unique())
+                ->where('is_add_date_of_birth', true)
+                ->get()->map($jidFromUser)->filter()->unique()->values();
+        }
+
+        return collect();
+    }
+
     public static function getFormSchema(): array
     {
         return [
@@ -599,14 +698,55 @@ class SentMessageResource extends Resource
                                 ->searchable()
                                 ->preload()
                                 ->reactive()
-                                ->afterStateUpdated(function ($state, Set $set, Get $get, WhatsAppServiceBusinessApi $svc) {
+
+                                // Reidrata ao abrir a tela (edição)
+                                ->afterStateHydrated(function ($state, Set $set, Get $get, WhatsAppServiceBusinessApi $svc) {
                                     if (blank($state)) {
-                                        $set('template_preview', null);
                                         return;
                                     }
-                                    $lang = $get('template_language'); // se tiver esse campo; senão null
-                                    $set('template_preview', $svc->getTemplatePreview($state, $lang));
+
+                                    $info = $svc->templateInfo($state, $get('template_language'));
+                                    if ($info) {
+                                        $set('template_id', $info['id'] ?? null);
+                                        $set('template_language', $info['language'] ?? null);
+
+                                        $components = $info['components'] ?? null;
+                                        $set('template_components', is_null($components)
+                                            ? null
+                                            : (is_string($components) ? $components : json_encode($components, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)));
+
+                                        $set('template_preview', $svc->getTemplatePreview($state, $info['language'] ?? null));
+                                    }
                                 })
+
+                                // Ao selecionar um modelo, popula os Hiddens e o preview
+                                ->afterStateUpdated(function ($state, Set $set, Get $get, WhatsAppServiceBusinessApi $svc) {
+                                    if (blank($state)) {
+                                        // limpa tudo ao des-selecionar
+                                        $set('template_preview', null);
+                                        $set('template_id', null);
+                                        $set('template_language', null);
+                                        $set('template_components', null);
+                                        return;
+                                    }
+
+                                    $preferredLang = $get('template_language'); // pode ser null
+                                    $info = $svc->templateInfo($state, $preferredLang);
+
+                                    // Preenche os Hiddens (id / language / components)
+                                    $set('template_id', $info['id'] ?? null);
+                                    $set('template_language', $info['language'] ?? null);
+
+                                    $components = $info['components'] ?? null;
+                                    $set('template_components', is_null($components)
+                                        ? null
+                                        : (is_string($components) ? $components : $components));
+
+                                    // Atualiza o preview com o idioma resolvido
+                                    $langForPreview = $info['language'] ?? $preferredLang;
+                                    $set('template_preview', $svc->getTemplatePreview($state, $langForPreview));
+                                })
+
                                 ->placeholder('Selecione um modelo')
                                 ->hint('Sincronizados a cada 10 min. Clique no ícone “Atualizar” para renovar.')
                                 ->suffixAction(
@@ -616,6 +756,11 @@ class SentMessageResource extends Resource
                                         ->action(function (WhatsAppServiceBusinessApi $svc, callable $set) {
                                             // limpa seleção atual e força refresh do cache
                                             $set('template_name', null);
+                                            $set('template_preview', null);
+                                            $set('template_id', null);
+                                            $set('template_language', null);
+                                            $set('template_components', null);
+
                                             $opts = $svc->refreshTemplatesCache();
 
                                             Notification::make()

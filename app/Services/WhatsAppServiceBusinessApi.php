@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Log;
 
 class WhatsAppServiceBusinessApi
 {
@@ -88,6 +89,52 @@ class WhatsAppServiceBusinessApi
             ],
         ]);
         return $response->json();
+    }
+
+    public function templateInfo(string $name, ?string $language = null): ?array
+    {
+        $lang = $language ?: 'any';
+        $cacheKey = "wa:tpl:info:{$name}:{$lang}";
+
+        return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($name, $language) {
+            $endpoint = $this->templatesEndpoint();
+
+            $resp = $this->http()
+                ->retry(5, 300, throw: false)
+                ->get($endpoint, [
+                    'name'   => $name, // filtra por nome
+                    'fields' => 'id,name,language,status,category,components',
+                    'limit'  => 50,
+                ]);
+
+            if (! $resp->successful()) {
+                logger()->warning('WA template info fetch failed', [
+                    'status' => $resp->status(),
+                    'body'   => $resp->body(),
+                ]);
+                return null;
+            }
+
+            $items = $resp->json('data', []);
+            if (empty($items)) {
+                return null; // template não encontrado
+            }
+
+            // Escolha do "variant": 1) idioma solicitado; 2) pt_BR; 3) primeiro
+            $collection = collect($items);
+            $tpl = ($language
+                ? $collection->first(fn($t) => ($t['language'] ?? null) === $language)
+                : null)
+                ?? $collection->first(fn($t) => ($t['language'] ?? null) === 'pt_BR')
+                ?? $items[0];
+
+            return [
+                'id'         => $tpl['id']         ?? null,
+                'name'       => $tpl['name']       ?? $name,
+                'language'   => $tpl['language']   ?? null,
+                'components' => $tpl['components'] ?? null,
+            ];
+        });
     }
 
     /**
