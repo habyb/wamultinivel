@@ -80,7 +80,6 @@ class SendScheduledMessagesJob implements ShouldQueue
             $logsToInsert = [];
             $successCount = 0;
             $failCount    = 0;
-            $info = wa_plain_text_basic($message->description);
 
             // 3.1) Decodifica contacts_result de forma robusta
             $users = collect();
@@ -121,7 +120,6 @@ class SendScheduledMessagesJob implements ShouldQueue
                 try {
                     $number = fix_whatsapp_number($user['remoteJid']);
                     $param_type_header = [];
-                    $infoForApi = str_replace("\n", "\\n", $info);
 
                     if ($message->type == 'image' || $message->type == 'video') {
                         $url = asset('storage/' . $message->path);
@@ -153,7 +151,7 @@ class SendScheduledMessagesJob implements ShouldQueue
                                     [
                                         'type' => 'text',
                                         "parameter_name" => "info",
-                                        'text' => $infoForApi
+                                        'text' => str_replace(PHP_EOL, "\n", $message->description)
                                     ],
                                 ],
                             ]
