@@ -26,6 +26,9 @@ class SentMessage extends Model
         'template_language',
         'template_components',
         'filter',
+        'lock_token',
+        'locked_at',
+        'sent_ok_at',
     ];
 
     protected $casts = [
@@ -38,5 +41,8 @@ class SentMessage extends Model
         'concerns_02' => 'array',
         'contacts_result' => 'array',
         'template_components' => 'array',
+        'sent_at'   => 'datetime',
+        'locked_at' => 'datetime',
+        'sent_ok_at' => 'datetime',
     ];
 }

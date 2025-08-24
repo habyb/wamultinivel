@@ -295,5 +295,7 @@
   "Delivered": "Entregue",
   "Read": "Lida",
   "Accepted": "Aceito",
-  "Excluded contacts": "Contatos Excluídos"
+  "Excluded contacts": "Contatos Excluídos",
+  "Image":"Imagem",
+  "Video":"Vídeo"
 }

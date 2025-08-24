@@ -196,22 +196,6 @@ class CreateSentMessage extends CreateRecord
             }
         }
 
-        $excludedRemoteJids = collect(preg_split('/\R+/', (string)($data['excluded_contacts'] ?? '')))
-            ->map(fn($line) => trim($line))
-            ->map(fn($line) => preg_replace('/\D+/', '', $line))   // somente dígitos
-            ->filter()                                              // remove vazios
-            ->map(fn($digits) => "{$digits}@s.whatsapp.net")
-            ->values();
-
-        if ($excludedRemoteJids->isNotEmpty()) {
-            // garante que $users seja uma Collection
-            $users = collect($users)->reject(function ($user) use ($excludedRemoteJids) {
-                // $user pode ser array ou objeto (dependendo do select). Cuidamos dos dois.
-                $remote = is_array($user) ? ($user['remoteJid'] ?? null) : ($user->remoteJid ?? null);
-                return $remote && $excludedRemoteJids->contains($remote);
-            })->values();
-        }
-
         // Opcional (evita duplicidade por remoteJid, se houver)
         $users = $users->unique(function ($user) {
             return is_array($user) ? ($user['remoteJid'] ?? null) : ($user->remoteJid ?? null);

@@ -13,22 +13,19 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-Schedule::command('app:assign-embaixador-role-to-users')->everyMinute();
-
-Artisan::command('send:scheduled-messages', function () {
-    dispatch(new SendScheduledMessagesJob());
-})->describe('Envia mensagens agendadas ou imediatas');
 
 Schedule::command('send:scheduled-messages')
     ->everyMinute()
     ->skip(function () {
-        return SentMessage::where('status', 'pending')
-            ->where(function ($query) {
-                $query->whereNull('sent_at')
-                    ->orWhere('sent_at', '<=', Carbon::now());
-            })
+        $now = Carbon::now()->startOfMinute();
+
+        return SentMessage::query()
+            ->where('status', 'pending')
+            ->where('sent_at', '<=', $now)
             ->doesntExist();
     });
+
+Schedule::command('app:assign-embaixador-role-to-users')->everyMinute();
 
 Schedule::command('app:prune-livewire-temp')->everyMinute();
 

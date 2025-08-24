@@ -9,6 +9,7 @@ use Filament\Forms\Form;
 use Filament\Tables\Table;
 use App\Models\SentMessage;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 use Filament\Resources\Resource;
 use Filament\Forms\Components\Grid;
@@ -29,6 +30,7 @@ use App\Services\WhatsAppServiceBusinessApi;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
 use App\Filament\Resources\SentMessageResource\Pages;
+use TangoDevIt\FilamentEmojiPicker\EmojiPickerAction;
 
 class SentMessageResource extends Resource
 {
@@ -51,12 +53,9 @@ class SentMessageResource extends Resource
         return __('Send messages');
     }
 
-    protected static function getApprovedTemplates(): array
+    public static function getModelLabel(): string
     {
-        return collect(app(WhatsAppServiceBusinessApi::class)->getTemplate())
-            ->where('status', 'APPROVED')
-            ->pluck('name', 'name')
-            ->toArray();
+        return __(key: 'Messages');
     }
 
     protected static function countFilteredContacts(callable $get): int
@@ -98,105 +97,6 @@ class SentMessageResource extends Resource
                 return true;
             })
             ->count();
-    }
-
-    // Normaliza texto -> remoteJid (somente se tiver >=10 dígitos)
-    protected static function normalizeToRemoteJid(?string $text): ?string
-    {
-        $digits = preg_replace('/\D+/', '', (string) $text);
-        return strlen($digits) >= 10 ? "{$digits}@s.whatsapp.net" : null;
-    }
-
-    // Extrai remoteJids válidos do textarea (únicos)
-    protected static function excludedJidsFromText(?string $text): \Illuminate\Support\Collection
-    {
-        return collect(preg_split('/\R+/', (string) $text))
-            ->map(fn($line) => static::normalizeToRemoteJid($line))
-            ->filter()
-            ->unique()
-            ->values();
-    }
-
-    // Monta os remoteJids (únicos) da base atual conforme o filtro selecionado
-    protected static function computeBaseRemoteJids(callable $get): \Illuminate\Support\Collection
-    {
-        $filter = $get('filter');
-
-        // função auxiliar para pegar remoteJid do usuário
-        $jidFromUser = function (User $u) {
-            // ajuste estes campos conforme seu projeto (whatsapp/phone/code…)
-            $digits = preg_replace('/\D+/', '', $u->whatsapp ?? $u->phone ?? $u->code ?? '');
-            return strlen($digits) >= 10 ? "{$digits}@s.whatsapp.net" : null;
-        };
-
-        if ($filter === 'questionary') {
-            $ageGroups = $get('age_groups');
-
-            $users = User::query()
-                ->when($get('cities'), fn($q) => $q->whereIn('city', $get('cities')))
-                ->when($get('neighborhoods'), fn($q) => $q->whereIn('neighborhood', $get('neighborhoods')))
-                ->when($get('genders'), fn($q) => $q->whereIn('gender', $get('genders')))
-                ->when($get('concerns_01'), fn($q) => $q->whereIn('concern_01', $get('concerns_01')))
-                ->when($get('concerns_02'), fn($q) => $q->whereIn('concern_02', $get('concerns_02')))
-                ->where('is_add_date_of_birth', true)
-                ->get()
-                ->filter(function ($user) use ($ageGroups) {
-                    if (empty($ageGroups)) return true;
-
-                    $birth = $user->getParsedDateOfBirth();
-                    if (!$birth) return false;
-
-                    $age = $birth->age;
-                    foreach ($ageGroups as $group) {
-                        if (preg_match('/^(\d{2})-(\d{2})$/', $group, $m)) {
-                            $min = (int) $m[1];
-                            $max = (int) $m[2];
-                            if ($age >= $min && $age <= $max) return true;
-                        }
-                    }
-                    return false;
-                });
-
-            return $users->map(fn($u) => $jidFromUser($u))->filter()->unique()->values();
-        }
-
-        if ($filter === 'ambassadors') {
-            if ($get('all_ambassadors') === true) {
-                return User::whereHas('firstLevelGuestsNetwork')
-                    ->where('is_add_date_of_birth', true)
-                    ->get()->map($jidFromUser)->filter()->unique()->values();
-            }
-
-            $ids = collect(Arr::wrap($get('ambassadors') ?? []));
-            if ($get('include_ambassador_network')) {
-                foreach ($ids as $id) {
-                    if ($u = User::find($id)) {
-                        $ids = $ids->merge($u->getRecursiveNetWork($u));
-                    }
-                }
-            }
-
-            return User::whereIn('id', $ids->unique())
-                ->where('is_add_date_of_birth', true)
-                ->get()->map($jidFromUser)->filter()->unique()->values();
-        }
-
-        if ($filter === 'contacts') {
-            $ids = collect(Arr::wrap($get('contacts') ?? []));
-            if ($get('include_network')) {
-                foreach ($ids as $id) {
-                    if ($u = User::find($id)) {
-                        $ids = $ids->merge($u->getRecursiveNetWork($u));
-                    }
-                }
-            }
-
-            return User::whereIn('id', $ids->unique())
-                ->where('is_add_date_of_birth', true)
-                ->get()->map($jidFromUser)->filter()->unique()->values();
-        }
-
-        return collect();
     }
 
     public static function getFormSchema(): array
@@ -582,35 +482,6 @@ class SentMessageResource extends Resource
                 ->id('contacts'),
             // Contacts Section - END
 
-            Section::make(__('Excluded contacts'))
-                ->visible(fn(Get $get) => filled($get('filter')))
-                ->schema([
-                    Grid::make(12)
-                        ->schema([
-                            Textarea::make('excluded_contacts')
-                                ->label('Contatos excluídos')
-                                ->rows(4)
-                                ->helperText('Informe um número de WhatsApp por linha (com DDI/DDD). Ex.: 5521999999999')
-                                ->placeholder("5521999999999\n5531988887777")
-                                ->columnSpan(12)
-                                ->dehydrated(true)
-                                ->reactive()
-                                ->extraInputAttributes([
-                                    // teclado numérico no mobile e validação básica do browser
-                                    'inputmode'   => 'numeric',
-                                    'pattern'     => '[0-9]*',
-
-                                    // aceita apenas dígitos e quebras de linha no textarea
-                                    'x-on:input'  => '$el.value = $el.value.replace(/[^0-9\n]/g, "")',
-                                    'x-on:paste'  => 'setTimeout(() => { $el.value = $el.value.replace(/[^0-9\n]/g, "") }, 0)',
-
-                                    'spellcheck'  => 'false',
-                                    'autocomplete' => 'off',
-                                ])
-                        ]),
-                ])
-                ->id('excluded'),
-
             // Message Section - START
             Section::make(__('Message'))
                 ->schema([
@@ -620,73 +491,91 @@ class SentMessageResource extends Resource
                                 ->columnSpan(1)
                                 ->label('Message type')
                                 ->options([
-                                    'text' => __('Text message'),
-                                    'image' => __('Image with description'),
-                                    'video' => __('Video with description'),
+                                    'image' => __('Image'),
+                                    'video' => __('Video'),
                                 ])
                                 ->reactive()
                                 ->required()
                                 ->columnSpan(6),
 
-                            // image
-                            FileUpload::make('path')
-                                ->label('Imagem')
-                                ->acceptedFileTypes(['image/jpeg', 'image/png'])
-                                ->disk('public')
-                                ->directory('messages')
-                                ->preserveFilenames()
-                                ->deleteUploadedFileUsing(function (string $file) {
-                                    Storage::disk('public')->delete($file);
-                                })
-                                ->visible(fn(callable $get) => $get('type') === 'image')
-                                ->required(fn(callable $get) => $get('type') === 'image')
-                                ->columnSpan(6)
-                                ->maxSize(5120)
-                                ->saveUploadedFileUsing(function (\Illuminate\Http\UploadedFile $file, $record) {
-                                    try {
-                                        $path = $file->storePubliclyAs('messages', $file->hashName(), 'public');
+                            Grid::make(12)->schema([
+                                // image
+                                FileUpload::make('path')
+                                    ->label('Imagem')
+                                    ->acceptedFileTypes(['image/jpeg', 'image/png'])
+                                    ->disk('public')
+                                    ->directory('messages')
+                                    ->preserveFilenames()
+                                    ->deleteUploadedFileUsing(function (string $file) {
+                                        Storage::disk('public')->delete($file);
+                                    })
+                                    ->visible(fn(callable $get) => $get('type') === 'image')
+                                    ->required(fn(callable $get) => $get('type') === 'image')
+                                    ->columnSpan(6)
+                                    ->maxSize(5120)
+                                    ->saveUploadedFileUsing(function (\Illuminate\Http\UploadedFile $file, $record) {
+                                        try {
+                                            $path = $file->storePubliclyAs('messages', $file->hashName(), 'public');
 
-                                        return $path;
-                                    } catch (\Throwable $e) {
-                                        Log::error('Erro no upload de mídia', [
-                                            'erro' => $e->getMessage(),
-                                            'arquivo' => $file->getClientOriginalName(),
-                                            'tamanho' => $file->getSize(),
-                                        ]);
-                                        throw $e; // rethrow para que Filament trate corretamente
-                                    }
-                                })
-                                ->helperText('Tamanho máximo permitido: 5 MB'),
+                                            return $path;
+                                        } catch (\Throwable $e) {
+                                            Log::error('Erro no upload de mídia', [
+                                                'erro' => $e->getMessage(),
+                                                'arquivo' => $file->getClientOriginalName(),
+                                                'tamanho' => $file->getSize(),
+                                            ]);
+                                            throw $e; // rethrow para que Filament trate corretamente
+                                        }
+                                    })
+                                    ->helperText('Tamanho máximo permitido: 5 MB'),
 
-                            // video
-                            FileUpload::make('path')
-                                ->label('Arquivo de Vídeo')
-                                ->acceptedFileTypes(['video/mp4'])
-                                ->disk('public')
-                                ->directory('messages')
-                                ->preserveFilenames()
-                                ->deleteUploadedFileUsing(function (string $file) {
-                                    Storage::disk('public')->delete($file);
-                                })
-                                ->visible(fn(callable $get) => $get('type') === 'video')
-                                ->required(fn(callable $get) => $get('type') === 'video')
-                                ->columnSpan(6)
-                                ->maxSize(16384)
-                                ->saveUploadedFileUsing(function (\Illuminate\Http\UploadedFile $file, $record) {
-                                    try {
-                                        $path = $file->storePubliclyAs('messages', $file->hashName(), 'public');
+                                // video
+                                FileUpload::make('path')
+                                    ->label('Arquivo de Vídeo')
+                                    ->acceptedFileTypes(['video/mp4'])
+                                    ->disk('public')
+                                    ->directory('messages')
+                                    ->preserveFilenames()
+                                    ->deleteUploadedFileUsing(function (string $file) {
+                                        Storage::disk('public')->delete($file);
+                                    })
+                                    ->visible(fn(callable $get) => $get('type') === 'video')
+                                    ->required(fn(callable $get) => $get('type') === 'video')
+                                    ->columnSpan(6)
+                                    ->maxSize(16384)
+                                    ->saveUploadedFileUsing(function (\Illuminate\Http\UploadedFile $file, $record) {
+                                        try {
+                                            $path = $file->storePubliclyAs('messages', $file->hashName(), 'public');
 
-                                        return $path;
-                                    } catch (\Throwable $e) {
-                                        Log::error('Erro no upload de mídia', [
-                                            'erro' => $e->getMessage(),
-                                            'arquivo' => $file->getClientOriginalName(),
-                                            'tamanho' => $file->getSize(),
-                                        ]);
-                                        throw $e; // rethrow para que Filament trate corretamente
-                                    }
-                                })
-                                ->helperText('Tamanho máximo permitido: 16 MB'),
+                                            return $path;
+                                        } catch (\Throwable $e) {
+                                            Log::error('Erro no upload de mídia', [
+                                                'erro' => $e->getMessage(),
+                                                'arquivo' => $file->getClientOriginalName(),
+                                                'tamanho' => $file->getSize(),
+                                            ]);
+                                            throw $e; // rethrow para que Filament trate corretamente
+                                        }
+                                    })
+                                    ->helperText('Tamanho máximo permitido: 16 MB'),
+
+                                Textarea::make('description')
+                                    ->required()
+                                    ->label('Info')
+                                    ->placeholder('Conteúdo que substitui {{info}} no Modelo de mensagem.')
+                                    ->minLength(5)
+                                    ->maxLength(5000)
+                                    ->extraAttributes(['id' => 'data.description'])
+                                    ->hintAction(
+                                        EmojiPickerAction::make('emoji-description')
+                                            ->icon('heroicon-o-face-smile')
+                                            ->label(__('Choose an emoji'))
+                                    )
+                                    ->visible(fn(Get $get) => in_array($get('type'), ['image', 'video']))
+                                    ->rows(10)
+                                    ->columnSpan(6),
+                            ]),
+
                         ]),
 
                     Grid::make(12)
@@ -773,10 +662,13 @@ class SentMessageResource extends Resource
                                                 ->send();
                                         })
                                 )
-                                // opcional: se quiser exibir só os aprovados
+                                // opcional: se quiser exibir só os aprovados e que iniciam por "image_" ou "video_"
                                 ->options(function (WhatsAppServiceBusinessApi $svc) {
                                     return collect($svc->getTemplate())
-                                        ->filter(fn($label) => str_contains($label, '(APPROVED)'))
+                                        ->filter(function ($label, $name) {
+                                            return Str::contains($label, '(APPROVED)')
+                                                && Str::startsWith(Str::lower($name), ['imagem_', 'video_']);
+                                        })
                                         ->mapWithKeys(fn($label, $name) => [$name => $name])
                                         ->all();
                                 })
@@ -868,6 +760,11 @@ class SentMessageResource extends Resource
                 TextColumn::make('created_at')
                     ->label('Created at')
                     ->dateTime(format: 'd/m/Y H:i')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('sent_ok_at')
+                    ->label(__('Sent at'))
+                    ->dateTime(format: 'd/m/Y H:i:s')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('title')->sortable()->searchable(),

@@ -107,67 +107,81 @@ class EditSentMessage extends EditRecord
                                 ->columnSpan(6)
                                 ->disabled(),
 
-                            // image
-                            FileUpload::make('path')
-                                ->label('Imagem')
-                                ->acceptedFileTypes(['image/jpeg', 'image/png'])
-                                ->disk('public')
-                                ->directory('messages')
-                                ->preserveFilenames()
-                                ->deleteUploadedFileUsing(function (string $file) {
-                                    Storage::disk('public')->delete($file);
-                                })
-                                ->visible(fn(callable $get) => $get('type') === 'image')
-                                ->required(fn(callable $get) => $get('type') === 'image')
-                                ->columnSpan(6)
-                                ->maxSize(5120) // 5 MB
-                                ->saveUploadedFileUsing(function (\Illuminate\Http\UploadedFile $file, $record) {
-                                    try {
-                                        $path = $file->storePubliclyAs('messages', $file->hashName(), 'public');
+                            Grid::make(12)->schema([
+                                // image
+                                FileUpload::make('path')
+                                    ->label('Imagem')
+                                    ->acceptedFileTypes(['image/jpeg', 'image/png'])
+                                    ->disk('public')
+                                    ->directory('messages')
+                                    ->preserveFilenames()
+                                    ->deleteUploadedFileUsing(function (string $file) {
+                                        Storage::disk('public')->delete($file);
+                                    })
+                                    ->visible(fn(callable $get) => $get('type') === 'image')
+                                    ->required(fn(callable $get) => $get('type') === 'image')
+                                    ->columnSpan(6)
+                                    ->maxSize(5120) // 5 MB
+                                    ->saveUploadedFileUsing(function (\Illuminate\Http\UploadedFile $file, $record) {
+                                        try {
+                                            $path = $file->storePubliclyAs('messages', $file->hashName(), 'public');
 
-                                        return $path;
-                                    } catch (\Throwable $e) {
-                                        Log::error('Erro no upload de mídia', [
-                                            'erro' => $e->getMessage(),
-                                            'arquivo' => $file->getClientOriginalName(),
-                                            'tamanho' => $file->getSize(),
-                                        ]);
-                                        throw $e; // rethrow para que Filament trate corretamente
-                                    }
-                                })
-                                ->helperText('Tamanho máximo permitido: 5 MB')
-                                ->disabled(),
+                                            return $path;
+                                        } catch (\Throwable $e) {
+                                            Log::error('Erro no upload de mídia', [
+                                                'erro' => $e->getMessage(),
+                                                'arquivo' => $file->getClientOriginalName(),
+                                                'tamanho' => $file->getSize(),
+                                            ]);
+                                            throw $e; // rethrow para que Filament trate corretamente
+                                        }
+                                    })
+                                    ->helperText('Tamanho máximo permitido: 5 MB')
+                                    ->disabled(),
 
-                            // video
-                            FileUpload::make('path')
-                                ->label('Arquivo de Vídeo')
-                                ->acceptedFileTypes(['video/mp4'])
-                                ->disk('public')
-                                ->directory('messages')
-                                ->preserveFilenames()
-                                ->deleteUploadedFileUsing(function (string $file) {
-                                    Storage::disk('public')->delete($file);
-                                })
-                                ->visible(fn(callable $get) => $get('type') === 'video')
-                                ->required(fn(callable $get) => $get('type') === 'video')
-                                ->columnSpan(6)
-                                ->maxSize(16384) // 16 MB
-                                ->saveUploadedFileUsing(function (\Illuminate\Http\UploadedFile $file, $record) {
-                                    try {
-                                        $path = $file->storePubliclyAs('messages', $file->hashName(), 'public');
+                                // video
+                                FileUpload::make('path')
+                                    ->label('Arquivo de Vídeo')
+                                    ->acceptedFileTypes(['video/mp4'])
+                                    ->disk('public')
+                                    ->directory('messages')
+                                    ->preserveFilenames()
+                                    ->deleteUploadedFileUsing(function (string $file) {
+                                        Storage::disk('public')->delete($file);
+                                    })
+                                    ->visible(fn(callable $get) => $get('type') === 'video')
+                                    ->required(fn(callable $get) => $get('type') === 'video')
+                                    ->columnSpan(6)
+                                    ->maxSize(16384) // 16 MB
+                                    ->saveUploadedFileUsing(function (\Illuminate\Http\UploadedFile $file, $record) {
+                                        try {
+                                            $path = $file->storePubliclyAs('messages', $file->hashName(), 'public');
 
-                                        return $path;
-                                    } catch (\Throwable $e) {
-                                        Log::error('Erro no upload de mídia', [
-                                            'erro' => $e->getMessage(),
-                                            'arquivo' => $file->getClientOriginalName(),
-                                            'tamanho' => $file->getSize(),
-                                        ]);
-                                        throw $e; // rethrow para que Filament trate corretamente
-                                    }
-                                })
-                                ->helperText('Tamanho máximo permitido: 16 MB')
-                                ->disabled(),
+                                            return $path;
+                                        } catch (\Throwable $e) {
+                                            Log::error('Erro no upload de mídia', [
+                                                'erro' => $e->getMessage(),
+                                                'arquivo' => $file->getClientOriginalName(),
+                                                'tamanho' => $file->getSize(),
+                                            ]);
+                                            throw $e; // rethrow para que Filament trate corretamente
+                                        }
+                                    })
+                                    ->helperText('Tamanho máximo permitido: 16 MB')
+                                    ->disabled(),
+
+                                Textarea::make('description')
+                                    ->required()
+                                    ->label('Info')
+                                    ->hint('Conteúdo que substitui {{info}} no Modelo de mensagem.')
+                                    ->minLength(5)
+                                    ->maxLength(5000)
+                                    ->extraAttributes(['id' => 'data.description'])
+                                    ->visible(fn(Get $get) => in_array($get('type'), ['image', 'video']))
+                                    ->rows(10)
+                                    ->columnSpan(6)
+                                    ->disabled(),
+                            ]),
                         ]),
 
                     Grid::make(12)
@@ -223,7 +237,6 @@ class EditSentMessage extends EditRecord
                 ->schema([
                     DateTimePicker::make('sent_at')
                         ->label(__('Schedule'))
-                        ->helperText(__('Select shipping date and time at least 2 minutes in the future.'))
                         ->suffixIcon('heroicon-m-calendar')
                         ->seconds(false)
                         ->native(false)
@@ -237,6 +250,17 @@ class EditSentMessage extends EditRecord
                                 }
                             };
                         })
+                        ->columnSpan(4)
+                        ->disabled(),
+
+                    DateTimePicker::make('sent_ok_at')
+                        ->label(__('Sent at'))
+                        ->suffixIcon('heroicon-m-calendar')
+                        ->seconds(false)
+                        ->native(false)
+                        ->nullable()
+                        ->required()
+                        ->displayFormat('d/m/Y H:i:s')
                         ->columnSpan(4)
                         ->disabled(),
                 ]),

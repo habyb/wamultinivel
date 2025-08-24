@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\SentMessageResource\Widgets;
 
+use Filament\Tables;
+use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Widgets\TableWidget as BaseWidget;
 use Illuminate\Database\Eloquent\Builder;
@@ -20,6 +22,28 @@ class SentMessagesLogTable extends BaseWidget
         return SentMessagesLog::query()
             ->where('sent_message_id', $this->record->id)
             ->orderByDesc('sent_at');
+    }
+
+    /**
+     * Header actions -> aparecem à direita do título
+     */
+    protected function getTableHeaderActions(): array
+    {
+        return [
+            Action::make('counter')
+                ->label(function () {
+                    // Total de registros exibidos por este widget (para a mensagem atual)
+                    $total = (clone $this->getTableQuery())->count();
+
+                    return 'Total: ' . number_format($total, 0, ',', '.');
+                })
+                ->color('gray')
+                ->disabled()
+                ->button()
+                ->extraAttributes([
+                    'class' => 'pointer-events-none',
+                ]),
+        ];
     }
 
     protected function getTableColumns(): array
