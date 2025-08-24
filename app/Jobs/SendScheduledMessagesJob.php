@@ -78,6 +78,7 @@ class SendScheduledMessagesJob implements ShouldQueue
 
         foreach ($messages as $message) {
             $info = wa_single_line($message->description);
+            Log::info("info {$info}");
 
             $logsToInsert = [];
             $successCount = 0;
@@ -161,8 +162,6 @@ class SendScheduledMessagesJob implements ShouldQueue
                     );
 
                     $status = $response['messages'][0]['message_status'] ?? null;
-
-                    Log::info("info {$info}");
 
                     // Sucesso: contabiliza e prepara log
                     $successCount++;
