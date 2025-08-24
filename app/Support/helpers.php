@@ -187,33 +187,44 @@ if (! function_exists('format_phone_number')) {
         return $cleanNumber;
     }
 
-    function wa_plain_text_basic(?string $value, int $max = 1024): string
-    {
-        $value = (string) $value;
+    if (! function_exists('wa_single_line')) {
+        /**
+         * Converte rich text/HTML em uma linha para a Cloud API:
+         * - Converte <br>, </p>, </div>, </li>, <h*> em separador " • "
+         * - Remove demais tags
+         * - Decodifica entidades HTML (&nbsp; &amp; ...)
+         * - Remove \r \n \t
+         * - Colapsa espaços em 1 (evita >4 seguidos)
+         * - Limita tamanho (padrão 1024)
+         */
+        function wa_single_line(?string $value, int $max = 1024, string $sep = ' • '): string
+        {
+            $value = (string) $value;
 
-        // 1) normaliza EOL
-        $value = str_replace(["\r\n", "\r"], "\n", $value);
+            // Mapeia tags de bloco para separador
+            $value = preg_replace('~<\s*br\s*/?>~i', $sep, $value);
+            $value = preg_replace('~</\s*(p|div|li|h[1-6])\s*>~i', $sep, $value);
 
-        // 2) trata tags comuns como quebra de linha
-        $value = preg_replace('~<\s*br\s*/?>~i', "\n", $value);
-        $value = preg_replace('~</\s*p\s*>~i', "\n", $value);
+            // Remove o restante das tags e decodifica entidades
+            $value = strip_tags($value);
+            $value = html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
-        // 3) remove demais tags
-        $value = strip_tags($value);
+            // Remove quebras e tabs (proibidos) e normaliza espaços
+            $value = str_replace(["\r\n", "\r", "\n", "\t"], ' ', $value);
+            $value = str_replace("\xC2\xA0", ' ', $value); // NBSP
+            $value = preg_replace('/[ ]{2,}/u', ' ', $value); // evita >1 (logo evita >4)
 
-        // 4) decodifica entidades (&nbsp;, &amp;...)
-        $value = html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            // Remove separadores duplicados gerados
+            $value = preg_replace('/(\s*' . preg_quote($sep, '/') . '\s*){2,}/u', " {$sep} ", $value);
 
-        // 5) squish de espaços e trims
-        $value = preg_replace('/[ \t]+/u', ' ', $value);
-        $value = preg_replace("/\n{3,}/u", "\n\n", $value);
-        $value = trim($value);
+            $value = trim($value);
 
-        // 6) limita (ajuste se seu template permitir outra capacidade)
-        if (mb_strlen($value, 'UTF-8') > $max) {
-            $value = Str::limit($value, $max, '…');
+            // Limita comprimento
+            if (mb_strlen($value, 'UTF-8') > $max) {
+                $value = Str::limit($value, $max, '…');
+            }
+
+            return $value;
         }
-
-        return $value;
     }
 }

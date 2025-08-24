@@ -77,6 +77,8 @@ class SendScheduledMessagesJob implements ShouldQueue
             ->get();
 
         foreach ($messages as $message) {
+            $info = wa_single_line($message->description);
+
             $logsToInsert = [];
             $successCount = 0;
             $failCount    = 0;
@@ -151,7 +153,7 @@ class SendScheduledMessagesJob implements ShouldQueue
                                     [
                                         'type' => 'text',
                                         "parameter_name" => "info",
-                                        'text' => $message->description
+                                        'text' => $info
                                     ],
                                 ],
                             ]
