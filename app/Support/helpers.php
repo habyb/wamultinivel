@@ -187,72 +187,33 @@ if (! function_exists('format_phone_number')) {
         return $cleanNumber;
     }
 
-    if (! function_exists('wa_plain_text')) {
-        /**
-         * Converte HTML/RichText em texto puro para WhatsApp:
-         * - Converte <br>, <p>, <div>, <li>, <h*> em quebras de linha
-         * - Remove demais tags
-         * - Decodifica entidades (&nbsp; &amp; etc.)
-         * - Normaliza múltiplos espaços/linhas
-         * - Limita a 1024 chars (padrão do body param do template)
-         */
-        function wa_plain_text(?string $value, int $max = 1024): string
-        {
-            $value = (string) $value;
+    function wa_plain_text_basic(?string $value, int $max = 1024): string
+    {
+        $value = (string) $value;
 
-            // Padroniza fim de linha
-            $value = str_replace(["\r\n", "\r"], "\n", $value);
+        // 1) normaliza EOL
+        $value = str_replace(["\r\n", "\r"], "\n", $value);
 
-            // Mapeia tags de bloco para \n
-            $blockTags = [
-                'p',
-                'div',
-                'br',
-                'li',
-                'ul',
-                'ol',
-                'h1',
-                'h2',
-                'h3',
-                'h4',
-                'h5',
-                'h6',
-                'blockquote',
-                'table',
-                'tr',
-                'td',
-                'th',
-                'thead',
-                'tbody'
-            ];
-            foreach ($blockTags as $tag) {
-                $value = preg_replace("~</?{$tag}[^>]*>~i", "\n", $value);
-            }
+        // 2) trata tags comuns como quebra de linha
+        $value = preg_replace('~<\s*br\s*/?>~i', "\n", $value);
+        $value = preg_replace('~</\s*p\s*>~i', "\n", $value);
 
-            // Remove o restante das tags
-            $value = strip_tags($value);
+        // 3) remove demais tags
+        $value = strip_tags($value);
 
-            // Entidades HTML -> UTF-8
-            $value = html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        // 4) decodifica entidades (&nbsp;, &amp;...)
+        $value = html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
-            // Normaliza &nbsp; remanescentes e espaços quebrados
-            $value = str_replace("\xc2\xa0", ' ', $value); // NBSP em UTF-8
+        // 5) squish de espaços e trims
+        $value = preg_replace('/[ \t]+/u', ' ', $value);
+        $value = preg_replace("/\n{3,}/u", "\n\n", $value);
+        $value = trim($value);
 
-            // Colapsa espaços múltiplos
-            $value = preg_replace('/[ \t]+/u', ' ', $value);
-
-            // Colapsa linhas em branco excessivas
-            $value = preg_replace("/\n{3,}/u", "\n\n", $value);
-
-            // Trim geral
-            $value = trim($value);
-
-            // Limite de tamanho (sem quebrar multibyte)
-            if (mb_strlen($value, 'UTF-8') > $max) {
-                $value = Str::limit($value, $max, '…'); // reticências
-            }
-
-            return $value;
+        // 6) limita (ajuste se seu template permitir outra capacidade)
+        if (mb_strlen($value, 'UTF-8') > $max) {
+            $value = Str::limit($value, $max, '…');
         }
+
+        return $value;
     }
 }
