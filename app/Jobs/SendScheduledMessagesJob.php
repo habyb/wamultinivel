@@ -77,8 +77,7 @@ class SendScheduledMessagesJob implements ShouldQueue
             ->get();
 
         foreach ($messages as $message) {
-            $info = $message->description;
-            Log::info("info {$info}");
+            $info = wa_single_line($message->description);
 
             $logsToInsert = [];
             $successCount = 0;
@@ -199,7 +198,7 @@ class SendScheduledMessagesJob implements ShouldQueue
                     'sent_ok_at'     => now(),
                     'lock_token'     => null, // liberar
                 ]);
-                Log::info("description {$message->description}");
+                Log::info("info: {$info}");
                 Log::info("[SendScheduledMessagesJob] Mensagem enviada. id={$message->id} ok={$successCount} fail={$failCount}");
             } else {
                 $message->update([
