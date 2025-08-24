@@ -77,7 +77,7 @@ class SendScheduledMessagesJob implements ShouldQueue
             ->get();
 
         foreach ($messages as $message) {
-            $info = wa_single_line($message->description);
+            $info = $message->description;
             Log::info("info {$info}");
 
             $logsToInsert = [];
