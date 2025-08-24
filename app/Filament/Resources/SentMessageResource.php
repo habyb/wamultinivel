@@ -667,7 +667,12 @@ class SentMessageResource extends Resource
                                     return collect($svc->getTemplate())
                                         ->filter(function ($label, $name) {
                                             return Str::contains($label, '(APPROVED)')
-                                                && Str::startsWith(Str::lower($name), ['imagem_', 'video_']);
+                                                && Str::startsWith(Str::lower($name), [
+                                                    'imagem_sem_',
+                                                    'imagem_com_',
+                                                    'video_sem_',
+                                                    'video_com_'
+                                                ]);
                                         })
                                         ->mapWithKeys(fn($label, $name) => [$name => $name])
                                         ->all();
