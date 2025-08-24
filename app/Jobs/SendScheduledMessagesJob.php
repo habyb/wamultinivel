@@ -121,7 +121,7 @@ class SendScheduledMessagesJob implements ShouldQueue
                 try {
                     $number = fix_whatsapp_number($user['remoteJid']);
                     $param_type_header = [];
-                    $infoForApi = $info;
+                    $infoForApi = str_replace("\n", "\\n", $info);
 
                     if ($message->type == 'image' || $message->type == 'video') {
                         $url = asset('storage/' . $message->path);
