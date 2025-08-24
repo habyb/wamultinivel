@@ -151,7 +151,7 @@ class SendScheduledMessagesJob implements ShouldQueue
                                     [
                                         'type' => 'text',
                                         "parameter_name" => "info",
-                                        'text' => $message->description
+                                        'text' => wa_plain_text($message->description)
                                     ],
                                 ],
                             ]

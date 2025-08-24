@@ -1,6 +1,6 @@
 <?php
 
-use function PHPUnit\Framework\isEmpty;
+use Illuminate\Support\Str;
 
 if (!function_exists('generate_custom_alphanumeric_password')) {
     /**
@@ -185,5 +185,74 @@ if (! function_exists('format_phone_number')) {
 
         // If not a Brazilian number, return the cleaned number as-is
         return $cleanNumber;
+    }
+
+    if (! function_exists('wa_plain_text')) {
+        /**
+         * Converte HTML/RichText em texto puro para WhatsApp:
+         * - Converte <br>, <p>, <div>, <li>, <h*> em quebras de linha
+         * - Remove demais tags
+         * - Decodifica entidades (&nbsp; &amp; etc.)
+         * - Normaliza múltiplos espaços/linhas
+         * - Limita a 1024 chars (padrão do body param do template)
+         */
+        function wa_plain_text(?string $value, int $max = 1024): string
+        {
+            $value = (string) $value;
+
+            // Padroniza fim de linha
+            $value = str_replace(["\r\n", "\r"], "\n", $value);
+
+            // Mapeia tags de bloco para \n
+            $blockTags = [
+                'p',
+                'div',
+                'br',
+                'li',
+                'ul',
+                'ol',
+                'h1',
+                'h2',
+                'h3',
+                'h4',
+                'h5',
+                'h6',
+                'blockquote',
+                'table',
+                'tr',
+                'td',
+                'th',
+                'thead',
+                'tbody'
+            ];
+            foreach ($blockTags as $tag) {
+                $value = preg_replace("~</?{$tag}[^>]*>~i", "\n", $value);
+            }
+
+            // Remove o restante das tags
+            $value = strip_tags($value);
+
+            // Entidades HTML -> UTF-8
+            $value = html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+            // Normaliza &nbsp; remanescentes e espaços quebrados
+            $value = str_replace("\xc2\xa0", ' ', $value); // NBSP em UTF-8
+
+            // Colapsa espaços múltiplos
+            $value = preg_replace('/[ \t]+/u', ' ', $value);
+
+            // Colapsa linhas em branco excessivas
+            $value = preg_replace("/\n{3,}/u", "\n\n", $value);
+
+            // Trim geral
+            $value = trim($value);
+
+            // Limite de tamanho (sem quebrar multibyte)
+            if (mb_strlen($value, 'UTF-8') > $max) {
+                $value = Str::limit($value, $max, '…'); // reticências
+            }
+
+            return $value;
+        }
     }
 }
