@@ -199,6 +199,7 @@ class SendScheduledMessagesJob implements ShouldQueue
                     'sent_ok_at'     => now(),
                     'lock_token'     => null, // liberar
                 ]);
+                Log::info("description {$message->description}");
                 Log::info("[SendScheduledMessagesJob] Mensagem enviada. id={$message->id} ok={$successCount} fail={$failCount}");
             } else {
                 $message->update([
