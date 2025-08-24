@@ -162,6 +162,8 @@ class SendScheduledMessagesJob implements ShouldQueue
 
                     $status = $response['messages'][0]['message_status'] ?? null;
 
+                    Log::info("info {$info}");
+
                     // Sucesso: contabiliza e prepara log
                     $successCount++;
                     $logsToInsert[] = [
