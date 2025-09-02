@@ -63,6 +63,7 @@ class TotalEmbaixadores extends Page implements HasTable
                 ->label('Number of guests')
                 ->counts('firstLevelGuests')
                 ->badge()
+                ->alignment('right')
                 ->sortable()
                 ->color(fn(string $state): string => match (true) {
                     $state == 0 => 'gray',
