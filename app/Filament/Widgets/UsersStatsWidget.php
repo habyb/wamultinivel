@@ -55,7 +55,7 @@ class UsersStatsWidget extends BaseWidget
                 ->icon('heroicon-o-user-plus')
                 ->color('primary'),
 
-            Stat::make(__('My Network'), $this->getTotalUsersMyNetwork())
+            Stat::make(__('My Network'), $user->total_network_count)
                 ->description(__('Total users who belong to your network'))
                 ->url(route('filament.admin.pages.my-network'))
                 ->icon('heroicon-o-globe-americas')
