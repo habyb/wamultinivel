@@ -35,10 +35,25 @@ class MyNetwork extends Page implements HasTable
 
     /**
      * Get the table query.
+     *
+     * Aqui garantimos os agregados necessários para ordenação:
+     * - first_level_guests_count: total de convidados de 1º nível (withCount)
+     * - role_name: menor nome de role associado (withMin) para permitir ORDER BY
      */
     protected function getTableQuery(): Builder
     {
-        return auth()->user()->networkGuestsQuery();
+        return auth()->user()
+            ->networkGuestsQuery()
+            ->withCount([
+                // ajuste o nome da relação se for diferente de firstLevelGuests
+                'firstLevelGuests as first_level_guests_count',
+            ])
+            ->withMin(
+                // relação do Spatie HasRoles
+                'roles as role_name',
+                'name',
+            )
+            ->reorder();
     }
 
     /**
@@ -48,31 +63,47 @@ class MyNetwork extends Page implements HasTable
     {
         return [
             Tables\Columns\TextColumn::make('code')->label('Invitation ID'),
+
             Tables\Columns\TextColumn::make('name')
                 ->label('Name')
                 ->sortable()
                 ->searchable(),
+
             Tables\Columns\TextColumn::make('remoteJid')
                 ->formatStateUsing(function (string $state): string {
                     return format_phone_number(fix_whatsapp_number($state));
                 })
                 ->label('WhatsApp')
                 ->searchable(),
+
+            /**
+             * Para ordenação usamos o alias "role_name" vindo do withMin.
+             * Se quiser continuar exibindo múltiplos papéis, mantenha esta coluna;
+             * apenas note que ela NÃO será ordenável — quem ordena é a role_name.
+             */
             Tables\Columns\TextColumn::make('roles.name')
-                ->sortable()
-                ->searchable()
+                ->label('Funções')
                 ->badge()
+                ->sortable()
                 ->separator(', '),
+
+            // Coluna auxiliar apenas para permitir ordenação por função
+            Tables\Columns\TextColumn::make('role_name')
+                ->label('Funções')
+                ->sortable()
+                ->toggleable(isToggledHiddenByDefault: true),
+
             TextColumn::make('first_level_guests_count')
                 ->label('Number of guests')
-                ->counts('firstLevelGuests')
                 ->badge()
                 ->sortable()
+                ->alignment('right')
                 ->color(fn(string $state): string => match (true) {
                     $state == 0 => 'gray',
                     $state <= 5 => 'success',
                     default => 'warning',
                 }),
+
             Tables\Columns\TextColumn::make('referrerGuest.name')
                 ->label('Invited by')
                 ->formatStateUsing(function ($state, $record) {
@@ -87,10 +118,12 @@ class MyNetwork extends Page implements HasTable
                     fn($state, $record) =>
                     $state ? "{$record->referrerGuest->name} ({$record->invitation_code})" : null
                 ),
+
             Tables\Columns\TextColumn::make('created_at')
                 ->dateTime(format: 'd/m/Y H:i:s')
                 ->sortable()
                 ->toggleable(isToggledHiddenByDefault: true),
+
             Tables\Columns\TextColumn::make('updated_at')
                 ->dateTime(format: 'd/m/Y H:i:s')
                 ->sortable()
