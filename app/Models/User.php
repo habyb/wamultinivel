@@ -14,6 +14,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class User extends Authenticatable implements FilamentUser
 {
@@ -197,12 +198,58 @@ class User extends Authenticatable implements FilamentUser
         return collect($ids);
     }
 
+    /**
+     * Conta TODOS os descendentes completos (is_add_date_of_birth = true)
+     * percorrendo a árvore em camadas, sem N+1.
+     */
     public function updateNetworkCount(): void
     {
-        $ids = $this->getRecursiveNetWork($this);
-        $this->total_network_count = $ids->count();
+        $table = $this->getTable();     // "users"
+        $pk    = $this->getKeyName();   // "id"
+        $code  = $this->code;           // owner key do pai
+
+        // campos da relação “filho -> pai”
+        // ex.: invitation_code (filho) -> code (pai)
+        $childFk = 'invitation_code';
+        $ownerOk = 'code';
+
+        $total = 0;
+        $visited = [];                 // evita loops acidentais
+        $currentCodes = [$code];       // começamos pelos filhos diretos do usuário
+
+        while (!empty($currentCodes)) {
+            // busca todos os filhos cujo FK esteja em qualquer dos códigos atuais
+            $rows = DB::table($table)
+                ->select($pk, $ownerOk, $childFk, 'is_add_date_of_birth')
+                ->whereIn($childFk, $currentCodes)
+                ->get();
+
+            $nextCodes = [];
+
+            foreach ($rows as $row) {
+                if (isset($visited[$row->$pk])) {
+                    continue;
+                }
+                $visited[$row->$pk] = true;
+
+                // conta somente quem completou
+                if ((bool) $row->is_add_date_of_birth === true) {
+                    $total++;
+                }
+
+                // adiciona o code do nó atual para buscar a próxima camada
+                if (!empty($row->$ownerOk)) {
+                    $nextCodes[] = $row->$ownerOk;
+                }
+            }
+
+            $currentCodes = array_values(array_unique($nextCodes));
+        }
+
+        $this->total_network_count = $total;
         $this->save();
     }
+
 
     public function allNetworkIds(): Collection
     {
