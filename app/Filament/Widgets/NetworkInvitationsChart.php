@@ -43,7 +43,7 @@ class NetworkInvitationsChart extends ChartWidget
         $networkIds = $user->allNetworkIds();
 
         $trend = Trend::query(
-            User::query()->whereIn('id', $networkIds)
+            User::query()->whereIn('id', $networkIds)->where('is_add_date_of_birth', true)
         )
             ->between(start: $start, end: $end)
             ->{$perMethod}()
