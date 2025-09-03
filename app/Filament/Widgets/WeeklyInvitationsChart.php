@@ -42,7 +42,7 @@ class WeeklyInvitationsChart extends ChartWidget
 
         $trendQuery = Trend::query(
             User::query()
-                ->where('invitation_code', $user->code)
+                ->where('invitation_code', $user->code)->where('is_add_date_of_birth', true)
         )
             ->between(start: $start, end: $end)
             ->{$perPeriod}()
