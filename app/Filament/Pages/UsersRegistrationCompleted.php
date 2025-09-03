@@ -318,6 +318,16 @@ class UsersRegistrationCompleted extends Page implements HasTable
         ];
     }
 
+    public function getTableDefaultSortColumn(): ?string
+    {
+        return 'created_at';
+    }
+
+    public function getTableDefaultSortDirection(): ?string
+    {
+        return 'desc';
+    }
+
     /**
      * Restrict access to Superadmin and Admin roles only.
      */
