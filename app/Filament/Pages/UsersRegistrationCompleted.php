@@ -43,7 +43,10 @@ class UsersRegistrationCompleted extends Page implements HasTable
      */
     protected function getTableQuery(): Builder
     {
-        return auth()->user()->completedRegistrationsQuery();
+        return auth()->user()->completedRegistrationsQuery()
+            // IMPORTANT: remove any orderBy anterior (ex.: latest(), orderByName, etc.)
+            ->reorder()
+            ->orderByDesc('created_at');
     }
 
     public function getTableBulkActions(): array
@@ -141,6 +144,10 @@ class UsersRegistrationCompleted extends Page implements HasTable
                 ->dateTime(format: 'd/m/Y H:i:s')
                 ->sortable()
                 ->searchable()
+                ->sortable(
+                    query: fn(Builder $query, string $direction) =>
+                    $query->reorder()->orderBy('created_at', $direction)
+                )
                 ->toggleable(isToggledHiddenByDefault: true),
             TextColumn::make('updated_at')
                 ->dateTime(format: 'd/m/Y H:i:s')
