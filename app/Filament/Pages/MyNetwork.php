@@ -16,7 +16,7 @@ class MyNetwork extends Page implements HasTable
 
     protected static ?string $navigationIcon = 'heroicon-o-globe-americas';
     protected static string $view = 'filament.pages.my-network';
-    protected static ?int $navigationSort = 3;
+    protected static ?int $navigationSort = 4;
 
     public static function getNavigationGroup(): string
     {

@@ -17,7 +17,7 @@ class TotalEmbaixadores extends Page implements HasTable
 
     protected static ?string $navigationIcon = 'heroicon-o-user-circle';
     protected static string $view = 'filament.pages.total-embaixadores';
-    protected static ?int $navigationSort = 4;
+    protected static ?int $navigationSort = 5;
 
     public static function getNavigationGroup(): string
     {

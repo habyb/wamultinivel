@@ -22,7 +22,7 @@ class DirectRegistrations extends Page implements HasTable
 
     protected static ?string $navigationIcon = 'heroicon-o-user-plus';
     protected static string $view = 'filament.pages.direct-registrations';
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 3;
 
     public static function getNavigationGroup(): string
     {
