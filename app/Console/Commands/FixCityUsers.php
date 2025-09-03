@@ -99,7 +99,7 @@ class FixCityUsers extends Command
             'Santo Antônio de Pádua' => ['santo antônio de pádua', 'santo antonio de padua'],
             'São Fidélis' => ['são fidélis', 'sao fidelis', 'São  fidelis'],
             'São Francisco de Itabapoana' => ['são francisco de itabapoana', 'sao francisco de itabapoana'],
-            'São Gonçalo' => ['São gonçalo', 'São goncalo', 'São Goncalo', 'são gonçalo', 'sao goncalo'],
+            'São Gonçalo' => ['São gonçalo', 'São goncalo', 'São Goncalo', 'são gonçalo', 'sao goncalo', 'São Gonçalo RJ'],
             'São João da Barra' => ['São joão da barra', 'São João da barra', 'Sao Joao da Barra', 'são joão da barra', 'sao joao da barra'],
             'São João de Meriti' => ['são joão de meriti', 'sao joao de meriti', 'São João'],
             'São José de Ubá' => ['são josé de ubá', 'sao jose de uba'],
