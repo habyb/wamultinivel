@@ -130,6 +130,24 @@ class SentMessageResource extends Resource
                             'contacts' => __('Contacts'),
                         ])
                         ->searchable()
+                        ->afterStateUpdated(function ($state, Set $set) {
+                            $set('contacts_count_preview', '0 contatos');
+                            // Questionary
+                            $set('cities', []);
+                            $set('neighborhoods', []);
+                            $set('genders', []);
+                            $set('age_groups', []);
+                            $set('concerns_01', []);
+                            $set('concerns_02', []);
+                            // Ambassadors
+                            $set('all_ambassadors', false);
+                            $set('selected_city', null);
+                            $set('ambassadors', []);
+                            $set('include_ambassador_network', false);
+                            // Contacts
+                            $set('contacts', []);
+                            $set('include_network', false);
+                        })
                         ->columnSpan(3),
                 ])
                 ->id('filter'),
@@ -280,21 +298,71 @@ class SentMessageResource extends Resource
                 ->schema([
                     Grid::make(12)
                         ->schema([
-                            Toggle::make('all_ambassadors')
-                                ->label('Selecionar todos os Embaixadores')
-                                ->reactive()
-                                ->afterStateUpdated(function ($state, callable $set) {
-                                    if ($state === true) {
-                                        $count = User::whereHas('firstLevelGuestsNetwork')->where('is_add_date_of_birth', true)->count();
-                                        $set('contacts_count_preview', "{$count} contatos");
-                                        $set('include_ambassador_network', false);
-                                        $set('ambassadors', []);
-                                    } else {
-                                        $set('contacts_count_preview', '0 contatos');
-                                    }
-                                })
-                                ->default(false)
-                                ->columnSpan(12),
+                            Grid::make(12)
+                                ->schema([
+                                    Toggle::make('all_ambassadors')
+                                        ->label('Selecionar todos os Embaixadores')
+                                        ->reactive()
+                                        ->afterStateUpdated(function ($state, Set $set, Get $get) {
+                                            if ($state === true) {
+                                                $query = User::query()
+                                                    ->whereHas('firstLevelGuestsNetwork')
+                                                    ->where('is_add_date_of_birth', true);
+
+                                                // Se houver cidade selecionada, filtra por ela
+                                                $selectedCity = $get('selected_city');
+                                                if (filled($selectedCity)) {
+                                                    $query->where('city', $selectedCity);
+                                                }
+
+                                                $count = $query->count();
+
+                                                $set('contacts_count_preview', "{$count} contatos");
+                                                $set('include_ambassador_network', false);
+                                                $set('ambassadors', []);
+                                                $set('selected_city', null);
+                                            } else {
+                                                $set('contacts_count_preview', '0 contatos');
+                                            }
+                                        })
+                                        ->default(false)
+                                        ->columnSpan(4),
+
+                                    Select::make('selected_city')
+                                        ->label('Cities')
+                                        ->options(
+                                            fn() => User::query()
+                                                ->whereNotNull('city')
+                                                ->where('is_add_date_of_birth', true)
+                                                ->distinct()
+                                                ->orderBy('city')
+                                                ->pluck('city', 'city')
+                                                ->toArray()
+                                        )
+                                        ->placeholder(__('Select a city'))
+                                        ->searchable()
+                                        ->native(false)
+                                        ->preload()
+                                        ->live(debounce: 0)
+                                        ->afterStateUpdated(function ($state, Set $set, Get $get) {
+                                            // Só recalcula quando "todos os embaixadores" estiver ativo
+                                            if ($get('all_ambassadors') === true) {
+                                                $query = User::query()
+                                                    ->whereHas('firstLevelGuestsNetwork')
+                                                    ->where('is_add_date_of_birth', true);
+
+                                                // Se limpou a cidade, volta a contar todos; se selecionou, filtra
+                                                if (filled($state)) {
+                                                    $query->where('city', $state);
+                                                }
+
+                                                $count = $query->count();
+                                                $set('contacts_count_preview', "{$count} contatos");
+                                            }
+                                        })
+                                        ->visible(fn(callable $get) => $get('all_ambassadors') === true)
+                                        ->columnSpan(3),
+                                ]),
 
                             Select::make('ambassadors')
                                 ->label('Ambassadors')

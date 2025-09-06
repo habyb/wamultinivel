@@ -128,13 +128,21 @@ class CreateSentMessage extends CreateRecord
 
             $all        = (bool) ($data['all_ambassadors'] ?? false);
             $includeNet = (bool) ($data['include_ambassador_network'] ?? false);
+            $selectedCity   = $data['selected_city']; // ie.: "Rio de Janeiro"
 
             // IDs base
             if ($all) {
-                // todos os usuários que são embaixadores (ajuste o critério se necessário)
-                $baseIds = User::query()
-                    ->whereHas('firstLevelGuestsNetwork')->where('is_add_date_of_birth', true)
-                    ->pluck('id');
+                if (!empty($selectedCity)) {
+                    $baseIds = User::query()
+                        ->whereHas('firstLevelGuestsNetwork')
+                        ->where('is_add_date_of_birth', true)
+                        ->where('city', $selectedCity)
+                        ->pluck('id');
+                } else {
+                    $baseIds = User::query()
+                        ->whereHas('firstLevelGuestsNetwork')->where('is_add_date_of_birth', true)
+                        ->pluck('id');
+                }
             } else {
                 // apenas os selecionados no select "Embaixadores"
                 $baseIds = collect(\Illuminate\Support\Arr::wrap($data['ambassadors'] ?? []))
