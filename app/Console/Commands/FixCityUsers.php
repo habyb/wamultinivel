@@ -108,7 +108,7 @@ class FixCityUsers extends Command
             'São Sebastião do Alto' => ['são sebastião do alto', 'sao sebastiao do alto'],
             'Sapucaia' => ['sapucaia'],
             'Saquarema' => ['saquarema', 'saqusrema'],
-            'Seropédica' => ['seropédica', 'seropedica'],
+            'Seropédica' => ['seropédica', 'seropedica', 'Seropédica RJ', 'Seropedica RJ', 'Seropédica/RJ', 'Seropedica/RJ'],
             'Silva Jardim' => ['silva jardim'],
             'Sumidouro' => ['sumidouro'],
             'Tanguá' => ['Tangua', 'tanguá', 'tangua', 'Tanguá-RJ'],
