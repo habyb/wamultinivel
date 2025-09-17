@@ -39,25 +39,7 @@ class TotalEmbaixadores extends Page implements HasTable
      */
     protected function getTableQuery(): Builder
     {
-        return User::embaixadoresQuery()
-            ->withCount([
-                'firstLevelGuests as first_level_guests_count',
-            ])
-            ->reorder()
-            ->orderByDesc('first_level_guests_count');
-    }
-
-    /**
-     * Ordenação padrão ao abrir a página.
-     */
-    protected function getTableDefaultSortColumn(): ?string
-    {
-        return 'first_level_guests_count';
-    }
-
-    protected function getTableDefaultSortDirection(): ?string
-    {
-        return 'desc';
+        return User::embaixadoresQuery();
     }
 
     /**
@@ -66,12 +48,12 @@ class TotalEmbaixadores extends Page implements HasTable
     protected function getTableColumns(): array
     {
         return [
-            TextColumn::make('code')->label('Invitation ID'),
-            TextColumn::make('name')
+            Tables\Columns\TextColumn::make('code')->label('Invitation ID'),
+            Tables\Columns\TextColumn::make('name')
                 ->label('Name')
                 ->sortable()
                 ->searchable(),
-            TextColumn::make('remoteJid')
+            Tables\Columns\TextColumn::make('remoteJid')
                 ->formatStateUsing(function (string $state): string {
                     return format_phone_number(fix_whatsapp_number($state));
                 })
@@ -79,15 +61,18 @@ class TotalEmbaixadores extends Page implements HasTable
                 ->searchable(),
             TextColumn::make('first_level_guests_count')
                 ->label('Number of guests')
+                ->counts('firstLevelGuests')
                 ->badge()
                 ->alignment('right')
-                ->color(fn (string $state): string => match (true) {
+                ->sortable()
+                ->color(fn(string $state): string => match (true) {
                     $state == 0 => 'gray',
                     $state <= 5 => 'success',
                     default => 'warning',
                 }),
-            TextColumn::make('referrerGuest.name')
+            Tables\Columns\TextColumn::make('referrerGuest.name')
                 ->label('Invited by')
+                ->sortable()
                 ->formatStateUsing(function ($state, $record) {
                     if (!$state) {
                         return '—';
@@ -100,11 +85,11 @@ class TotalEmbaixadores extends Page implements HasTable
                     fn($state, $record) =>
                     $state ? "{$record->referrerGuest->name} ({$record->invitation_code})" : null
                 ),
-            TextColumn::make('created_at')
+            Tables\Columns\TextColumn::make('created_at')
                 ->dateTime(format: 'd/m/Y H:i:s')
                 ->sortable()
                 ->toggleable(isToggledHiddenByDefault: true),
-            TextColumn::make('updated_at')
+            Tables\Columns\TextColumn::make('updated_at')
                 ->dateTime(format: 'd/m/Y H:i:s')
                 ->sortable()
                 ->toggleable(isToggledHiddenByDefault: true),
