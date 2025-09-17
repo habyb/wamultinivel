@@ -53,8 +53,7 @@ class MyNetwork extends Page implements HasTable
                 'roles as role_name',
                 'name',
             )
-            ->reorder()
-            ->orderByDesc('first_level_guests_count');
+            ->reorder();
     }
 
     /**
@@ -63,14 +62,14 @@ class MyNetwork extends Page implements HasTable
     protected function getTableColumns(): array
     {
         return [
-            Tables\Columns\TextColumn::make('code')->label('Invitation ID'),
+            TextColumn::make('code')->label('Invitation ID'),
 
-            Tables\Columns\TextColumn::make('name')
+            TextColumn::make('name')
                 ->label('Name')
                 ->sortable()
                 ->searchable(),
 
-            Tables\Columns\TextColumn::make('remoteJid')
+            TextColumn::make('remoteJid')
                 ->formatStateUsing(function (string $state): string {
                     return format_phone_number(fix_whatsapp_number($state));
                 })
@@ -82,21 +81,16 @@ class MyNetwork extends Page implements HasTable
              * Se quiser continuar exibindo múltiplos papéis, mantenha esta coluna;
              * apenas note que ela NÃO será ordenável — quem ordena é a role_name.
              */
-            Tables\Columns\TextColumn::make('roles.name')
+            TextColumn::make('roles.name')
                 ->label('Funções')
                 ->badge()
                 ->sortable()
                 ->separator(', '),
 
-            // Coluna auxiliar apenas para permitir ordenação por função
-            Tables\Columns\TextColumn::make('role_name')
-                ->label('Funções')
-                ->sortable()
-                ->toggleable(isToggledHiddenByDefault: true),
-
             TextColumn::make('first_level_guests_count')
                 ->label('Number of guests')
                 ->badge()
+                ->sortable()
                 ->alignment('right')
                 ->color(fn(string $state): string => match (true) {
                     $state == 0 => 'gray',
@@ -104,8 +98,9 @@ class MyNetwork extends Page implements HasTable
                     default => 'warning',
                 }),
 
-            Tables\Columns\TextColumn::make('referrerGuest.name')
+            TextColumn::make('referrerGuest.name')
                 ->label('Invited by')
+                ->sortable()
                 ->formatStateUsing(function ($state, $record) {
                     if (!$state) {
                         return '—';
@@ -119,12 +114,12 @@ class MyNetwork extends Page implements HasTable
                     $state ? "{$record->referrerGuest->name} ({$record->invitation_code})" : null
                 ),
 
-            Tables\Columns\TextColumn::make('created_at')
+            TextColumn::make('created_at')
                 ->dateTime(format: 'd/m/Y H:i:s')
                 ->sortable()
                 ->toggleable(isToggledHiddenByDefault: true),
 
-            Tables\Columns\TextColumn::make('updated_at')
+            TextColumn::make('updated_at')
                 ->dateTime(format: 'd/m/Y H:i:s')
                 ->sortable()
                 ->toggleable(isToggledHiddenByDefault: true),
