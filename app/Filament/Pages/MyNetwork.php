@@ -97,7 +97,6 @@ class MyNetwork extends Page implements HasTable
             TextColumn::make('first_level_guests_count')
                 ->label('Number of guests')
                 ->badge()
-                ->sortable()
                 ->alignment('right')
                 ->color(fn(string $state): string => match (true) {
                     $state == 0 => 'gray',
