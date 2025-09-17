@@ -48,6 +48,14 @@ class TotalEmbaixadores extends Page implements HasTable
     protected function getTableColumns(): array
     {
         return [
+            Tables\Columns\TextColumn::make('created_at')
+                ->dateTime(format: 'd/m/Y H:i:s')
+                ->sortable()
+                ->toggleable(isToggledHiddenByDefault: true),
+            Tables\Columns\TextColumn::make('updated_at')
+                ->dateTime(format: 'd/m/Y H:i:s')
+                ->sortable()
+                ->toggleable(isToggledHiddenByDefault: true),
             Tables\Columns\TextColumn::make('code')->label('Invitation ID'),
             Tables\Columns\TextColumn::make('name')
                 ->label('Name')
@@ -85,14 +93,6 @@ class TotalEmbaixadores extends Page implements HasTable
                     fn($state, $record) =>
                     $state ? "{$record->referrerGuest->name} ({$record->invitation_code})" : null
                 ),
-            Tables\Columns\TextColumn::make('created_at')
-                ->dateTime(format: 'd/m/Y H:i:s')
-                ->sortable()
-                ->toggleable(isToggledHiddenByDefault: true),
-            Tables\Columns\TextColumn::make('updated_at')
-                ->dateTime(format: 'd/m/Y H:i:s')
-                ->sortable()
-                ->toggleable(isToggledHiddenByDefault: true),
         ];
     }
 }

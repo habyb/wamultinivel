@@ -62,6 +62,16 @@ class MyNetwork extends Page implements HasTable
     protected function getTableColumns(): array
     {
         return [
+            TextColumn::make('created_at')
+                ->dateTime(format: 'd/m/Y H:i:s')
+                ->sortable()
+                ->toggleable(isToggledHiddenByDefault: true),
+
+            TextColumn::make('updated_at')
+                ->dateTime(format: 'd/m/Y H:i:s')
+                ->sortable()
+                ->toggleable(isToggledHiddenByDefault: true),
+
             TextColumn::make('code')->label('Invitation ID'),
 
             TextColumn::make('name')
@@ -113,16 +123,6 @@ class MyNetwork extends Page implements HasTable
                     fn($state, $record) =>
                     $state ? "{$record->referrerGuest->name} ({$record->invitation_code})" : null
                 ),
-
-            TextColumn::make('created_at')
-                ->dateTime(format: 'd/m/Y H:i:s')
-                ->sortable()
-                ->toggleable(isToggledHiddenByDefault: true),
-
-            TextColumn::make('updated_at')
-                ->dateTime(format: 'd/m/Y H:i:s')
-                ->sortable()
-                ->toggleable(isToggledHiddenByDefault: true),
         ];
     }
 }
