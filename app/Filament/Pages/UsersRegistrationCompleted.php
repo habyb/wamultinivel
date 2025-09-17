@@ -43,10 +43,11 @@ class UsersRegistrationCompleted extends Page implements HasTable
      */
     protected function getTableQuery(): Builder
     {
-        return auth()->user()->completedRegistrationsQuery()
-            // IMPORTANT: remove any orderBy anterior (ex.: latest(), orderByName, etc.)
-            ->reorder()
-            ->orderByDesc('created_at');
+        return auth()->user()
+            ->completedRegistrationsQuery()
+            ->withCount([
+                'firstLevelGuests as first_level_guests_count_x',
+            ]);
     }
 
     public function getTableBulkActions(): array
