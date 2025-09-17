@@ -92,6 +92,7 @@ class DirectRegistrations extends Page implements HasTable
                 }),
             TextColumn::make('referrerGuest.name')
                 ->label('Invited by')
+                ->sortable()
                 ->formatStateUsing(function ($state, $record) {
                     if (!$state) {
                         return '—';
