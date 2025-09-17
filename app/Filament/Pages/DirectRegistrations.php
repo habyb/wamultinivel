@@ -46,7 +46,7 @@ class DirectRegistrations extends Page implements HasTable
     {
         $user = Auth::user();
 
-        return $user->firstLevelGuests()->getQuery();
+        return $user->firstLevelGuests()->getQuery()->orderByDesc('first_level_guests_count');
     }
 
     /**
@@ -83,7 +83,6 @@ class DirectRegistrations extends Page implements HasTable
                 ->label('Number of guests')
                 ->counts('firstLevelGuests')
                 ->badge()
-                ->sortable()
                 ->alignment('right')
                 ->color(fn(string $state): string => match (true) {
                     $state == 0 => 'gray',

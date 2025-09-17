@@ -39,7 +39,7 @@ class TotalEmbaixadores extends Page implements HasTable
      */
     protected function getTableQuery(): Builder
     {
-        return User::embaixadoresQuery();
+        return User::embaixadoresQuery()->orderByDesc('first_level_guests_count');
     }
 
     /**
@@ -72,7 +72,6 @@ class TotalEmbaixadores extends Page implements HasTable
                 ->counts('firstLevelGuests')
                 ->badge()
                 ->alignment('right')
-                ->sortable()
                 ->color(fn(string $state): string => match (true) {
                     $state == 0 => 'gray',
                     $state <= 5 => 'success',

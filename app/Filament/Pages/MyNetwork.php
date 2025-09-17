@@ -53,7 +53,8 @@ class MyNetwork extends Page implements HasTable
                 'roles as role_name',
                 'name',
             )
-            ->reorder();
+            ->reorder()
+            ->orderByDesc('first_level_guests_count');
     }
 
     /**
@@ -100,7 +101,6 @@ class MyNetwork extends Page implements HasTable
             TextColumn::make('first_level_guests_count')
                 ->label('Number of guests')
                 ->badge()
-                ->sortable()
                 ->alignment('right')
                 ->color(fn(string $state): string => match (true) {
                     $state == 0 => 'gray',
