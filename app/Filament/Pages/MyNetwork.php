@@ -53,7 +53,8 @@ class MyNetwork extends Page implements HasTable
                 'roles as role_name',
                 'name',
             )
-            ->reorder();
+            ->reorder()
+            ->orderByDesc('first_level_guests_count');
     }
 
     /**
