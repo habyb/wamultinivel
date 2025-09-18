@@ -33,12 +33,12 @@ class UsersRegistrationPerCity extends Page implements HasTable, Forms\Contracts
 
     public static function getNavigationLabel(): string
     {
-        return __(key: 'Registrations by city');
+        return __(key: 'Registrations by city (daily)');
     }
 
     public function getTitle(): string
     {
-        return __(key: 'Registrations by city');
+        return __(key: 'Registrations by city (daily)');
     }
 
     /** Coluna booleana que indica cadastro completo */

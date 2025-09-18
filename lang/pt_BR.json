@@ -302,5 +302,7 @@
   "Date": "Data",
   "Quantity": "Quantidade",
   "Select": "Selecione",
-  "Select a city": "Selecione uma Cidade"
+  "Select a city": "Selecione uma Cidade",
+  "Registrations by city (daily)": "Cadastros por Cidade (Diário)",
+  "Registrations by city (total)": "Cadastros por Cidade (Total)"
 }
