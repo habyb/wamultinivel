@@ -31,6 +31,13 @@ class TopNetworkGuests extends BaseWidget
                     ->reorder()
             )
             ->columns([
+                TextColumn::make('position')
+                    ->label('Posição')
+                    ->rowIndex()
+                    ->alignment('left')
+                    ->badge()
+                    ->color('gray'),
+
                 TextColumn::make('name')
                     ->label('Nome')
                     ->searchable(),

@@ -23,30 +23,27 @@ class TopNetworkRanking extends BaseWidget
         return 10;
     }
 
-    /**
-     * Build the query.
-     *
-     * SECURITY & PERFORMANCE:
-     * - Uses server-side pagination & ordering.
-     * - Only exposes required fields.
-     */
     protected function getTableQuery(): Builder
     {
         $user = Auth::user();
 
-        return $user
-            ->firstLevelGuests()
+        return $user->firstLevelGuests()
             ->getQuery()
             ->withCount(['firstLevelGuests as network_guests_count'])
-            ->orderByDesc('network_guests_count');
+            ->orderByDesc('network_guests_count')
+            ->orderBy('id'); // tie-break para ranking estável
     }
 
-    /**
-     * Define the table columns.
-     */
     protected function getTableColumns(): array
     {
         return [
+            TextColumn::make('position')
+                ->label('Posição')
+                ->rowIndex()
+                ->alignment('left')
+                ->badge()
+                ->color('gray'),
+
             TextColumn::make('name')
                 ->label('Nome')
                 ->searchable(),
@@ -64,9 +61,6 @@ class TopNetworkRanking extends BaseWidget
         ];
     }
 
-    /**
-     * Keep pagination enabled.
-     */
     protected function isTablePaginationEnabled(): bool
     {
         return true;
