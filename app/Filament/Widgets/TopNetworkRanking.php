@@ -13,11 +13,15 @@ class TopNetworkRanking extends BaseWidget
     protected static ?string $heading = 'Top Cadastros Diretos';
     protected static ?int $sort = 1;
 
-    /** @var int|string|array Default per-page size */
-    protected int|string|array $defaultTableRecordsPerPage = 10;
+    protected function getTableRecordsPerPageSelectOptions(): array
+    {
+        return [10, 25, 50];
+    }
 
-    /** @var array Page-size options */
-    protected array $tableRecordsPerPageSelectOptions = [10, 25, 50];
+    protected function getDefaultTableRecordsPerPage(): int|string|array
+    {
+        return 10;
+    }
 
     /**
      * Build the query.
