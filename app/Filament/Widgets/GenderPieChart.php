@@ -7,7 +7,7 @@ use Filament\Widgets\ChartWidget;
 
 class GenderPieChart extends ChartWidget
 {
-    protected static ?int $sort = 3;
+    protected static ?int $sort = 5;
 
     public function getHeading(): string
     {

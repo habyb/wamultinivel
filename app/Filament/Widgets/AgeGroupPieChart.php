@@ -11,7 +11,7 @@ use Carbon\Carbon;
  */
 class AgeGroupPieChart extends ChartWidget
 {
-    protected static ?int $sort = 4;
+    protected static ?int $sort = 6;
 
     public function getHeading(): string
     {

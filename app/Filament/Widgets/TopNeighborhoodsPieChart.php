@@ -7,7 +7,7 @@ use Filament\Widgets\ChartWidget;
 
 class TopNeighborhoodsPieChart extends ChartWidget
 {
-    protected static ?int $sort = 2;
+    protected static ?int $sort = 4;
 
     public function getHeading(): string
     {

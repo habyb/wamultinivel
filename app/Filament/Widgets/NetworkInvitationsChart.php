@@ -11,7 +11,7 @@ use Flowframe\Trend\TrendValue;
 
 class NetworkInvitationsChart extends ChartWidget
 {
-    protected static ?int $sort = 8;
+    protected static ?int $sort = 10;
 
     public function getHeading(): string
     {

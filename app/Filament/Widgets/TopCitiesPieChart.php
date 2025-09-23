@@ -7,7 +7,7 @@ use Filament\Widgets\ChartWidget;
 
 class TopCitiesPieChart extends ChartWidget
 {
-    protected static ?int $sort = 1;
+    protected static ?int $sort = 3;
 
     public function getHeading(): string
     {

@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Auth;
 
 class WeeklyInvitationsChart extends ChartWidget
 {
-    protected static ?int $sort = 7;
+    protected static ?int $sort = 9;
 
     public function getHeading(): string
     {

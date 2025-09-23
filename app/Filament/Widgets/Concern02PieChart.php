@@ -7,7 +7,7 @@ use Filament\Widgets\ChartWidget;
 
 class Concern02PieChart extends ChartWidget
 {
-    protected static ?int $sort = 6;
+    protected static ?int $sort = 8;
 
     public function getHeading(): string
     {

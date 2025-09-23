@@ -42,6 +42,8 @@ use App\Filament\Pages\MyNetwork;
 use App\Filament\Pages\TotalEmbaixadores;
 use App\Filament\Pages\UsersRegistrationCompleted;
 use App\Filament\Pages\DirectGuests;
+use App\Filament\Widgets\TopNetworkRanking;
+use App\Filament\Widgets\TopNetworkGuests;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -80,6 +82,8 @@ class AdminPanelProvider extends PanelProvider
                 Concern02PieChart::class,
                 AgeGroupPieChart::class,
                 WeeklyInvitationsChart::class,
+                TopNetworkGuests::class,
+                TopNetworkRanking::class,
             ])
             ->bootUsing(function () {
                 Section::configureUsing(function (Section $field) {
