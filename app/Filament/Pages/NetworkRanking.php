@@ -13,6 +13,7 @@ use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class NetworkRanking extends Page implements HasTable
 {
@@ -78,15 +79,28 @@ class NetworkRanking extends Page implements HasTable
     }
 
     /**
-     * Count cumulative NETWORK (all levels) up to a cutoff ($until) for a given root user.
+     * Detect the "completed registration" boolean flag used by UsersRegistrationCompleted.
      *
-     * WHAT IT DOES (EN):
-     * - Builds the entire subtree (all levels) using the real FK/owner key from
-     *   User::firstLevelGuests() to match your schema types (id vs code).
-     * - Counts ONLY nodes whose created_at <= $until (cumulative).
+     * SAFETY (EN):
+     * - We try common column names; if none exists, we do not filter (fallback).
+     */
+    protected function detectCompletedColumn(string $table): ?string
+    {
+        foreach (['is_add_date_of_birth', 'is_completed', 'registration_completed'] as $col) {
+            if (Schema::hasColumn($table, $col)) {
+                return $col;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Count cumulative NETWORK (all levels) up to a cutoff ($until) for a given root user,
+     * filtering ONLY completed registrations to match "Cadastros Completos".
      *
      * PERFORMANCE (EN):
-     * - One recursive CTE per (user, cutoff) and memoized in-memory.
+     * - One recursive CTE per (user, cutoff) memoized in-memory.
      */
     protected function countNetworkUntil(int $rootUserId, CarbonImmutable $until): int
     {
@@ -97,9 +111,11 @@ class NetworkRanking extends Page implements HasTable
 
         $user       = new User();
         $table      = $user->getTable();
-        $relation   = $user->firstLevelGuests();     // HasMany
-        $fkCol      = $relation->getForeignKeyName();   // child column -> parent owner
-        $ownerKey   = $relation->getLocalKeyName();     // parent owner key (may be id or code)
+        $relation   = $user->firstLevelGuests();         // HasMany
+        $fkCol      = $relation->getForeignKeyName();    // child column -> parent owner
+        $ownerKey   = $relation->getLocalKeyName();      // parent owner key (may be id or code)
+
+        $completedCol = $this->detectCompletedColumn($table);
 
         // Owner key value for ROOT user (keeps types consistent on PostgreSQL)
         $rootOwnerVal = DB::table($table)->where('id', $rootUserId)->value($ownerKey);
@@ -110,6 +126,9 @@ class NetworkRanking extends Page implements HasTable
         $wrappedFkCol    = $grammar->wrap($fkCol);
         $wrappedOwnerKey = $grammar->wrap($ownerKey);
         $wrappedCreated  = $grammar->wrap('created_at');
+        $wrappedCompleted = $completedCol ? $grammar->wrap($completedCol) : null;
+
+        $completedFilter = $wrappedCompleted ? " AND x.{$wrappedCompleted} = true" : '';
 
         $sql = <<<SQL
             WITH RECURSIVE subtree AS (
@@ -127,6 +146,7 @@ class NetworkRanking extends Page implements HasTable
             FROM {$wrappedTable} x
             WHERE x.id IN (SELECT id FROM subtree)
               AND x.{$wrappedCreated} <= :until_at
+              {$completedFilter}
         SQL;
 
         $row = DB::selectOne($sql, [
@@ -141,13 +161,11 @@ class NetworkRanking extends Page implements HasTable
     }
 
     /**
-     * Build a correlated ORDER BY expression that sorts by the cumulative
-     * network size up to the CURRENT week end (desc).
+     * ORDER BY cumulative network up to current week end, DESC.
      *
-     * NOTE (EN):
-     * - Uses the same recursive logic as countNetworkUntil(), but correlated to the
-     *   outer "users" row via <child.$fkCol = users.$ownerKey>.
-     * - Works on PostgreSQL thanks to correlation allowed inside the CTE body.
+     * IMPORTANT (EN):
+     * - Uses the same "completed registration" filter to keep ordering consistent
+     *   with the visible numbers and the "Cadastros Completos" page.
      */
     protected function orderByNetworkCurrentWeekDesc(Builder $query): Builder
     {
@@ -157,13 +175,17 @@ class NetworkRanking extends Page implements HasTable
         $fkCol      = $relation->getForeignKeyName();
         $ownerKey   = $relation->getLocalKeyName();
 
+        $completedCol = $this->detectCompletedColumn($table);
+
         $grammar         = DB::getQueryGrammar();
         $wrappedTable    = $grammar->wrap($table);
         $wrappedFkCol    = $grammar->wrap($fkCol);
         $wrappedOwnerKey = $grammar->wrap($ownerKey);
         $wrappedCreated  = $grammar->wrap('created_at');
+        $wrappedCompleted = $completedCol ? $grammar->wrap($completedCol) : null;
 
-        // Correlated CTE referencing outer "users" row ("users".$ownerKey).
+        $completedFilter = $wrappedCompleted ? " AND x.{$wrappedCompleted} = true" : '';
+
         $expr = <<<SQL
             (
                 WITH RECURSIVE subtree AS (
@@ -181,10 +203,10 @@ class NetworkRanking extends Page implements HasTable
                 FROM {$wrappedTable} x
                 WHERE x.id IN (SELECT id FROM subtree)
                   AND x.{$wrappedCreated} <= ?
+                  {$completedFilter}
             )
         SQL;
 
-        // Apply DESC ordering by that expression (bind current week end).
         return $query->orderByRaw("{$expr} DESC", [$this->currWeekEnd->toDateTimeString()]);
     }
 
@@ -212,7 +234,7 @@ class NetworkRanking extends Page implements HasTable
                             $q->where('created_at', '<=', $this->currWeekEnd)
                         ),
                     /** @return Builder $q */
-                    fn (Builder $q) => $this->orderByNetworkCurrentWeekDesc($q), // <-- DESC by current "Rede"
+                    fn (Builder $q) => $this->orderByNetworkCurrentWeekDesc($q),
                 )
             )
             ->columns([
@@ -298,7 +320,7 @@ class NetworkRanking extends Page implements HasTable
                         return $delta < 0 ? 'danger' : ($delta === 0 ? 'gray' : 'success');
                     }),
             ])
-            // SQL sorting is already applied via orderByNetworkCurrentWeekDesc()
+            // SQL sorting is applied via orderByNetworkCurrentWeekDesc()
             ->striped()
             ->paginated([10, 25, 50, 100]);
     }
