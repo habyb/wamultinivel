@@ -3,6 +3,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Models\User;
 use Carbon\CarbonImmutable;
 use Filament\Pages\Page;
 use Filament\Tables\Table;
@@ -81,13 +82,18 @@ class NetworkRanking extends Page implements HasTable
     /**
      * Count weekly NETWORK registrations for a given root user (all levels).
      *
+     * FIX (EN): We no longer hardcode the FK name. Instead, we read the FK used
+     * by the `firstLevelGuests()` relation on the User model, so it matches your
+     * actual schema (e.g., postgres column may not be `referrer_guest_id`).
+     *
      * PERFORMANCE (EN):
-     * - Uses a single recursive CTE per call (MySQL 8+/PostgreSQL).
-     * - Results are cached in-memory for the request to avoid duplicate hits
-     *   when the value is needed by multiple columns (network + growth).
+     * - One recursive CTE per row; results cached for the request lifecycle.
+     * - Uses query grammar wrapping to be safe on Postgres/MySQL quoting.
      *
      * SECURITY (EN):
-     * - Uses bound parameters to prevent SQL injection.
+     * - Only values are bound as parameters; identifiers are strictly derived
+     *   from the Eloquent relation and wrapped by the grammar to prevent
+     *   injection.
      */
     protected function countWeeklyNetwork(int $rootUserId, CarbonImmutable $start, CarbonImmutable $end): int
     {
@@ -97,23 +103,39 @@ class NetworkRanking extends Page implements HasTable
             return $this->networkWeeklyCache[$cacheKey];
         }
 
-        // Recursive adjacency by users.referrer_guest_id (adjust if your FK differs).
+        // Discover table & FK from the existing relation to avoid guessing names.
+        $userModel   = new User();
+        $table       = $userModel->getTable();
+        $relation    = $userModel->firstLevelGuests(); // must exist on User model
+        $qualifiedFk = $relation->getQualifiedForeignKeyName(); // e.g. "users.referrer_id" or "guests.parent_id"
+
+        // Extract plain column name from "table.column".
+        $fkParts = explode('.', $qualifiedFk);
+        $fkCol   = end($fkParts);
+
+        // Properly wrap identifiers for the current connection/grammar (Postgres-safe).
+        $grammar        = DB::getQueryGrammar();
+        $wrappedTable   = $grammar->wrap($table);      // -> e.g. "users"
+        $wrappedFkCol   = $grammar->wrap($fkCol);      // -> e.g. "referrer_id"
+        $wrappedCreated = $grammar->wrap('created_at'); // -> e.g. "created_at"
+
+        // Build the recursive CTE using the discovered FK.
         $sql = <<<SQL
             WITH RECURSIVE subtree AS (
                 SELECT u.id
-                FROM users u
-                WHERE u.referrer_guest_id = :root_id
+                FROM {$wrappedTable} u
+                WHERE u.{$wrappedFkCol} = :root_id
 
                 UNION ALL
 
                 SELECT c.id
-                FROM users c
-                INNER JOIN subtree s ON c.referrer_guest_id = s.id
+                FROM {$wrappedTable} c
+                INNER JOIN subtree s ON c.{$wrappedFkCol} = s.id
             )
             SELECT COUNT(*) AS c
-            FROM users x
+            FROM {$wrappedTable} x
             WHERE x.id IN (SELECT id FROM subtree)
-              AND x.created_at BETWEEN :start_at AND :end_at
+              AND x.{$wrappedCreated} BETWEEN :start_at AND :end_at
         SQL;
 
         $row = DB::selectOne($sql, [
@@ -133,8 +155,8 @@ class NetworkRanking extends Page implements HasTable
     {
         $this->initWeekRanges();
 
-        $currRange = $this->rangeLabel($this->currWeekStart, $this->currWeekEnd); // ex.: "08/07 a 14/07"
-        $prevRange = $this->rangeLabel($this->prevWeekStart, $this->prevWeekEnd); // ex.: "01/07 a 07/07"
+        $currRange = $this->rangeLabel($this->currWeekStart, $this->currWeekEnd);
+        $prevRange = $this->rangeLabel($this->prevWeekStart, $this->prevWeekEnd);
 
         return $table
             ->query(
@@ -172,7 +194,6 @@ class NetworkRanking extends Page implements HasTable
                     ->label('Nome')
                     ->searchable(),
 
-                // New header row using ColumnGroup for each week.
                 ColumnGroup::make($currRange, [
                     // REDE (all levels) registered in the CURRENT week
                     TextColumn::make('network_w1')
@@ -223,7 +244,6 @@ class NetworkRanking extends Page implements HasTable
                         'class' => 'whitespace-nowrap',
                     ])
                     ->state(function ($record): string {
-                        // EN: Use cached weekly counts to avoid extra queries.
                         $w1 = $this->countWeeklyNetwork((int) $record->id, $this->currWeekStart, $this->currWeekEnd);
                         $w0 = $this->countWeeklyNetwork((int) $record->id, $this->prevWeekStart, $this->prevWeekEnd);
 
