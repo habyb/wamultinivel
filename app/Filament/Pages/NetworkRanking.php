@@ -304,7 +304,7 @@ class NetworkRanking extends Page implements HasTable
                         }
 
                         $pct = (($nw1 - $nw0) / $nw0) * 100;
-                        return number_format($pct, 0, ',', '.') . '%';
+                        return number_format($pct, 2, ',', '.') . '%';
                     })
                     ->badge()
                     ->alignment('right')
