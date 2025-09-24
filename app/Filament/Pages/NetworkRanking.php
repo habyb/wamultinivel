@@ -140,6 +140,54 @@ class NetworkRanking extends Page implements HasTable
         return $count;
     }
 
+    /**
+     * Build a correlated ORDER BY expression that sorts by the cumulative
+     * network size up to the CURRENT week end (desc).
+     *
+     * NOTE (EN):
+     * - Uses the same recursive logic as countNetworkUntil(), but correlated to the
+     *   outer "users" row via <child.$fkCol = users.$ownerKey>.
+     * - Works on PostgreSQL thanks to correlation allowed inside the CTE body.
+     */
+    protected function orderByNetworkCurrentWeekDesc(Builder $query): Builder
+    {
+        $user       = new User();
+        $table      = $user->getTable();
+        $relation   = $user->firstLevelGuests();
+        $fkCol      = $relation->getForeignKeyName();
+        $ownerKey   = $relation->getLocalKeyName();
+
+        $grammar         = DB::getQueryGrammar();
+        $wrappedTable    = $grammar->wrap($table);
+        $wrappedFkCol    = $grammar->wrap($fkCol);
+        $wrappedOwnerKey = $grammar->wrap($ownerKey);
+        $wrappedCreated  = $grammar->wrap('created_at');
+
+        // Correlated CTE referencing outer "users" row ("users".$ownerKey).
+        $expr = <<<SQL
+            (
+                WITH RECURSIVE subtree AS (
+                    SELECT u.id, u.{$wrappedOwnerKey} AS owner_key
+                    FROM {$wrappedTable} u
+                    WHERE u.{$wrappedFkCol} = {$wrappedTable}.{$wrappedOwnerKey}
+
+                    UNION ALL
+
+                    SELECT c.id, c.{$wrappedOwnerKey} AS owner_key
+                    FROM {$wrappedTable} c
+                    INNER JOIN subtree s ON c.{$wrappedFkCol} = s.owner_key
+                )
+                SELECT COUNT(*)
+                FROM {$wrappedTable} x
+                WHERE x.id IN (SELECT id FROM subtree)
+                  AND x.{$wrappedCreated} <= ?
+            )
+        SQL;
+
+        // Apply DESC ordering by that expression (bind current week end).
+        return $query->orderByRaw("{$expr} DESC", [$this->currWeekEnd->toDateTimeString()]);
+    }
+
     public function table(Table $table): Table
     {
         $this->initWeekRanges();
@@ -149,19 +197,23 @@ class NetworkRanking extends Page implements HasTable
 
         return $table
             ->query(
-                auth()->user()
-                    ->completedRegistrationsQuery()
-                    ->withCount([
-                        // DIRECT members cumulative up to each week's END (<=)
-                        'firstLevelGuests as members_w1' => fn ($q) =>
-                            $q->where('created_at', '<=', $this->currWeekEnd),
-                        'firstLevelGuests as members_w0' => fn ($q) =>
-                            $q->where('created_at', '<=', $this->prevWeekEnd),
-                    ])
-                    // Show only who has at least 1 direct member up to CURRENT week end
-                    ->whereHas('firstLevelGuests', fn ($q) =>
-                        $q->where('created_at', '<=', $this->currWeekEnd)
-                    )
+                tap(
+                    auth()->user()
+                        ->completedRegistrationsQuery()
+                        ->withCount([
+                            // DIRECT members cumulative up to each week's END (<=)
+                            'firstLevelGuests as members_w1' => fn ($q) =>
+                                $q->where('created_at', '<=', $this->currWeekEnd),
+                            'firstLevelGuests as members_w0' => fn ($q) =>
+                                $q->where('created_at', '<=', $this->prevWeekEnd),
+                        ])
+                        // Show only who has at least 1 direct member up to CURRENT week end
+                        ->whereHas('firstLevelGuests', fn ($q) =>
+                            $q->where('created_at', '<=', $this->currWeekEnd)
+                        ),
+                    /** @return Builder $q */
+                    fn (Builder $q) => $this->orderByNetworkCurrentWeekDesc($q), // <-- DESC by current "Rede"
+                )
             )
             ->columns([
                 TextColumn::make('posicao')
@@ -225,7 +277,6 @@ class NetworkRanking extends Page implements HasTable
                         $nw1 = $this->countNetworkUntil((int) $record->id, $this->currWeekEnd);
                         $nw0 = $this->countNetworkUntil((int) $record->id, $this->prevWeekEnd);
 
-                        // SAFETY (EN): Avoid divide-by-zero; show infinity symbol for growth from zero.
                         if ($nw0 === 0) {
                             return $nw1 > 0 ? '∞%' : '0%';
                         }
@@ -247,7 +298,7 @@ class NetworkRanking extends Page implements HasTable
                         return $delta < 0 ? 'danger' : ($delta === 0 ? 'gray' : 'success');
                     }),
             ])
-            // Sorting by computed (per-row) values is intentionally disabled (SQL efficiency).
+            // SQL sorting is already applied via orderByNetworkCurrentWeekDesc()
             ->striped()
             ->paginated([10, 25, 50, 100]);
     }
