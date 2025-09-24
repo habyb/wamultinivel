@@ -18,29 +18,26 @@ class NetworkRanking extends Page implements HasTable
 {
     use InteractsWithTable;
 
-    /** Navigation */
     protected static ?string $navigationIcon  = 'heroicon-o-arrow-trending-up';
     protected static ?string $navigationGroup = 'Relatórios';
     protected static ?int    $navigationSort  = 2;
     protected static string  $view            = 'filament.pages.network-ranking';
 
-    /** Week ranges (Mon–Sun) dynamically computed from "today" */
+    /** Dynamic week ranges (Mon–Sun) */
     protected ?CarbonImmutable $currWeekStart = null;
     protected ?CarbonImmutable $currWeekEnd   = null;
     protected ?CarbonImmutable $prevWeekStart = null;
     protected ?CarbonImmutable $prevWeekEnd   = null;
 
-    /** In-memory cache to avoid duplicate queries per row */
+    /** Request-lifetime cache for per-user weekly network counts */
     protected array $networkWeeklyCache = [];
 
-    /** Paging defaults */
     protected int|string|array $defaultTableRecordsPerPage = 10;
     protected array $tableRecordsPerPageSelectOptions = [10, 25, 50, 100];
 
     /**
-     * Lazy init of week ranges to survive Livewire rehydrations.
-     *
-     * SECURITY (EN): Immutable dates + app timezone ensure deterministic ranges.
+     * Lazy-init ranges so Livewire rehydrations (e.g., per-page change) are safe.
+     * SECURITY (EN): Uses app timezone and immutable instances.
      */
     protected function initWeekRanges(): void
     {
@@ -80,57 +77,53 @@ class NetworkRanking extends Page implements HasTable
     }
 
     /**
-     * Count weekly NETWORK registrations for a given root user (all levels).
+     * Count weekly NETWORK (all levels) for a given root user between [$start, $end].
      *
-     * FIX (EN): We no longer hardcode the FK name. Instead, we read the FK used
-     * by the `firstLevelGuests()` relation on the User model, so it matches your
-     * actual schema (e.g., postgres column may not be `referrer_guest_id`).
+     * FIX (EN):
+     * - Detects FK and owner key from the existing `firstLevelGuests()` relation on User,
+     *   so it works whether your schema uses `referrer_id`, `inviter_code`, etc.
+     * - Joins using child's FK to parent's OWNER KEY (not always the numeric `id`).
+     * - Seeds the recursion with the ROOT owner's key value to avoid type mismatch
+     *   (e.g., varchar codes vs bigint ids) on PostgreSQL.
      *
      * PERFORMANCE (EN):
-     * - One recursive CTE per row; results cached for the request lifecycle.
-     * - Uses query grammar wrapping to be safe on Postgres/MySQL quoting.
-     *
-     * SECURITY (EN):
-     * - Only values are bound as parameters; identifiers are strictly derived
-     *   from the Eloquent relation and wrapped by the grammar to prevent
-     *   injection.
+     * - Uses a recursive CTE once per user per range, cached in-memory for the request.
      */
     protected function countWeeklyNetwork(int $rootUserId, CarbonImmutable $start, CarbonImmutable $end): int
     {
         $cacheKey = $rootUserId . '|' . $start->toDateString() . '|' . $end->toDateString();
-
-        if (array_key_exists($cacheKey, $this->networkWeeklyCache)) {
+        if (isset($this->networkWeeklyCache[$cacheKey])) {
             return $this->networkWeeklyCache[$cacheKey];
         }
 
-        // Discover table & FK from the existing relation to avoid guessing names.
-        $userModel   = new User();
-        $table       = $userModel->getTable();
-        $relation    = $userModel->firstLevelGuests(); // must exist on User model
-        $qualifiedFk = $relation->getQualifiedForeignKeyName(); // e.g. "users.referrer_id" or "guests.parent_id"
+        $user       = new User();
+        $table      = $user->getTable();
+        $relation   = $user->firstLevelGuests();            // HasMany relation (child -> parent)
+        $fkCol      = $relation->getForeignKeyName();       // child column referencing parent owner key
+        $ownerKey   = $relation->getLocalKeyName();         // parent owner key column
 
-        // Extract plain column name from "table.column".
-        $fkParts = explode('.', $qualifiedFk);
-        $fkCol   = end($fkParts);
+        // Owner key value for the ROOT user (can be id, code, etc.)
+        $rootOwnerVal = DB::table($table)->where('id', $rootUserId)->value($ownerKey);
 
-        // Properly wrap identifiers for the current connection/grammar (Postgres-safe).
-        $grammar        = DB::getQueryGrammar();
-        $wrappedTable   = $grammar->wrap($table);      // -> e.g. "users"
-        $wrappedFkCol   = $grammar->wrap($fkCol);      // -> e.g. "referrer_id"
-        $wrappedCreated = $grammar->wrap('created_at'); // -> e.g. "created_at"
+        // Wrap identifiers for current grammar (Postgres-safe).
+        $grammar         = DB::getQueryGrammar();
+        $wrappedTable    = $grammar->wrap($table);
+        $wrappedFkCol    = $grammar->wrap($fkCol);
+        $wrappedOwnerKey = $grammar->wrap($ownerKey);
+        $wrappedCreated  = $grammar->wrap('created_at');
 
-        // Build the recursive CTE using the discovered FK.
+        // Recursive adjacency via <child.$fkCol = parent.$ownerKey>
         $sql = <<<SQL
             WITH RECURSIVE subtree AS (
-                SELECT u.id
+                SELECT u.id, u.{$wrappedOwnerKey} AS owner_key
                 FROM {$wrappedTable} u
-                WHERE u.{$wrappedFkCol} = :root_id
+                WHERE u.{$wrappedFkCol} = :root_owner_val
 
                 UNION ALL
 
-                SELECT c.id
+                SELECT c.id, c.{$wrappedOwnerKey} AS owner_key
                 FROM {$wrappedTable} c
-                INNER JOIN subtree s ON c.{$wrappedFkCol} = s.id
+                INNER JOIN subtree s ON c.{$wrappedFkCol} = s.owner_key
             )
             SELECT COUNT(*) AS c
             FROM {$wrappedTable} x
@@ -139,13 +132,12 @@ class NetworkRanking extends Page implements HasTable
         SQL;
 
         $row = DB::selectOne($sql, [
-            'root_id'  => $rootUserId,
-            'start_at' => $start->toDateTimeString(),
-            'end_at'   => $end->toDateTimeString(),
+            'root_owner_val' => $rootOwnerVal,
+            'start_at'       => $start->toDateTimeString(),
+            'end_at'         => $end->toDateTimeString(),
         ]);
 
-        $count = (int) (($row->c ?? 0));
-
+        $count = (int) ($row->c ?? 0);
         $this->networkWeeklyCache[$cacheKey] = $count;
 
         return $count;
@@ -175,7 +167,7 @@ class NetworkRanking extends Page implements HasTable
                                 $this->prevWeekEnd->toDateTimeString(),
                             ]),
                     ])
-                    // Only show users who had >= 1 direct member in the current week
+                    // Only show users who had >= 1 direct member in the CURRENT week
                     ->whereHas('firstLevelGuests', fn ($q) =>
                         $q->whereBetween('created_at', [
                             $this->currWeekStart->toDateTimeString(),
@@ -195,7 +187,7 @@ class NetworkRanking extends Page implements HasTable
                     ->searchable(),
 
                 ColumnGroup::make($currRange, [
-                    // REDE (all levels) registered in the CURRENT week
+                    // REDE (all levels) registered in CURRENT week
                     TextColumn::make('network_w1')
                         ->label('Rede')
                         ->state(fn ($record): int =>
@@ -206,7 +198,7 @@ class NetworkRanking extends Page implements HasTable
                         ->color(fn (int $state): string => $state === 0 ? 'gray' : ($state <= 50 ? 'primary' : 'success'))
                         ->alignment('right'),
 
-                    // DIRECT MEMBERS registered in the CURRENT week
+                    // DIRECT members registered in CURRENT week
                     TextColumn::make('members_w1')
                         ->label('Membros')
                         ->numeric(thousandsSeparator: '.', decimalPlaces: 0)
@@ -216,7 +208,7 @@ class NetworkRanking extends Page implements HasTable
                 ]),
 
                 ColumnGroup::make($prevRange, [
-                    // REDE (all levels) registered in the PREVIOUS week
+                    // REDE (all levels) registered in PREVIOUS week
                     TextColumn::make('network_w0')
                         ->label('Rede')
                         ->state(fn ($record): int =>
@@ -227,7 +219,7 @@ class NetworkRanking extends Page implements HasTable
                         ->color(fn (int $state): string => $state === 0 ? 'gray' : ($state <= 50 ? 'primary' : 'success'))
                         ->alignment('right'),
 
-                    // DIRECT MEMBERS registered in the PREVIOUS week
+                    // DIRECT members registered in PREVIOUS week
                     TextColumn::make('members_w0')
                         ->label('Membros')
                         ->numeric(thousandsSeparator: '.', decimalPlaces: 0)
@@ -236,7 +228,7 @@ class NetworkRanking extends Page implements HasTable
                         ->alignment('right'),
                 ]),
 
-                // Growth column (based on REDE weekly counts)
+                // Growth based on REDE weekly counts
                 TextColumn::make('growth_pct')
                     ->label('Crescimento (?)')
                     ->extraHeaderAttributes([
@@ -268,12 +260,10 @@ class NetworkRanking extends Page implements HasTable
                         return $delta < 0 ? 'danger' : ($delta === 0 ? 'gray' : 'success');
                     }),
             ])
-            // Sorting by computed (per-row) values is disabled to keep the query efficient.
             ->striped()
             ->paginated([10, 25, 50, 100]);
     }
 
-    /** Labels used in the Blade header */
     public function getCurrentRangeLabel(): string
     {
         $this->initWeekRanges();
@@ -286,7 +276,6 @@ class NetworkRanking extends Page implements HasTable
         return $this->rangeLabel($this->prevWeekStart, $this->prevWeekEnd);
     }
 
-    /** Access restriction */
     public static function canAccess(): bool
     {
         return auth()->user()?->hasAnyRole(['Superadmin']);
