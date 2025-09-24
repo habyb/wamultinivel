@@ -29,6 +29,9 @@ class NetworkRanking extends Page implements HasTable
     protected ?CarbonImmutable $prevWeekStart = null;
     protected ?CarbonImmutable $prevWeekEnd   = null;
 
+    /** In-memory cache to avoid duplicate queries per row */
+    protected array $networkWeeklyCache = [];
+
     /** Paging defaults */
     protected int|string|array $defaultTableRecordsPerPage = 10;
     protected array $tableRecordsPerPageSelectOptions = [10, 25, 50, 100];
@@ -75,6 +78,57 @@ class NetworkRanking extends Page implements HasTable
         return $start->format('d/m') . ' a ' . $end->format('d/m');
     }
 
+    /**
+     * Count weekly NETWORK registrations for a given root user (all levels).
+     *
+     * PERFORMANCE (EN):
+     * - Uses a single recursive CTE per call (MySQL 8+/PostgreSQL).
+     * - Results are cached in-memory for the request to avoid duplicate hits
+     *   when the value is needed by multiple columns (network + growth).
+     *
+     * SECURITY (EN):
+     * - Uses bound parameters to prevent SQL injection.
+     */
+    protected function countWeeklyNetwork(int $rootUserId, CarbonImmutable $start, CarbonImmutable $end): int
+    {
+        $cacheKey = $rootUserId . '|' . $start->toDateString() . '|' . $end->toDateString();
+
+        if (array_key_exists($cacheKey, $this->networkWeeklyCache)) {
+            return $this->networkWeeklyCache[$cacheKey];
+        }
+
+        // Recursive adjacency by users.referrer_guest_id (adjust if your FK differs).
+        $sql = <<<SQL
+            WITH RECURSIVE subtree AS (
+                SELECT u.id
+                FROM users u
+                WHERE u.referrer_guest_id = :root_id
+
+                UNION ALL
+
+                SELECT c.id
+                FROM users c
+                INNER JOIN subtree s ON c.referrer_guest_id = s.id
+            )
+            SELECT COUNT(*) AS c
+            FROM users x
+            WHERE x.id IN (SELECT id FROM subtree)
+              AND x.created_at BETWEEN :start_at AND :end_at
+        SQL;
+
+        $row = DB::selectOne($sql, [
+            'root_id'  => $rootUserId,
+            'start_at' => $start->toDateTimeString(),
+            'end_at'   => $end->toDateTimeString(),
+        ]);
+
+        $count = (int) (($row->c ?? 0));
+
+        $this->networkWeeklyCache[$cacheKey] = $count;
+
+        return $count;
+    }
+
     public function table(Table $table): Table
     {
         $this->initWeekRanges();
@@ -87,26 +141,27 @@ class NetworkRanking extends Page implements HasTable
                 auth()->user()
                     ->completedRegistrationsQuery()
                     ->withCount([
-                        // Direct members (cumulative up to each week end)
+                        // Direct members registered INSIDE each week window (not cumulative).
                         'firstLevelGuests as members_w1' => fn ($q) =>
-                            $q->whereDate('created_at', '<=', $this->currWeekEnd->toDateString()),
+                            $q->whereBetween('created_at', [
+                                $this->currWeekStart->toDateTimeString(),
+                                $this->currWeekEnd->toDateTimeString(),
+                            ]),
                         'firstLevelGuests as members_w0' => fn ($q) =>
-                            $q->whereDate('created_at', '<=', $this->prevWeekEnd->toDateString()),
+                            $q->whereBetween('created_at', [
+                                $this->prevWeekStart->toDateTimeString(),
+                                $this->prevWeekEnd->toDateTimeString(),
+                            ]),
                     ])
-                    // NOTE (EN): Using snapshot column for "network" until a recursive relation exists.
-                    ->addSelect([
-                        DB::raw('users.total_network_count as network_w1'),
-                        DB::raw('users.total_network_count as network_w0'),
-                    ])
-                    // Only users with >= 1 direct member up to current week end
+                    // Only show users who had >= 1 direct member in the current week
                     ->whereHas('firstLevelGuests', fn ($q) =>
-                        $q->whereDate('created_at', '<=', $this->currWeekEnd->toDateString())
+                        $q->whereBetween('created_at', [
+                            $this->currWeekStart->toDateTimeString(),
+                            $this->currWeekEnd->toDateTimeString(),
+                        ])
                     )
-                    ->orderByDesc('network_w1')
-                    ->orderByDesc('members_w1')
             )
             ->columns([
-                // — First, the "free" columns (no group). Above them the extra header row stays empty.
                 TextColumn::make('posicao')
                     ->label('Colocação')
                     ->rowIndex(isFromZero: false)
@@ -117,15 +172,20 @@ class NetworkRanking extends Page implements HasTable
                     ->label('Nome')
                     ->searchable(),
 
-                // — Create a NEW HEADER ROW using ColumnGroup for each week range.
+                // New header row using ColumnGroup for each week.
                 ColumnGroup::make($currRange, [
+                    // REDE (all levels) registered in the CURRENT week
                     TextColumn::make('network_w1')
                         ->label('Rede')
+                        ->state(fn ($record): int =>
+                            $this->countWeeklyNetwork((int) $record->id, $this->currWeekStart, $this->currWeekEnd)
+                        )
                         ->numeric(thousandsSeparator: '.', decimalPlaces: 0)
                         ->badge()
                         ->color(fn (int $state): string => $state === 0 ? 'gray' : ($state <= 50 ? 'primary' : 'success'))
                         ->alignment('right'),
 
+                    // DIRECT MEMBERS registered in the CURRENT week
                     TextColumn::make('members_w1')
                         ->label('Membros')
                         ->numeric(thousandsSeparator: '.', decimalPlaces: 0)
@@ -135,13 +195,18 @@ class NetworkRanking extends Page implements HasTable
                 ]),
 
                 ColumnGroup::make($prevRange, [
+                    // REDE (all levels) registered in the PREVIOUS week
                     TextColumn::make('network_w0')
                         ->label('Rede')
+                        ->state(fn ($record): int =>
+                            $this->countWeeklyNetwork((int) $record->id, $this->prevWeekStart, $this->prevWeekEnd)
+                        )
                         ->numeric(thousandsSeparator: '.', decimalPlaces: 0)
                         ->badge()
                         ->color(fn (int $state): string => $state === 0 ? 'gray' : ($state <= 50 ? 'primary' : 'success'))
                         ->alignment('right'),
 
+                    // DIRECT MEMBERS registered in the PREVIOUS week
                     TextColumn::make('members_w0')
                         ->label('Membros')
                         ->numeric(thousandsSeparator: '.', decimalPlaces: 0)
@@ -150,23 +215,18 @@ class NetworkRanking extends Page implements HasTable
                         ->alignment('right'),
                 ]),
 
-                // You may keep this outside of a group or create another ColumnGroup if desired.
-                // Coluna "Crescimento" com tooltip no cabeçalho
+                // Growth column (based on REDE weekly counts)
                 TextColumn::make('growth_pct')
-                    // Simple approach: add "(?)" and a native tooltip on the header cell.
-                    // UX (EN): Hover the word "Crescimento" (or anywhere in the header cell) to see the tooltip.
                     ->label('Crescimento (?)')
                     ->extraHeaderAttributes([
-                        'title' => 'Percentual de Crescimento em Relação à Semana Anterior',
+                        'title' => 'Percentual de Crescimento em Relação à Semana Anterior (REDE)',
                         'class' => 'whitespace-nowrap',
                     ])
                     ->state(function ($record): string {
-                        /** @var int $w1 */
-                        $w1 = (int) ($record->network_w1 ?? 0);
-                        /** @var int $w0 */
-                        $w0 = (int) ($record->network_w0 ?? 0);
+                        // EN: Use cached weekly counts to avoid extra queries.
+                        $w1 = $this->countWeeklyNetwork((int) $record->id, $this->currWeekStart, $this->currWeekEnd);
+                        $w0 = $this->countWeeklyNetwork((int) $record->id, $this->prevWeekStart, $this->prevWeekEnd);
 
-                        // SAFETY (EN): Robust to zero baseline.
                         if ($w0 === 0) {
                             return $w1 > 0 ? '∞%' : '0%';
                         }
@@ -177,8 +237,8 @@ class NetworkRanking extends Page implements HasTable
                     ->badge()
                     ->alignment('right')
                     ->color(function ($record): string {
-                        $w1 = (int) ($record->network_w1 ?? 0);
-                        $w0 = (int) ($record->network_w0 ?? 0);
+                        $w1 = $this->countWeeklyNetwork((int) $record->id, $this->currWeekStart, $this->currWeekEnd);
+                        $w0 = $this->countWeeklyNetwork((int) $record->id, $this->prevWeekStart, $this->prevWeekEnd);
 
                         if ($w0 === 0 && $w1 > 0) {
                             return 'warning';
@@ -187,9 +247,8 @@ class NetworkRanking extends Page implements HasTable
                         $delta = $w1 - $w0;
                         return $delta < 0 ? 'danger' : ($delta === 0 ? 'gray' : 'success');
                     }),
-
             ])
-            ->defaultSort('network_w1', 'desc')
+            // Sorting by computed (per-row) values is disabled to keep the query efficient.
             ->striped()
             ->paginated([10, 25, 50, 100]);
     }
