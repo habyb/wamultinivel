@@ -23,20 +23,21 @@ class NetworkRanking extends Page implements HasTable
     protected static ?int    $navigationSort  = 2;
     protected static string  $view            = 'filament.pages.network-ranking';
 
-    /** Dynamic week ranges (Mon–Sun) */
+    /** Week ranges (Mon–Sun) */
     protected ?CarbonImmutable $currWeekStart = null;
     protected ?CarbonImmutable $currWeekEnd   = null;
     protected ?CarbonImmutable $prevWeekStart = null;
     protected ?CarbonImmutable $prevWeekEnd   = null;
 
-    /** Request-lifetime cache for per-user weekly network counts */
-    protected array $networkWeeklyCache = [];
+    /** Request-lifetime cache (per user per cutoff) for cumulative network size */
+    protected array $networkUntilCache = [];
 
     protected int|string|array $defaultTableRecordsPerPage = 10;
     protected array $tableRecordsPerPageSelectOptions = [10, 25, 50, 100];
 
     /**
-     * Lazy-init ranges so Livewire rehydrations (e.g., per-page change) are safe.
+     * Lazy-init ranges so Livewire rehydrations are safe.
+     *
      * SECURITY (EN): Uses app timezone and immutable instances.
      */
     protected function initWeekRanges(): void
@@ -77,42 +78,39 @@ class NetworkRanking extends Page implements HasTable
     }
 
     /**
-     * Count weekly NETWORK (all levels) for a given root user between [$start, $end].
+     * Count cumulative NETWORK (all levels) up to a cutoff ($until) for a given root user.
      *
-     * FIX (EN):
-     * - Detects FK and owner key from the existing `firstLevelGuests()` relation on User,
-     *   so it works whether your schema uses `referrer_id`, `inviter_code`, etc.
-     * - Joins using child's FK to parent's OWNER KEY (not always the numeric `id`).
-     * - Seeds the recursion with the ROOT owner's key value to avoid type mismatch
-     *   (e.g., varchar codes vs bigint ids) on PostgreSQL.
+     * WHAT IT DOES (EN):
+     * - Builds the entire subtree (all levels) using the real FK/owner key from
+     *   User::firstLevelGuests() to match your schema types (id vs code).
+     * - Counts ONLY nodes whose created_at <= $until (cumulative).
      *
      * PERFORMANCE (EN):
-     * - Uses a recursive CTE once per user per range, cached in-memory for the request.
+     * - One recursive CTE per (user, cutoff) and memoized in-memory.
      */
-    protected function countWeeklyNetwork(int $rootUserId, CarbonImmutable $start, CarbonImmutable $end): int
+    protected function countNetworkUntil(int $rootUserId, CarbonImmutable $until): int
     {
-        $cacheKey = $rootUserId . '|' . $start->toDateString() . '|' . $end->toDateString();
-        if (isset($this->networkWeeklyCache[$cacheKey])) {
-            return $this->networkWeeklyCache[$cacheKey];
+        $cacheKey = $rootUserId . '|<=|' . $until->toDateTimeString();
+        if (isset($this->networkUntilCache[$cacheKey])) {
+            return $this->networkUntilCache[$cacheKey];
         }
 
         $user       = new User();
         $table      = $user->getTable();
-        $relation   = $user->firstLevelGuests();            // HasMany relation (child -> parent)
-        $fkCol      = $relation->getForeignKeyName();       // child column referencing parent owner key
-        $ownerKey   = $relation->getLocalKeyName();         // parent owner key column
+        $relation   = $user->firstLevelGuests();     // HasMany
+        $fkCol      = $relation->getForeignKeyName();   // child column -> parent owner
+        $ownerKey   = $relation->getLocalKeyName();     // parent owner key (may be id or code)
 
-        // Owner key value for the ROOT user (can be id, code, etc.)
+        // Owner key value for ROOT user (keeps types consistent on PostgreSQL)
         $rootOwnerVal = DB::table($table)->where('id', $rootUserId)->value($ownerKey);
 
-        // Wrap identifiers for current grammar (Postgres-safe).
+        // Wrap identifiers safely
         $grammar         = DB::getQueryGrammar();
         $wrappedTable    = $grammar->wrap($table);
         $wrappedFkCol    = $grammar->wrap($fkCol);
         $wrappedOwnerKey = $grammar->wrap($ownerKey);
         $wrappedCreated  = $grammar->wrap('created_at');
 
-        // Recursive adjacency via <child.$fkCol = parent.$ownerKey>
         $sql = <<<SQL
             WITH RECURSIVE subtree AS (
                 SELECT u.id, u.{$wrappedOwnerKey} AS owner_key
@@ -128,17 +126,16 @@ class NetworkRanking extends Page implements HasTable
             SELECT COUNT(*) AS c
             FROM {$wrappedTable} x
             WHERE x.id IN (SELECT id FROM subtree)
-              AND x.{$wrappedCreated} BETWEEN :start_at AND :end_at
+              AND x.{$wrappedCreated} <= :until_at
         SQL;
 
         $row = DB::selectOne($sql, [
             'root_owner_val' => $rootOwnerVal,
-            'start_at'       => $start->toDateTimeString(),
-            'end_at'         => $end->toDateTimeString(),
+            'until_at'       => $until->toDateTimeString(),
         ]);
 
         $count = (int) ($row->c ?? 0);
-        $this->networkWeeklyCache[$cacheKey] = $count;
+        $this->networkUntilCache[$cacheKey] = $count;
 
         return $count;
     }
@@ -147,32 +144,23 @@ class NetworkRanking extends Page implements HasTable
     {
         $this->initWeekRanges();
 
-        $currRange = $this->rangeLabel($this->currWeekStart, $this->currWeekEnd);
-        $prevRange = $this->rangeLabel($this->prevWeekStart, $this->prevWeekEnd);
+        $currRange = $this->rangeLabel($this->currWeekStart, $this->currWeekEnd); // ex.: "08/07 a 14/07"
+        $prevRange = $this->rangeLabel($this->prevWeekStart, $this->prevWeekEnd); // ex.: "01/07 a 07/07"
 
         return $table
             ->query(
                 auth()->user()
                     ->completedRegistrationsQuery()
                     ->withCount([
-                        // Direct members registered INSIDE each week window (not cumulative).
+                        // DIRECT members cumulative up to each week's END (<=)
                         'firstLevelGuests as members_w1' => fn ($q) =>
-                            $q->whereBetween('created_at', [
-                                $this->currWeekStart->toDateTimeString(),
-                                $this->currWeekEnd->toDateTimeString(),
-                            ]),
+                            $q->where('created_at', '<=', $this->currWeekEnd),
                         'firstLevelGuests as members_w0' => fn ($q) =>
-                            $q->whereBetween('created_at', [
-                                $this->prevWeekStart->toDateTimeString(),
-                                $this->prevWeekEnd->toDateTimeString(),
-                            ]),
+                            $q->where('created_at', '<=', $this->prevWeekEnd),
                     ])
-                    // Only show users who had >= 1 direct member in the CURRENT week
+                    // Show only who has at least 1 direct member up to CURRENT week end
                     ->whereHas('firstLevelGuests', fn ($q) =>
-                        $q->whereBetween('created_at', [
-                            $this->currWeekStart->toDateTimeString(),
-                            $this->currWeekEnd->toDateTimeString(),
-                        ])
+                        $q->where('created_at', '<=', $this->currWeekEnd)
                     )
             )
             ->columns([
@@ -186,19 +174,18 @@ class NetworkRanking extends Page implements HasTable
                     ->label('Nome')
                     ->searchable(),
 
+                // GROUP: Current week (cumulative totals up to Sun)
                 ColumnGroup::make($currRange, [
-                    // REDE (all levels) registered in CURRENT week
                     TextColumn::make('network_w1')
                         ->label('Rede')
                         ->state(fn ($record): int =>
-                            $this->countWeeklyNetwork((int) $record->id, $this->currWeekStart, $this->currWeekEnd)
+                            $this->countNetworkUntil((int) $record->id, $this->currWeekEnd)
                         )
                         ->numeric(thousandsSeparator: '.', decimalPlaces: 0)
                         ->badge()
                         ->color(fn (int $state): string => $state === 0 ? 'gray' : ($state <= 50 ? 'primary' : 'success'))
                         ->alignment('right'),
 
-                    // DIRECT members registered in CURRENT week
                     TextColumn::make('members_w1')
                         ->label('Membros')
                         ->numeric(thousandsSeparator: '.', decimalPlaces: 0)
@@ -207,19 +194,18 @@ class NetworkRanking extends Page implements HasTable
                         ->alignment('right'),
                 ]),
 
+                // GROUP: Previous week (cumulative totals up to Sun)
                 ColumnGroup::make($prevRange, [
-                    // REDE (all levels) registered in PREVIOUS week
                     TextColumn::make('network_w0')
                         ->label('Rede')
                         ->state(fn ($record): int =>
-                            $this->countWeeklyNetwork((int) $record->id, $this->prevWeekStart, $this->prevWeekEnd)
+                            $this->countNetworkUntil((int) $record->id, $this->prevWeekEnd)
                         )
                         ->numeric(thousandsSeparator: '.', decimalPlaces: 0)
                         ->badge()
                         ->color(fn (int $state): string => $state === 0 ? 'gray' : ($state <= 50 ? 'primary' : 'success'))
                         ->alignment('right'),
 
-                    // DIRECT members registered in PREVIOUS week
                     TextColumn::make('members_w0')
                         ->label('Membros')
                         ->numeric(thousandsSeparator: '.', decimalPlaces: 0)
@@ -228,7 +214,7 @@ class NetworkRanking extends Page implements HasTable
                         ->alignment('right'),
                 ]),
 
-                // Growth based on REDE weekly counts
+                // Growth % based on cumulative "Rede" (current vs previous week end)
                 TextColumn::make('growth_pct')
                     ->label('Crescimento (?)')
                     ->extraHeaderAttributes([
@@ -236,30 +222,32 @@ class NetworkRanking extends Page implements HasTable
                         'class' => 'whitespace-nowrap',
                     ])
                     ->state(function ($record): string {
-                        $w1 = $this->countWeeklyNetwork((int) $record->id, $this->currWeekStart, $this->currWeekEnd);
-                        $w0 = $this->countWeeklyNetwork((int) $record->id, $this->prevWeekStart, $this->prevWeekEnd);
+                        $nw1 = $this->countNetworkUntil((int) $record->id, $this->currWeekEnd);
+                        $nw0 = $this->countNetworkUntil((int) $record->id, $this->prevWeekEnd);
 
-                        if ($w0 === 0) {
-                            return $w1 > 0 ? '∞%' : '0%';
+                        // SAFETY (EN): Avoid divide-by-zero; show infinity symbol for growth from zero.
+                        if ($nw0 === 0) {
+                            return $nw1 > 0 ? '∞%' : '0%';
                         }
 
-                        $pct = (($w1 - $w0) / $w0) * 100;
+                        $pct = (($nw1 - $nw0) / $nw0) * 100;
                         return number_format($pct, 0, ',', '.') . '%';
                     })
                     ->badge()
                     ->alignment('right')
                     ->color(function ($record): string {
-                        $w1 = $this->countWeeklyNetwork((int) $record->id, $this->currWeekStart, $this->currWeekEnd);
-                        $w0 = $this->countWeeklyNetwork((int) $record->id, $this->prevWeekStart, $this->prevWeekEnd);
+                        $nw1 = $this->countNetworkUntil((int) $record->id, $this->currWeekEnd);
+                        $nw0 = $this->countNetworkUntil((int) $record->id, $this->prevWeekEnd);
 
-                        if ($w0 === 0 && $w1 > 0) {
+                        if ($nw0 === 0 && $nw1 > 0) {
                             return 'warning';
                         }
 
-                        $delta = $w1 - $w0;
+                        $delta = $nw1 - $nw0;
                         return $delta < 0 ? 'danger' : ($delta === 0 ? 'gray' : 'success');
                     }),
             ])
+            // Sorting by computed (per-row) values is intentionally disabled (SQL efficiency).
             ->striped()
             ->paginated([10, 25, 50, 100]);
     }
