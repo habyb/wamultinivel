@@ -11,6 +11,7 @@ use Filament\Tables\Columns\ColumnGroup;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Actions\Action;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -121,11 +122,11 @@ class NetworkRanking extends Page implements HasTable
         $rootOwnerVal = DB::table($table)->where('id', $rootUserId)->value($ownerKey);
 
         // Wrap identifiers safely
-        $grammar         = DB::getQueryGrammar();
-        $wrappedTable    = $grammar->wrap($table);
-        $wrappedFkCol    = $grammar->wrap($fkCol);
-        $wrappedOwnerKey = $grammar->wrap($ownerKey);
-        $wrappedCreated  = $grammar->wrap('created_at');
+        $grammar          = DB::getQueryGrammar();
+        $wrappedTable     = $grammar->wrap($table);
+        $wrappedFkCol     = $grammar->wrap($fkCol);
+        $wrappedOwnerKey  = $grammar->wrap($ownerKey);
+        $wrappedCreated   = $grammar->wrap('created_at');
         $wrappedCompleted = $completedCol ? $grammar->wrap($completedCol) : null;
 
         $completedFilter = $wrappedCompleted ? " AND x.{$wrappedCompleted} = true" : '';
@@ -177,11 +178,11 @@ class NetworkRanking extends Page implements HasTable
 
         $completedCol = $this->detectCompletedColumn($table);
 
-        $grammar         = DB::getQueryGrammar();
-        $wrappedTable    = $grammar->wrap($table);
-        $wrappedFkCol    = $grammar->wrap($fkCol);
-        $wrappedOwnerKey = $grammar->wrap($ownerKey);
-        $wrappedCreated  = $grammar->wrap('created_at');
+        $grammar          = DB::getQueryGrammar();
+        $wrappedTable     = $grammar->wrap($table);
+        $wrappedFkCol     = $grammar->wrap($fkCol);
+        $wrappedOwnerKey  = $grammar->wrap($ownerKey);
+        $wrappedCreated   = $grammar->wrap('created_at');
         $wrappedCompleted = $completedCol ? $grammar->wrap($completedCol) : null;
 
         $completedFilter = $wrappedCompleted ? " AND x.{$wrappedCompleted} = true" : '';
@@ -245,8 +246,7 @@ class NetworkRanking extends Page implements HasTable
                     ->alignment('left'),
 
                 TextColumn::make('name')
-                    ->label('Nome')
-                    ->searchable(),
+                    ->label('Nome'),
 
                 // GROUP: Current week (cumulative totals up to Sun)
                 ColumnGroup::make($currRange, [
@@ -318,6 +318,79 @@ class NetworkRanking extends Page implements HasTable
 
                         $delta = $nw1 - $nw0;
                         return $delta < 0 ? 'danger' : ($delta === 0 ? 'gray' : 'success');
+                    }),
+            ])
+            // Header action: Export all as CSV (full dataset, same ordering & numbers)
+            ->headerActions([
+                Action::make('export_all_csv')
+                    ->label('Exportar Todos')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->color('success')
+                    ->action(function () use ($currRange, $prevRange) {
+                        // EN: Build the SAME base query used by the table, including ordering.
+                        $builder = tap(
+                            auth()->user()
+                                ->completedRegistrationsQuery()
+                                ->withCount([
+                                    'firstLevelGuests as members_w1' => fn ($q) =>
+                                        $q->where('created_at', '<=', $this->currWeekEnd),
+                                    'firstLevelGuests as members_w0' => fn ($q) =>
+                                        $q->where('created_at', '<=', $this->prevWeekEnd),
+                                ])
+                                ->whereHas('firstLevelGuests', fn ($q) =>
+                                    $q->where('created_at', '<=', $this->currWeekEnd)
+                                ),
+                            fn (Builder $q) => $this->orderByNetworkCurrentWeekDesc($q),
+                        );
+
+                        $filename = 'ranking_rede_' . now()->format('Ymd_His') . '.csv';
+
+                        return response()->streamDownload(function () use ($builder, $currRange, $prevRange) {
+                            // SECURITY (EN): Stream to avoid memory pressure for large datasets.
+                            $handle = fopen('php://output', 'w');
+
+                            // Header row — mirrors table columns
+                            fputcsv($handle, [
+                                'Colocação',
+                                'Nome',
+                                "{$currRange} Rede",
+                                "{$currRange} Membros",
+                                "{$prevRange} Rede",
+                                "{$prevRange} Membros",
+                                'Crescimento (%)',
+                            ]);
+
+                            $pos = 1;
+
+                            foreach ($builder->cursor() as $record) {
+                                /** @var \App\Models\User $record */
+                                $nw1 = $this->countNetworkUntil((int) $record->id, $this->currWeekEnd);
+                                $nw0 = $this->countNetworkUntil((int) $record->id, $this->prevWeekEnd);
+                                $m1  = (int) ($record->members_w1 ?? 0);
+                                $m0  = (int) ($record->members_w0 ?? 0);
+
+                                if ($nw0 === 0) {
+                                    $growth = $nw1 > 0 ? '∞%' : '0%';
+                                } else {
+                                    $pct    = (($nw1 - $nw0) / $nw0) * 100;
+                                    $growth = number_format($pct, 2, ',', '.') . '%';
+                                }
+
+                                fputcsv($handle, [
+                                    $pos,
+                                    $record->name,
+                                    $nw1,
+                                    $m1,
+                                    $nw0,
+                                    $m0,
+                                    $growth,
+                                ]);
+
+                                $pos++;
+                            }
+
+                            fclose($handle);
+                        }, $filename);
                     }),
             ])
             // SQL sorting is applied via orderByNetworkCurrentWeekDesc()
