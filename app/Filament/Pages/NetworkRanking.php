@@ -100,8 +100,11 @@ class NetworkRanking extends Page implements HasTable
      * Count cumulative NETWORK (all levels) up to a cutoff ($until) for a given root user,
      * filtering ONLY completed registrations to match "Cadastros Completos".
      *
-     * PERFORMANCE (EN):
-     * - One recursive CTE per (user, cutoff) memoized in-memory.
+     * IMPORTANT FIX (EN):
+     * - The recursive CTE now restricts **every level** (seed and recursion) to
+     *   `created_at <= :until_at` (and completed when available). This produces a
+     *   snapshot of the network **as of the cutoff date**, preventing new users
+     *   created after the week from “bridging” older descendants into the count.
      */
     protected function countNetworkUntil(int $rootUserId, CarbonImmutable $until): int
     {
@@ -129,25 +132,39 @@ class NetworkRanking extends Page implements HasTable
         $wrappedCreated   = $grammar->wrap('created_at');
         $wrappedCompleted = $completedCol ? $grammar->wrap($completedCol) : null;
 
-        $completedFilter = $wrappedCompleted ? " AND x.{$wrappedCompleted} = true" : '';
+        // Filters applied INSIDE the recursion to generate “as-of” snapshot
+        $seedExtra = "AND u.{$wrappedCreated} <= :until_at";
+        $joinExtra = "AND c.{$wrappedCreated} <= :until_at";
+        if ($wrappedCompleted) {
+            $seedExtra .= " AND u.{$wrappedCompleted} = true";
+            $joinExtra .= " AND c.{$wrappedCompleted} = true";
+        }
+
+        $finalCountExtra = '';
+        if ($wrappedCompleted) {
+            $finalCountExtra = " AND x.{$wrappedCompleted} = true";
+        }
 
         $sql = <<<SQL
             WITH RECURSIVE subtree AS (
                 SELECT u.id, u.{$wrappedOwnerKey} AS owner_key
                 FROM {$wrappedTable} u
                 WHERE u.{$wrappedFkCol} = :root_owner_val
+                  {$seedExtra}
 
                 UNION ALL
 
                 SELECT c.id, c.{$wrappedOwnerKey} AS owner_key
                 FROM {$wrappedTable} c
                 INNER JOIN subtree s ON c.{$wrappedFkCol} = s.owner_key
+                WHERE 1=1
+                  {$joinExtra}
             )
             SELECT COUNT(*) AS c
             FROM {$wrappedTable} x
             WHERE x.id IN (SELECT id FROM subtree)
               AND x.{$wrappedCreated} <= :until_at
-              {$completedFilter}
+              {$finalCountExtra}
         SQL;
 
         $row = DB::selectOne($sql, [
@@ -164,9 +181,9 @@ class NetworkRanking extends Page implements HasTable
     /**
      * ORDER BY cumulative network up to current week end, DESC.
      *
-     * IMPORTANT (EN):
-     * - Uses the same "completed registration" filter to keep ordering consistent
-     *   with the visible numbers and the "Cadastros Completos" page.
+     * NOTE (EN):
+     * - Mirrors the same “as-of cutoff” logic used by countNetworkUntil() so the
+     *   ordering stays consistent with the visible numbers.
      */
     protected function orderByNetworkCurrentWeekDesc(Builder $query): Builder
     {
@@ -185,7 +202,14 @@ class NetworkRanking extends Page implements HasTable
         $wrappedCreated   = $grammar->wrap('created_at');
         $wrappedCompleted = $completedCol ? $grammar->wrap($completedCol) : null;
 
-        $completedFilter = $wrappedCompleted ? " AND x.{$wrappedCompleted} = true" : '';
+        $seedExtra = "AND u.{$wrappedCreated} <= ?";
+        $joinExtra = "AND c.{$wrappedCreated} <= ?";
+        $finalExtra = '';
+        if ($wrappedCompleted) {
+            $seedExtra  .= " AND u.{$wrappedCompleted} = true";
+            $joinExtra  .= " AND c.{$wrappedCompleted} = true";
+            $finalExtra .= " AND x.{$wrappedCompleted} = true";
+        }
 
         $expr = <<<SQL
             (
@@ -193,22 +217,27 @@ class NetworkRanking extends Page implements HasTable
                     SELECT u.id, u.{$wrappedOwnerKey} AS owner_key
                     FROM {$wrappedTable} u
                     WHERE u.{$wrappedFkCol} = {$wrappedTable}.{$wrappedOwnerKey}
+                      {$seedExtra}
 
                     UNION ALL
 
                     SELECT c.id, c.{$wrappedOwnerKey} AS owner_key
                     FROM {$wrappedTable} c
                     INNER JOIN subtree s ON c.{$wrappedFkCol} = s.owner_key
+                    WHERE 1=1
+                      {$joinExtra}
                 )
                 SELECT COUNT(*)
                 FROM {$wrappedTable} x
                 WHERE x.id IN (SELECT id FROM subtree)
                   AND x.{$wrappedCreated} <= ?
-                  {$completedFilter}
+                  {$finalExtra}
             )
         SQL;
 
-        return $query->orderByRaw("{$expr} DESC", [$this->currWeekEnd->toDateTimeString()]);
+        $cut = $this->currWeekEnd->toDateTimeString();
+        // Bind the same cutoff three times: seed, join, final
+        return $query->orderByRaw("{$expr} DESC", [$cut, $cut, $cut]);
     }
 
     public function table(Table $table): Table
