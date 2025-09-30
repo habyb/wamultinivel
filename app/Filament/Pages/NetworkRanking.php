@@ -441,6 +441,6 @@ class NetworkRanking extends Page implements HasTable
 
     public static function canAccess(): bool
     {
-        return auth()->user()?->hasAnyRole(['Superadmin']);
+        return auth()->user()?->hasAnyRole(['Superadmin', 'Admin']);
     }
 }
