@@ -76,7 +76,7 @@ class UsersRegistrationCompleted extends Page implements HasTable
                 ->requiresConfirmation()
                 ->deselectRecordsAfterCompletion()
                 ->action(function ($records) {
-                    $records = $records->loadCount('firstLevelGuests');
+                    $records = $records->loadCount('firstLevelGuests')->sortByDesc('total_network_count');
 
                     $filename = 'contatos_' . now()->format('Ymd_His') . '.csv';
 
@@ -278,6 +278,7 @@ class UsersRegistrationCompleted extends Page implements HasTable
                     $records = $this->getFilteredTableQuery()
                         ->with(['roles', 'referrerGuest'])
                         ->withCount('firstLevelGuests')
+                        ->orderBy('total_network_count', 'desc')
                         ->get();
 
                     $filename = 'cadastros_' . now()->format('Ymd_His') . '.csv';
@@ -347,7 +348,7 @@ class UsersRegistrationCompleted extends Page implements HasTable
 
     public function getTableDefaultSortColumn(): ?string
     {
-        return 'created_at';
+        return 'total_network_count';
     }
 
     public function getTableDefaultSortDirection(): ?string
