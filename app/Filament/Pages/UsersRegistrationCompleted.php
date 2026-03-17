@@ -44,11 +44,17 @@ class UsersRegistrationCompleted extends Page implements HasTable
      */
     protected function getTableQuery(): Builder
     {
-        return auth()->user()
+        $query = auth()->user()
             ->completedRegistrationsQuery()
             ->withCount([
                 'firstLevelGuests as first_level_guests_count_x',
             ]);
+
+        if (empty($this->tableSortColumn)) {
+            $query->orderBy('total_network_count', 'desc');
+        }
+
+        return $query;
     }
 
     protected function getTableFilters(): array
@@ -336,16 +342,6 @@ class UsersRegistrationCompleted extends Page implements HasTable
                     }, $filename);
                 }),
         ];
-    }
-
-    public function getTableDefaultSortColumn(): ?string
-    {
-        return 'total_network_count';
-    }
-
-    public function getTableDefaultSortDirection(): ?string
-    {
-        return 'desc';
     }
 
     /**
