@@ -7,6 +7,7 @@ use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Concerns\InteractsWithTable;
+use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 use Filament\Tables\Actions\Action;
@@ -48,6 +49,21 @@ class UsersRegistrationCompleted extends Page implements HasTable
             ->withCount([
                 'firstLevelGuests as first_level_guests_count_x',
             ]);
+    }
+
+    protected function getTableFilters(): array
+    {
+        return [
+            SelectFilter::make('city')
+                ->label(__('City'))
+                ->options(
+                    User::whereNotNull('city')
+                        ->distinct()
+                        ->orderBy('city')
+                        ->pluck('city', 'city')
+                        ->toArray()
+                ),
+        ];
     }
 
     public function getTableBulkActions(): array
@@ -259,10 +275,9 @@ class UsersRegistrationCompleted extends Page implements HasTable
                 ->icon('heroicon-o-arrow-down-tray')
                 ->color('success')
                 ->action(function (): StreamedResponse {
-                    $records = User::with(['roles', 'referrerGuest'])
+                    $records = $this->getFilteredTableQuery()
+                        ->with(['roles', 'referrerGuest'])
                         ->withCount('firstLevelGuests')
-                        ->where('is_add_date_of_birth', true)
-                        ->orderBy('name')
                         ->get();
 
                     $filename = 'cadastros_' . now()->format('Ymd_His') . '.csv';
