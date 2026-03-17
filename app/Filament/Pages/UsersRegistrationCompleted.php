@@ -161,19 +161,11 @@ class UsersRegistrationCompleted extends Page implements HasTable
                 ->dateTime(format: 'd/m/Y H:i:s')
                 ->sortable()
                 ->searchable()
-                ->sortable(
-                    query: fn(Builder $query, string $direction) =>
-                    $query->reorder()->orderBy('created_at', $direction)
-                )
                 ->toggleable(isToggledHiddenByDefault: true),
             TextColumn::make('updated_at')
                 ->dateTime(format: 'd/m/Y H:i:s')
                 ->sortable()
                 ->searchable()
-                ->sortable(
-                    query: fn(Builder $query, string $direction) =>
-                    $query->reorder()->orderBy('updated_at', $direction)
-                )
                 ->toggleable(isToggledHiddenByDefault: true),
             TextColumn::make('code')
                 ->label('Invitation ID')
