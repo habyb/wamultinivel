@@ -86,6 +86,10 @@ if (!function_exists('fix_whatsapp_number')) {
             return '';
         }
 
+        if (str_contains($remoteJid, '@lid')) {
+            return str_replace('@lid', '', $remoteJid);
+        }
+
         // Remove the sufix "@s.whatsapp.net"
         $number = explode('@', $remoteJid)[0];
 
