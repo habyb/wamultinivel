@@ -62,7 +62,7 @@ class AssignEmbaixadorRoleToUsers extends Command
 
                     // Send message via WhatsApp with email and password
                     $password = generate_custom_alphanumeric_password(8, true, true, true, true);
-                    $number = fix_whatsapp_number(preg_replace('/\D/', '', $user->remoteJid));
+                    $number = fix_whatsapp_number($user->remoteJid);
 
                     $user->forceFill([
                         'password' => bcrypt($password),
