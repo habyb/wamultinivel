@@ -82,7 +82,7 @@ class AssignEmbaixadorRoleToUsers extends Command
                         ]
                     );
 
-                    dispatch(new SendPasswordMessageJob($number, $password))->delay(now()->addSeconds(3));
+                    dispatch(new SendPasswordMessageJob($number, $password))->delay(now()->addSeconds(10));
                 }
             }
         });
