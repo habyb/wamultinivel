@@ -38,7 +38,7 @@ class FixCityUsers extends Command
             'Areal' => ['areal', 'AREAL'],
             'Armação dos Búzios' => ['armacao dos buzios', 'armação dos búzios', 'ARMAÇÃO DOS BÚZIOS', 'buzios'],
             'Arraial do Cabo' => ['arraial do cabo', 'ARRAIAL DO CABO'],
-            'Barra do Piraí' => ['barra do piraí', 'barra do pirai', 'BARRA DO PIRAÍ', 'Barra do pirai', 'BARRA DO PIRAI', 'Barra do Pirai !', 'Barra do Piraí e Rio das flores', 'Barra do Piraí - RJ', 'Barra do Piraí -RJ', 'Barra do Piraí RJ', 'Barra do Piraí r.j', 'Barra do Piraí-RJ', 'Barra do Piraí.', 'Barrra do Piraí', 'Piraí'],
+            'Barra do Piraí' => ['barra do piraí', 'barra do pirai', 'BARRA DO PIRAÍ', 'Barra do pirai', 'BARRA DO PIRAI', 'Barra do Pirai !', 'Barra do Piraí e Rio das flores', 'Barra do Piraí - RJ', 'Barra do Piraí -RJ', 'Barra do Piraí RJ', 'Barra do Piraí r.j', 'Barra do Piraí-RJ', 'Barra do Piraí.', 'Barrra do Piraí', 'Piraí', 'Barra do pirai R.J'],
             'Barra Mansa' => ['barra mansa', 'BARRA MANSA', 'Barra Mansa, Siderlandia', 'Barra Mansa.', 'BarraMansa'],
             'Belford Roxo' => ['belford roxo', 'BELFORD ROXO', 'belford roxo RJ centro'],
             'Bom Jardim' => ['bom jardim', 'BOM JARDIM'],
