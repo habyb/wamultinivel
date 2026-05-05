@@ -66,7 +66,7 @@ class FixCityUsers extends Command
             'Macaé' => ['Macaé RJ', 'Macaé rj', 'macaé', 'macae'],
             'Macuco' => ['macuco', 'MACUCO'],
             'Magé' => ['magé', 'mage', 'Magé-RJ', 'Magé-Rj', 'Magé-rj', 'Mage-RJ', 'Mage-Rj', 'Mage-rj', 'Magé Rj', 'Magé rj', 'Mage RJ', 'Mage Rj', 'Mage rj'],
-            'Mangaratiba' => ['mangaratiba', 'MANGARATIBA'],
+            'Mangaratiba' => ['mangaratiba', 'MANGARATIBA', 'Muriqui (Mangaratiba RJ)'],
             'Maricá' => ['maricá', 'marica'],
             'Mendes' => ['mendes', 'MENDES'],
             'Mesquita' => ['mesquita', 'MESQUITA'],
