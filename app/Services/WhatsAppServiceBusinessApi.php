@@ -12,6 +12,58 @@ use Illuminate\Support\Facades\Log;
 class WhatsAppServiceBusinessApi
 {
     /**
+     * Sends a list message (interactive dropdown)
+     */
+    public function sendListMessage(string $phone, string $bodyText, string $buttonText, array $sections, ?string $headerText = null)
+    {
+        $interactive = [
+            'type' => 'list',
+            'body' => [
+                'text' => $bodyText,
+            ],
+            'action' => [
+                'button' => $buttonText,
+                'sections' => $sections,
+            ],
+        ];
+
+        if ($headerText) {
+            $interactive['header'] = [
+                'type' => 'text',
+                'text' => $headerText,
+            ];
+        }
+
+        $response = Http::withHeaders([
+            'Authorization' => 'Bearer ' . config('services.business_test.access_token_test'),
+            'Accept' => 'application/json',
+            'Content-Type'  => 'application/json',
+        ])->post(config('services.business_test.url_test') . '/' . config('services.business_test.version_test') . '/' . config('services.business_test.phone_number_id_test') . '/messages', [
+            'messaging_product' => 'whatsapp',
+            'recipient_type'    => 'individual',
+            'to'                => $phone,
+            'type'              => 'interactive',
+            'interactive'       => $interactive,
+        ]);
+
+        Log::info('WA list message response', [
+            'status' => $response->status(),
+            'body'   => $response->json(),
+            'phone'  => $phone
+        ]);
+
+        if (!$response->successful()) {
+            Log::error('WA list message send failed', [
+                'status' => $response->status(),
+                'body'   => $response->body(),
+                'phone'  => $phone
+            ]);
+        }
+
+        return $response->json();
+    }
+
+    /**
      * Sends a message with interactive buttons
      */
     public function sendInteractiveButtons(string $phone, string $bodyText, array $buttons)

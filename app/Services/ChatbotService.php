@@ -27,7 +27,9 @@ class ChatbotService
             $text = $message['text']['body'] ?? '';
         } elseif (($message['type'] ?? '') === 'interactive') {
             $text = $message['interactive']['button_reply']['id'] ?? 
-                    $message['interactive']['button_reply']['title'] ?? '';
+                    $message['interactive']['button_reply']['title'] ?? 
+                    $message['interactive']['list_reply']['title'] ?? 
+                    $message['interactive']['list_reply']['id'] ?? '';
         }
 
         Log::info("Processing message from $waId: $text");
@@ -99,24 +101,186 @@ class ChatbotService
 
     protected function handleStateAction($waId, $state, $text)
     {
-        // Lógica para cada passo do cadastro será implementada aqui
         Log::info("Handling state $state for $waId with text: $text");
 
         $textLower = strtolower(trim($text));
-        
+        $user = User::where('remoteJid', $waId)->first();
+
+        if (!$user) {
+            return $this->sendReply($waId, "Ops, ocorreu um erro. Por favor, envie a mensagem de cadastro novamente.");
+        }
+
         switch ($state) {
             case 'AWAITING_REGISTRATION_CONFIRMATION':
                 if (Str::contains($textLower, ['sim', 'quero', 'ok', 'confirm_yes'])) {
                     $this->setStep($waId, 'AWAITING_NAME');
+                    $user->update(['is_question_name' => true]);
                     $this->sendReply($waId, "Legal! Vamos começar. Digite seu *Nome e Sobrenome*.");
                 } else {
                     $this->sendReply($waId, "Sem problemas. Se mudar de ideia, é só enviar a mensagem de cadastro novamente.");
                     $this->clearStep($waId);
                 }
                 break;
-            
-            // Outros passos serão adicionados conforme o fluxo
+
+            case 'AWAITING_NAME':
+                $user->update([
+                    'name' => $text,
+                    'is_add_name' => true,
+                    'is_question_city' => true
+                ]);
+                $this->setStep($waId, 'AWAITING_CITY');
+                $this->sendReply($waId, "Legal {$text}, agora por favor digite o nome da sua *Cidade*.");
+                break;
+
+            case 'AWAITING_CITY':
+                $user->update([
+                    'city' => $text,
+                    'is_add_city' => true
+                ]);
+
+                if (Str::contains(strtolower($text), ['rio de janeiro', 'rj'])) {
+                    $this->setStep($waId, 'AWAITING_NEIGHBORHOOD');
+                    $user->update(['is_question_neighborhood' => true]);
+                    $this->sendReply($waId, "Vimos que você é do Rio de Janeiro! Por favor, digite seu *Bairro*.");
+                } else {
+                    $this->askConcern01($waId, $user, $text);
+                }
+                break;
+
+            case 'AWAITING_NEIGHBORHOOD':
+                $user->update([
+                    'neighborhood' => $text,
+                    'is_add_neighborhood' => true
+                ]);
+                $this->askConcern01($waId, $user, $user->city);
+                break;
+
+            case 'AWAITING_CONCERN_01':
+                $user->update([
+                    'concern_01' => $text,
+                    'is_add_concern_01' => true,
+                    'is_question_concern_02' => true
+                ]);
+                $this->setStep($waId, 'AWAITING_CONCERN_02');
+                $this->whatsapp->sendListMessage(
+                    $waId, 
+                    "Escolha uma das opções na lista.", 
+                    "Selecione", 
+                    $this->getConcernsList(),
+                    "Segunda preocupação"
+                );
+                break;
+
+            case 'AWAITING_CONCERN_02':
+                $user->update([
+                    'concern_02' => $text,
+                    'is_add_concern_02' => true,
+                    'is_question_gender' => true
+                ]);
+                $this->setStep($waId, 'AWAITING_GENDER');
+                $this->whatsapp->sendListMessage($waId, "Escolha uma das opções na lista.", "Selecione", [
+                    [
+                        'title' => 'Gênero',
+                        'rows' => [
+                            ['id' => 'Masculino', 'title' => 'Masculino', 'description' => 'Pessoas do gênero masculino'],
+                            ['id' => 'Feminino', 'title' => 'Feminino', 'description' => 'Pessoas do gênero feminino'],
+                            ['id' => 'Outro', 'title' => 'Não informar', 'description' => 'Prefiro não informar'],
+                        ]
+                    ]
+                ], "Selecione o seu Gênero");
+                break;
+
+            case 'AWAITING_GENDER':
+                $user->update([
+                    'gender' => $text,
+                    'is_add_gender' => true,
+                    'is_question_date_of_birth' => true
+                ]);
+                $this->setStep($waId, 'AWAITING_DATE_OF_BIRTH');
+                $this->sendReply($waId, "Digite sua *Data de Nascimento*.\nDigite apenas os números.\nEx: *01011980*");
+                break;
+
+            case 'AWAITING_DATE_OF_BIRTH':
+                $dateInput = preg_replace('/\D/', '', $text);
+                $formattedDate = null;
+
+                if (strlen($dateInput) === 6) {
+                    $day = substr($dateInput, 0, 2);
+                    $month = substr($dateInput, 2, 2);
+                    $year = substr($dateInput, 4, 2);
+                    
+                    // Lógica para ano: se > 26 (ano atual 2026), assume 19XX, senão 20XX
+                    $year = (int)$year > 26 ? "19$year" : "20$year";
+                    $dateInput = $day . $month . $year;
+                }
+
+                if (strlen($dateInput) === 8) {
+                    $day = substr($dateInput, 0, 2);
+                    $month = substr($dateInput, 2, 2);
+                    $year = substr($dateInput, 4, 4);
+                    
+                    if (checkdate((int)$month, (int)$day, (int)$year)) {
+                        $formattedDate = "$day/$month/$year";
+                    }
+                }
+
+                if (!$formattedDate) {
+                    return $this->sendReply($waId, "A data informada é inválida.\nPor favor revise e tente novamente.");
+                }
+
+                $user->update([
+                    'date_of_birth' => $formattedDate,
+                    'is_add_date_of_birth' => true,
+                ]);
+                $this->clearStep($waId);
+                
+                $inviteLink = config('app.url') . '/' . ($user->code ?: '');
+                $msg = "você faz parte do nosso time vencedor! Segue o seu link de convite. Compartilhe! 🔗✨\n\n" .
+                "*Seu link de convite:*\n" . 
+                "{$inviteLink}\n\n" .
+                "Acompanhe nosso trabalho através de minhas redes sociais:\n\n" .
+                "*📘 Facebook:* https://www.facebook.com/depandrecorrea1\n" .
+                "*📸 Instagram:* https://instagram.com/depandrecorrea\n" .
+                "*🌐 Site:* https://www.andrecorrea.com.br/";
+                
+                $this->sendReply($waId, "{$user->name}, $msg");
+                break;
         }
+    }
+
+    protected function askConcern01($waId, $user, $city)
+    {
+        $this->setStep($waId, 'AWAITING_CONCERN_01');
+        $user->update(['is_question_concern_01' => true]);
+        
+        $this->whatsapp->sendListMessage(
+            $waId, 
+            "Escolha uma das opções na lista.", 
+            "Selecione", 
+            $this->getConcernsList(),
+            "Principal preocupação"
+        );
+    }
+
+    protected function getConcernsList()
+    {
+        return [
+            [
+                'title' => 'Preocupações',
+                'rows' => [
+                    ['id' => 'Asfalto ruim', 'title' => 'Asfalto ruim', 'description' => 'Ruas esburacadas e de difícil acesso.'],
+                    ['id' => 'Cultura e Lazer', 'title' => 'Cultura e Lazer', 'description' => 'Falta de espaços culturais e recreativos.'],
+                    ['id' => 'Falta de água', 'title' => 'Falta de água', 'description' => 'Escassez ou interrupção no abastecimento.'],
+                    ['id' => 'Falta de creches', 'title' => 'Falta de creches', 'description' => 'Poucas vagas para crianças pequenas.'],
+                    ['id' => 'Falta de emprego', 'title' => 'Falta de emprego', 'description' => 'Escassez de oportunidades de trabalho.'],
+                    ['id' => 'Iluminação e segurança', 'title' => 'Iluminação e segurança', 'description' => 'Ruas escuras e alto índice de crimes.'],
+                    ['id' => 'Qualidade na educação', 'title' => 'Qualidade na educação', 'description' => 'Ensino deficiente e precário.'],
+                    ['id' => 'Saneamento básico', 'title' => 'Saneamento básico', 'description' => 'Falta de esgoto e água tratada.'],
+                    ['id' => 'Saúde precária', 'title' => 'Saúde precária', 'description' => 'Falta de médicos e estrutura hospitalar.'],
+                    ['id' => 'Transporte insuficiente', 'title' => 'Transporte insuficiente', 'description' => 'Poucos ônibus e lotação diária.'],
+                ]
+            ]
+        ];
     }
 
     protected function setStep($waId, $step)
