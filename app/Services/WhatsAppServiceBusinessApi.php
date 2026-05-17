@@ -16,6 +16,7 @@ class WhatsAppServiceBusinessApi
      */
     public function sendInteractiveButtons(string $phone, string $bodyText, array $buttons)
     {
+        Log::info('WA sending interactive buttons to ' . $phone);
         $buttonObjects = [];
         foreach ($buttons as $id => $title) {
             $buttonObjects[] = [
@@ -45,6 +46,12 @@ class WhatsAppServiceBusinessApi
                     'buttons' => $buttonObjects,
                 ],
             ],
+        ]);
+
+        Log::info('WA interactive buttons response', [
+            'status' => $response->status(),
+            'body'   => $response->json(),
+            'phone'  => $phone
         ]);
 
         if (!$response->successful()) {
@@ -78,6 +85,12 @@ class WhatsAppServiceBusinessApi
             ],
         ]);
 
+        Log::info('WA free text response', [
+            'status' => $response->status(),
+            'body'   => $response->json(),
+            'phone'  => $phone
+        ]);
+
         if (!$response->successful()) {
             Log::error('WA free text send failed', [
                 'status' => $response->status(),
@@ -88,6 +101,7 @@ class WhatsAppServiceBusinessApi
 
         return $response->json();
     }
+
 
     /**
      * Obtém o access token da config.
@@ -166,6 +180,14 @@ class WhatsAppServiceBusinessApi
                 'components' => $params,
             ],
         ]);
+
+        Log::info('WA template response', [
+            'status' => $response->status(),
+            'body'   => $response->json(),
+            'phone'  => $phone,
+            'template' => $template
+        ]);
+
         return $response->json();
     }
 
