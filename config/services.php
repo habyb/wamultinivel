@@ -49,4 +49,12 @@ return [
         'phone_account_id' => env('USINESS_API_PHONE_ACCOUNT_ID'),
     ],
 
+    'business_test' => [
+        'url_test' => env('BUSINESS_API_TEST_URL'),
+        'version_test' => env('BUSINESS_API_TEST_VERSION'),
+        'access_token_test' => env('BUSINESS_API_TEST_ACCESS_TOKEN'),
+        'phone_number_id_test' => env('BUSINESS_API_TEST_PHONE_NUMBER_ID'),
+        'phone_account_id_test' => env('USINESS_API_TEST_PHONE_ACCOUNT_ID'),
+    ],
+
 ];
