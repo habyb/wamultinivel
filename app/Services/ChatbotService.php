@@ -21,7 +21,14 @@ class ChatbotService
     {
         $waId = $contact['wa_id'];
         $profileName = $contact['profile']['name'] ?? 'Amigo(a)';
-        $text = $message['text']['body'] ?? '';
+        
+        $text = '';
+        if (($message['type'] ?? '') === 'text') {
+            $text = $message['text']['body'] ?? '';
+        } elseif (($message['type'] ?? '') === 'interactive') {
+            $text = $message['interactive']['button_reply']['id'] ?? 
+                    $message['interactive']['button_reply']['title'] ?? '';
+        }
 
         Log::info("Processing message from $waId: $text");
 
@@ -49,7 +56,15 @@ class ChatbotService
         if ($user && $user->is_add_date_of_birth) {
             // Cenário A: Usuário Completo
             $inviteLink = config('app.url') . '/' . ($user->code ?: '');
-            $this->sendReply($waId, "{$user->name}, você faz parte do nosso time vencedor! Segue o seu link de convite: {$inviteLink}. Compartilhe! 🚀✨");
+            $msg = "você faz parte do nosso time vencedor! Segue o seu link de convite. Compartilhe! 🔗✨\n\n" .
+            "*Seu link de convite:*\n" . 
+            "{$inviteLink}\n\n" .
+            "Acompanhe nosso trabalho através de minhas redes sociais:\n\n" .
+            "*📘 Facebook:* https://www.facebook.com/depandrecorrea1\n" .
+            "*📸 Instagram:* https://instagram.com/depandrecorrea\n" .
+            "*🌐 Site:* https://www.andrecorrea.com.br/";
+
+            $this->sendReply($waId, "{$user->name}, $msg");
             return;
         }
 
@@ -71,22 +86,27 @@ class ChatbotService
         // Iniciar fluxo de onboarding
         $this->setStep($waId, 'AWAITING_REGISTRATION_CONFIRMATION');
         
-        $msg = "Olá, Boa tarde! Seja Bem-vindo(a) ao time do Dep. André Corrêa.\n\n" .
-               "Que ótimo ter você aqui! 🥳\n" .
+        $msg = "Olá. Boa tarde! Seja Bem-vindo(a) ao time do Dep. André Corrêa.\n\n" .
+               "Que ótimo ter você aqui! 🎉\n" .
                "Percebi que este é o nosso primeiro contato, e para continuarmos essa conversa, preciso da sua autorização para enviar informativos e novidades da nossa equipe. 📩\n\n" .
-               "Basta digitar *Sim* para confirmar ou *Não* para cancelar.";
+               "Basta tocar no botão abaixo para confirmar. 👇";
         
-        $this->sendReply($waId, $msg);
+        $this->whatsapp->sendInteractiveButtons($waId, $msg, [
+            'confirm_yes' => 'Sim, quero receber',
+            'confirm_no' => 'Talvez depois',
+        ]);
     }
 
     protected function handleStateAction($waId, $state, $text)
     {
         // Lógica para cada passo do cadastro será implementada aqui
         Log::info("Handling state $state for $waId with text: $text");
+
+        $textLower = strtolower(trim($text));
         
         switch ($state) {
             case 'AWAITING_REGISTRATION_CONFIRMATION':
-                if (Str::contains(strtolower($text), ['sim', 'quero', 'ok'])) {
+                if (Str::contains($textLower, ['sim', 'quero', 'ok', 'confirm_yes'])) {
                     $this->setStep($waId, 'AWAITING_NAME');
                     $this->sendReply($waId, "Legal! Vamos começar. Digite seu *Nome e Sobrenome*.");
                 } else {

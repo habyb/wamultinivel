@@ -12,6 +12,53 @@ use Illuminate\Support\Facades\Log;
 class WhatsAppServiceBusinessApi
 {
     /**
+     * Sends a message with interactive buttons
+     */
+    public function sendInteractiveButtons(string $phone, string $bodyText, array $buttons)
+    {
+        $buttonObjects = [];
+        foreach ($buttons as $id => $title) {
+            $buttonObjects[] = [
+                'type' => 'reply',
+                'reply' => [
+                    'id' => $id,
+                    'title' => $title,
+                ],
+            ];
+        }
+
+        $response = Http::withHeaders([
+            'Authorization' => 'Bearer ' . config('services.business.access_token'),
+            'Accept' => 'application/json',
+            'Content-Type'  => 'application/json',
+        ])->post(config('services.business.url') . '/' . config('services.business.version') . '/' . config('services.business.phone_number_id') . '/messages', [
+            'messaging_product' => 'whatsapp',
+            'recipient_type'    => 'individual',
+            'to'                => $phone,
+            'type'              => 'interactive',
+            'interactive'       => [
+                'type' => 'button',
+                'body' => [
+                    'text' => $bodyText,
+                ],
+                'action' => [
+                    'buttons' => $buttonObjects,
+                ],
+            ],
+        ]);
+
+        if (!$response->successful()) {
+            Log::error('WA interactive buttons send failed', [
+                'status' => $response->status(),
+                'body'   => $response->body(),
+                'phone'  => $phone
+            ]);
+        }
+
+        return $response->json();
+    }
+
+    /**
      * Sends a free text message (not a template)
      */
     public function sendFreeText(string $phone, string $text)

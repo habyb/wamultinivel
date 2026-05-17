@@ -33,7 +33,7 @@ class ChatProcessController extends Controller
         $contact = $change['contacts'][0] ?? null;
         $message = $change['messages'][0] ?? null;
 
-        if ($contact && $message && ($message['type'] ?? '') === 'text') {
+        if ($contact && $message) {
             $this->chatbot->processMessage($contact, $message);
         }
 
