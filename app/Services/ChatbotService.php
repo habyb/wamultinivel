@@ -77,12 +77,16 @@ class ChatbotService
                 'email' => $waId . '@s.whatsapp.net',
                 'password' => bcrypt(Str::random(16)),
                 'remoteJid' => $waId,
+                'is_remote_jid' => true,
                 'invitation_code' => $invitationCode,
                 'code' => strtoupper(Str::random(10)),
             ]);
         } else {
             // Atualizar código de convite se ainda não estiver completo
-            $user->update(['invitation_code' => $invitationCode]);
+            $user->update([
+                'invitation_code' => $invitationCode,
+                'is_remote_jid' => true,
+            ]);
         }
 
         // Iniciar fluxo de onboarding
