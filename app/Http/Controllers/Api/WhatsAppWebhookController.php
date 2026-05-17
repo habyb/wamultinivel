@@ -41,14 +41,17 @@ class WhatsAppWebhookController extends Controller
     {
         $payload = $request->all();
 
-        // Log the JSON response for analysis as requested
+        // Log para análise
         Log::channel('single')->info('WhatsApp Webhook Received:', $payload);
         
-        // Optional: Log to a specific file for easier analysis
         Log::build([
             'driver' => 'single',
             'path' => storage_path('logs/whatsapp_webhook.log'),
         ])->info(json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+
+        // Delegar para o ChatProcessController (Cérebro)
+        // Poderia ser um Job assíncrono aqui para resposta imediata ao Facebook
+        app(ChatProcessController::class)->process($request);
 
         return response('EVENT_RECEIVED', 200);
     }

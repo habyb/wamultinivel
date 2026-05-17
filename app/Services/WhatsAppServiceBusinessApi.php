@@ -12,6 +12,37 @@ use Illuminate\Support\Facades\Log;
 class WhatsAppServiceBusinessApi
 {
     /**
+     * Sends a free text message (not a template)
+     */
+    public function sendFreeText(string $phone, string $text)
+    {
+        $response = Http::withHeaders([
+            'Authorization' => 'Bearer ' . config('services.business.access_token'),
+            'Accept' => 'application/json',
+            'Content-Type'  => 'application/json',
+        ])->post(config('services.business.url') . '/' . config('services.business.version') . '/' . config('services.business.phone_number_id') . '/messages', [
+            'messaging_product' => 'whatsapp',
+            'recipient_type'    => 'individual',
+            'to'                => $phone,
+            'type'              => 'text',
+            'text'              => [
+                'preview_url' => false,
+                'body'        => $text,
+            ],
+        ]);
+
+        if (!$response->successful()) {
+            Log::error('WA free text send failed', [
+                'status' => $response->status(),
+                'body'   => $response->body(),
+                'phone'  => $phone
+            ]);
+        }
+
+        return $response->json();
+    }
+
+    /**
      * Obtém o access token da config.
      * Prioriza services.business.access_token e faz fallback para services.facebook.token
      */
