@@ -3,14 +3,14 @@
 namespace App\Services;
 
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Str;
 
 class ChatbotService
 {
     protected $whatsapp;
-    protected $redisPrefix = 'chatbot:state:';
+    protected $statePrefix = 'chatbot:state:';
 
     public function __construct(WhatsAppServiceBusinessApi $whatsapp)
     {
@@ -38,8 +38,8 @@ class ChatbotService
             return $this->handleInitialRegistration($waId, $profileName, $invitationCode);
         }
 
-        // 2. Verificar estado no Redis
-        $state = Redis::get($this->redisPrefix . $waId);
+        // 2. Verificar estado no Cache
+        $state = Cache::get($this->statePrefix . $waId);
 
         if (!$state) {
             // Se não tem estado e não é comando de cadastro, poderíamos ignorar ou enviar menu inicial
@@ -121,12 +121,12 @@ class ChatbotService
 
     protected function setStep($waId, $step)
     {
-        Redis::setex($this->redisPrefix . $waId, 3600 * 24, $step); // 24h de expiração
+        Cache::put($this->statePrefix . $waId, $step, now()->addDay());
     }
 
     protected function clearStep($waId)
     {
-        Redis::del($this->redisPrefix . $waId);
+        Cache::forget($this->statePrefix . $waId);
     }
 
     protected function sendReply($waId, $text)
