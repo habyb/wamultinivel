@@ -228,13 +228,16 @@ class ChatbotService
                     return $this->sendReply($waId, "A data informada é inválida.\nPor favor revise e tente novamente.");
                 }
 
+                $code = $user->code ?: strtoupper(Str::random(10));
+
                 $user->update([
                     'date_of_birth' => $formattedDate,
                     'is_add_date_of_birth' => true,
+                    'code' => $code,
                 ]);
                 $this->clearStep($waId);
                 
-                $inviteLink = config('app.url') . '/' . ($user->code ?: '');
+                $inviteLink = config('app.url') . '/' . $code;
                 $msg = "você faz parte do nosso time vencedor! Segue o seu link de convite. Compartilhe! 🔗✨\n\n" .
                 "*Seu link de convite:*\n" . 
                 "{$inviteLink}\n\n" .
