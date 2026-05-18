@@ -33,6 +33,15 @@ class ChatProcessController extends Controller
         $contact = $change['contacts'][0] ?? null;
         $message = $change['messages'][0] ?? null;
 
+        // Trava de segurança: permitir apenas o número de teste especificado
+        $allowedPhone = '50760215163';
+        $waId = $contact['wa_id'] ?? null;
+
+        if ($waId !== $allowedPhone) {
+            Log::info("ChatProcess ignoring message from unauthorized number: $waId");
+            return response('Unauthorized phone', 200);
+        }
+
         if ($contact && $message) {
             $this->chatbot->processMessage($contact, $message);
         }
