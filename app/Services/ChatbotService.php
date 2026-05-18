@@ -103,6 +103,12 @@ class ChatbotService
 
     protected function handleInitialRegistration($waId, $name, $invitationCode)
     {
+        // Validar se o código de convite existe
+        $referrer = User::where('code', $invitationCode)->first();
+        if (!$referrer) {
+            return $this->sendReply($waId, "❌ Por favor, envie a mensagem de cadastro com ID de convite válido.");
+        }
+
         $user = User::where('remoteJid', $waId)->first();
 
         if ($user && $user->is_add_date_of_birth) {
