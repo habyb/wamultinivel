@@ -254,7 +254,7 @@ class ChatbotService
             case 'AWAITING_GENDER':
                 $genders = ['Masculino', 'Feminino', 'Não informar'];
                 if (!in_array($text, $genders)) {
-                    $this->sendReply($waId, "Resposta incorreta. Selecione uma resposta da lista.");
+                    $this->sendReply($waId, "🚫 Resposta não permitida. Selecione uma resposta da lista.");
                     return $this->whatsapp->sendListMessage($waId, "Escolha uma das opções na lista.", "Selecione", [
                         [
                             'title' => 'Gênero',
