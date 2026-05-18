@@ -262,8 +262,32 @@ class ChatbotService
                 break;
 
             case 'AWAITING_NEIGHBORHOOD':
+                $cleanedNeighborhood = preg_replace('/\s+/', ' ', trim($text));
+
+                // 1. Validar letras, números, espaços e hifens
+                if (!preg_match('/^[a-zA-ZÀ-ÿ0-9\s\-]+$/u', $cleanedNeighborhood)) {
+                    return $this->sendReply($waId, "⚠️ O nome do bairro contém caracteres inválidos. Por favor, digite apenas letras e números.");
+                }
+
+                // 2. Validação de tamanho
+                if (mb_strlen($cleanedNeighborhood) < 2 || mb_strlen($cleanedNeighborhood) > 50) {
+                    return $this->sendReply($waId, "⚠️ O nome do bairro parece inválido. Por favor, verifique e tente novamente.");
+                }
+
+                // 3. Normalizar para Title Case (mantendo preposições em lowercase)
+                $parts = explode(' ', mb_strtolower($cleanedNeighborhood));
+                $prepositions = ['da', 'de', 'do', 'das', 'dos', 'e'];
+                $normalizedParts = array_map(function ($part, $index) use ($prepositions) {
+                    if ($index > 0 && in_array($part, $prepositions)) {
+                        return $part;
+                    }
+                    return mb_convert_case($part, MB_CASE_TITLE, "UTF-8");
+                }, $parts, array_keys($parts));
+                
+                $finalNeighborhood = implode(' ', $normalizedParts);
+
                 $user->update([
-                    'neighborhood' => $text,
+                    'neighborhood' => $finalNeighborhood,
                     'is_add_neighborhood' => true
                 ]);
                 $this->askConcern01($waId, $user, $user->city);
