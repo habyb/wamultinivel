@@ -162,17 +162,19 @@ class ChatbotService
 
         switch ($state) {
             case 'AWAITING_REGISTRATION_CONFIRMATION':
-                if (Str::contains($textLower, ['sim', 'quero', 'ok', 'confirm_yes'])) {
+                if (in_array($textLower, ['confirm_yes', 'sim, quero receber'])) {
                     $this->setStep($waId, 'AWAITING_NAME');
                     $user->update(['is_question_name' => true]);
                     $this->sendReply($waId, "Legal! Vamos começar. Digite seu *Nome e Sobrenome*.");
-                } else {
+                } elseif (in_array($textLower, ['confirm_no', 'talvez depois'])) {
                     $msg = "Sem problemas! 😊\n" .
                         "Quando estiver pronto(a), estarei por aqui para continuar nossa conversa.\n" .
                         "Fique à vontade para me chamar quando quiser saber mais ou receber novidades. 😉";
 
                     $this->sendReply($waId, $msg);
                     $this->clearStep($waId);
+                } else {
+                    $this->sendReply($waId, "🚫 Resposta não permitida. Selecione uma resposta dos botões.");
                 }
                 break;
 
