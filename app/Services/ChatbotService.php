@@ -72,7 +72,12 @@ class ChatbotService
                 return $this->sendReply($waId, "{$user->name}, $msg");
             }
             
-            // Caso 2: Usuário não existe ou não completou o cadastro
+            // Caso 2: Usuário não existe (Tentativa de contato sem ID de convite)
+            if (!$user) {
+                return $this->sendReply($waId, "❌ Ops, ocorreu um erro. Por favor, envie a mensagem de cadastro com ID de convite válido.");
+            }
+
+            // Caso 3: Usuário existe mas não completou o cadastro
             // Reinicia o fluxo de boas-vindas
             return $this->sendInitialWelcome($waId);
         }
