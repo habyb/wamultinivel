@@ -312,7 +312,7 @@ class ChatbotService
                 }
 
                 if (!$formattedDate) {
-                    return $this->sendReply($waId, "A data informada é inválida.\nPor favor revise e tente novamente.");
+                    return $this->sendReply($waId, "🚫 A data informada é inválida.\nPor favor revise e tente novamente.");
                 }
 
                 $code = $user->code ?: strtoupper(Str::random(10));
