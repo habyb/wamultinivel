@@ -45,6 +45,8 @@ class ChatbotService
 
         if (!$state) {
             $user = User::where('remoteJid', $waId)->first();
+            
+            // Caso 1: Usuário já completou o cadastro
             if ($user && $user->is_add_date_of_birth) {
                 $text = trim($text);
                 if (in_array($text, ['SIM', 'NÃO'])) {
@@ -70,11 +72,27 @@ class ChatbotService
                 return $this->sendReply($waId, "{$user->name}, $msg");
             }
             
-            // Se não tem estado e não é comando de cadastro, poderíamos ignorar ou enviar menu inicial
-            return null;
+            // Caso 2: Usuário não existe ou não completou o cadastro
+            // Reinicia o fluxo de boas-vindas
+            return $this->sendInitialWelcome($waId);
         }
 
         return $this->handleStateAction($waId, $state, $text);
+    }
+
+    protected function sendInitialWelcome($waId)
+    {
+        $this->setStep($waId, 'AWAITING_REGISTRATION_CONFIRMATION');
+        
+        $msg = "Olá. Boa tarde! Seja Bem-vindo(a) ao time do Dep. André Corrêa.\n\n" .
+               "Que ótimo ter você aqui! 🎉\n" .
+               "Percebi que este é o nosso primeiro contato, e para continuarmos essa conversa, preciso da sua autorização para enviar informativos e novidades da nossa equipe. 📩\n\n" .
+               "Basta tocar no botão abaixo para confirmar. 👇";
+        
+        return $this->whatsapp->sendInteractiveButtons($waId, $msg, [
+            'confirm_yes' => 'Sim, quero receber',
+            'confirm_no' => 'Talvez depois',
+        ]);
     }
 
     protected function handleInitialRegistration($waId, $name, $invitationCode)
@@ -116,17 +134,7 @@ class ChatbotService
         }
 
         // Iniciar fluxo de onboarding
-        $this->setStep($waId, 'AWAITING_REGISTRATION_CONFIRMATION');
-        
-        $msg = "Olá. Boa tarde! Seja Bem-vindo(a) ao time do Dep. André Corrêa.\n\n" .
-               "Que ótimo ter você aqui! 🎉\n" .
-               "Percebi que este é o nosso primeiro contato, e para continuarmos essa conversa, preciso da sua autorização para enviar informativos e novidades da nossa equipe. 📩\n\n" .
-               "Basta tocar no botão abaixo para confirmar. 👇";
-        
-        $this->whatsapp->sendInteractiveButtons($waId, $msg, [
-            'confirm_yes' => 'Sim, quero receber',
-            'confirm_no' => 'Talvez depois',
-        ]);
+        return $this->sendInitialWelcome($waId);
     }
 
     protected function handleStateAction($waId, $state, $text)
