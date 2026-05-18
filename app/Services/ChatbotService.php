@@ -44,7 +44,7 @@ class ChatbotService
         $state = Cache::get($this->statePrefix . $waId);
 
         if (!$state) {
-            $user = User::where('remoteJid', $waId)->first();
+            $user = User::where('remoteJid', fix_whatsapp_number($waId))->first();
             
             // Caso 1: Usuário já completou o cadastro
             if ($user && $user->is_add_date_of_birth) {
@@ -109,7 +109,7 @@ class ChatbotService
             return $this->sendReply($waId, "❌ Por favor, envie a mensagem de cadastro com ID de convite válido.");
         }
 
-        $user = User::where('remoteJid', $waId)->first();
+        $user = User::where('remoteJid', fix_whatsapp_number($waId))->first();
 
         if ($user && $user->is_add_date_of_birth) {
             // Cenário A: Usuário Completo
@@ -154,7 +154,7 @@ class ChatbotService
         // Log::info("Handling state $state for $waId with text: $text");
 
         $textLower = strtolower(trim($text));
-        $user = User::where('remoteJid', $waId)->first();
+        $user = User::where('remoteJid', fix_whatsapp_number($waId))->first();
 
         if (!$user) {
             return $this->sendReply($waId, "Ops, ocorreu um erro. Por favor, envie a mensagem de cadastro novamente.");
