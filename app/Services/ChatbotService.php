@@ -84,7 +84,8 @@ class ChatbotService
     {
         $this->setStep($waId, 'AWAITING_REGISTRATION_CONFIRMATION');
         
-        $msg = "Olá. Boa tarde! Seja Bem-vindo(a) ao time do Dep. André Corrêa.\n\n" .
+        $greeting = get_greeting();
+        $msg = "Olá. {$greeting}! Seja Bem-vindo(a) ao time do Dep. André Corrêa.\n\n" .
                "Que ótimo ter você aqui! 🎉\n" .
                "Percebi que este é o nosso primeiro contato, e para continuarmos essa conversa, preciso da sua autorização para enviar informativos e novidades da nossa equipe. 📩\n\n" .
                "Basta tocar no botão abaixo para confirmar. 👇";

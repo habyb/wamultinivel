@@ -232,3 +232,24 @@ if (! function_exists('format_phone_number')) {
         }
     }
 }
+
+if (!function_exists('get_greeting')) {
+    /**
+     * Retorna a saudação correta baseada no horário atual.
+     *
+     * @return string
+     */
+    function get_greeting(): string
+    {
+        $hora = (int) date('H');
+
+        if ($hora >= 0 && $hora < 12) {
+            return 'Bom dia';
+        } elseif ($hora >= 12 && $hora < 18) {
+            return 'Boa tarde';
+        } else {
+            return 'Boa noite';
+        }
+    }
+}
+
