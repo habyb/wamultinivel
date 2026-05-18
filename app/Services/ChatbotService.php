@@ -150,7 +150,7 @@ class ChatbotService
 
         switch ($state) {
             case 'AWAITING_REGISTRATION_CONFIRMATION':
-                if (Str::contains($textLower, ['sim, quero receber'])) {
+                if (Str::contains($textLower, ['sim', 'quero', 'ok', 'confirm_yes'])) {
                     $this->setStep($waId, 'AWAITING_NAME');
                     $user->update(['is_question_name' => true]);
                     $this->sendReply($waId, "Legal! Vamos começar. Digite seu *Nome e Sobrenome*.");
