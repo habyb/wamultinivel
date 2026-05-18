@@ -199,6 +199,12 @@ class ChatbotService
                 break;
 
             case 'AWAITING_CONCERN_01':
+                $concerns = collect($this->getConcernsList()[0]['rows'])->pluck('title')->toArray();
+                if (!in_array($text, $concerns)) {
+                    $this->sendReply($waId, "🚫 Resposta não permitida. Selecione uma resposta da lista.");
+                    return $this->askConcern01($waId, $user, $user->city);
+                }
+
                 $user->update([
                     'concern_01' => $text,
                     'is_add_concern_01' => true,
@@ -215,6 +221,18 @@ class ChatbotService
                 break;
 
             case 'AWAITING_CONCERN_02':
+                $concerns = collect($this->getConcernsList()[0]['rows'])->pluck('title')->toArray();
+                if (!in_array($text, $concerns)) {
+                    $this->sendReply($waId, "🚫 Resposta não permitida. Selecione uma resposta da lista.");
+                    return $this->whatsapp->sendListMessage(
+                        $waId, 
+                        "Escolha uma das opções na lista.", 
+                        "Selecione", 
+                        $this->getConcernsList(),
+                        "Segunda preocupação"
+                    );
+                }
+
                 $user->update([
                     'concern_02' => $text,
                     'is_add_concern_02' => true,
@@ -234,6 +252,21 @@ class ChatbotService
                 break;
 
             case 'AWAITING_GENDER':
+                $genders = ['Masculino', 'Feminino', 'Não informar'];
+                if (!in_array($text, $genders)) {
+                    $this->sendReply($waId, "Resposta incorreta. Selecione uma resposta da lista.");
+                    return $this->whatsapp->sendListMessage($waId, "Escolha uma das opções na lista.", "Selecione", [
+                        [
+                            'title' => 'Gênero',
+                            'rows' => [
+                                ['id' => 'Masculino', 'title' => 'Masculino', 'description' => 'Pessoas do gênero masculino'],
+                                ['id' => 'Feminino', 'title' => 'Feminino', 'description' => 'Pessoas do gênero feminino'],
+                                ['id' => 'Outro', 'title' => 'Não informar', 'description' => 'Prefiro não informar'],
+                            ]
+                        ]
+                    ], "Selecione o seu Gênero");
+                }
+
                 $user->update([
                     'gender' => $text,
                     'is_add_gender' => true,
