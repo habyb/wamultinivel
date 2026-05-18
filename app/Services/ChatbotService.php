@@ -179,13 +179,43 @@ class ChatbotService
                 break;
 
             case 'AWAITING_NAME':
+                $cleanedName = preg_replace('/\s+/', ' ', trim($text));
+                
+                // 1. Validar apenas letras e espaços
+                if (!preg_match('/^[a-zA-ZÀ-ÿ\s\-]+$/u', $cleanedName)) {
+                    return $this->sendReply($waId, "⚠️ O nome deve conter apenas letras. Por favor, tente novamente.");
+                }
+
+                // 2. Validar pelo menos duas palavras e comprimento mínimo
+                $parts = explode(' ', $cleanedName);
+                if (count($parts) < 2 || mb_strlen($cleanedName) < 5) {
+                    return $this->sendReply($waId, "⚠️ Por favor, digite seu nome *completo* (Nome e Sobrenome).");
+                }
+
+                // 3. Limite máximo
+                if (mb_strlen($cleanedName) > 100) {
+                    return $this->sendReply($waId, "⚠️ O nome digitado é muito longo. Por favor, tente abreviar um pouco.");
+                }
+
+                // 4. Normalizar para Title Case (mantendo preposições em lowercase)
+                $prepositions = ['da', 'de', 'do', 'das', 'dos', 'e'];
+                $normalizedParts = array_map(function ($part, $index) use ($prepositions) {
+                    $partLower = mb_strtolower($part);
+                    if ($index > 0 && in_array($partLower, $prepositions)) {
+                        return $partLower;
+                    }
+                    return mb_convert_case($partLower, MB_CASE_TITLE, "UTF-8");
+                }, $parts, array_keys($parts));
+                
+                $finalName = implode(' ', $normalizedParts);
+
                 $user->update([
-                    'name' => $text,
+                    'name' => $finalName,
                     'is_add_name' => true,
                     'is_question_city' => true
                 ]);
                 $this->setStep($waId, 'AWAITING_CITY');
-                $this->sendReply($waId, "Legal {$text}, agora por favor digite o nome da sua *Cidade*.");
+                $this->sendReply($waId, "Legal {$finalName}, agora por favor digite o nome da sua *Cidade*.");
                 break;
 
             case 'AWAITING_CITY':
