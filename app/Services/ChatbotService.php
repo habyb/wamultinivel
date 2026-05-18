@@ -74,7 +74,7 @@ class ChatbotService
             
             // Caso 2: Usuário não existe (Tentativa de contato sem ID de convite)
             if (!$user) {
-                return $this->sendReply($waId, "❌ Ops, ocorreu um erro. Por favor, envie a mensagem de cadastro com ID de convite válido.");
+                return $this->sendReply($waId, "⚠️ Ops, ocorreu um erro. Por favor, envie a mensagem de cadastro com ID de convite válido.");
             }
 
             // Caso 3: Usuário existe mas não completou o cadastro
@@ -106,7 +106,7 @@ class ChatbotService
         // Validar se o código de convite existe
         $referrer = User::where('code', $invitationCode)->first();
         if (!$referrer) {
-            return $this->sendReply($waId, "❌ Por favor, envie a mensagem de cadastro com ID de convite válido.");
+            return $this->sendReply($waId, "⚠️ Por favor, envie a mensagem de cadastro com ID de convite válido.");
         }
 
         $user = User::where('remoteJid', fix_whatsapp_number($waId))->first();
@@ -174,7 +174,7 @@ class ChatbotService
                     $this->sendReply($waId, $msg);
                     $this->clearStep($waId);
                 } else {
-                    $this->sendReply($waId, "🚫 Resposta não permitida. Selecione uma resposta dos botões.");
+                    $this->sendReply($waId, "⚠️ Resposta não permitida. Selecione uma resposta dos botões.");
                 }
                 break;
 
@@ -219,17 +219,45 @@ class ChatbotService
                 break;
 
             case 'AWAITING_CITY':
+                // 1. Limpeza inicial e remoção de sufixos de estado (ex: Valença/RJ, Valença - RJ, Valença RJ)
+                $cleanedCity = preg_replace('/\s+/', ' ', trim($text));
+                // Regex para remover separadores e siglas de estado no final (2 letras maiúsculas ou minúsculas precedidas por espaço, traço, barra ou vírgula)
+                $cleanedCity = preg_replace('/[\/\-\,\s]+[a-zA-Z]{2}$/', '', $cleanedCity);
+                $cleanedCity = trim($cleanedCity);
+
+                // 2. Validar apenas letras e espaços
+                if (!preg_match('/^[a-zA-ZÀ-ÿ\s\-]+$/u', $cleanedCity)) {
+                    return $this->sendReply($waId, "⚠️ O nome da cidade deve conter apenas letras. Por favor, tente novamente.");
+                }
+
+                // 3. Validação de tamanho
+                if (mb_strlen($cleanedCity) < 3 || mb_strlen($cleanedCity) > 50) {
+                    return $this->sendReply($waId, "⚠️ O nome da cidade parece inválido. Por favor, digite o nome completo da sua cidade.");
+                }
+
+                // 4. Normalizar para Title Case (mantendo preposições em lowercase)
+                $parts = explode(' ', mb_strtolower($cleanedCity));
+                $prepositions = ['da', 'de', 'do', 'das', 'dos', 'e'];
+                $normalizedParts = array_map(function ($part, $index) use ($prepositions) {
+                    if ($index > 0 && in_array($part, $prepositions)) {
+                        return $part;
+                    }
+                    return mb_convert_case($part, MB_CASE_TITLE, "UTF-8");
+                }, $parts, array_keys($parts));
+                
+                $finalCity = implode(' ', $normalizedParts);
+
                 $user->update([
-                    'city' => $text,
+                    'city' => $finalCity,
                     'is_add_city' => true
                 ]);
 
-                if (Str::contains(strtolower($text), ['rio de janeiro', 'rj'])) {
+                if ($finalCity === 'Rio de Janeiro') {
                     $this->setStep($waId, 'AWAITING_NEIGHBORHOOD');
                     $user->update(['is_question_neighborhood' => true]);
                     $this->sendReply($waId, "Vimos que você é do Rio de Janeiro! Por favor, digite seu *Bairro*.");
                 } else {
-                    $this->askConcern01($waId, $user, $text);
+                    $this->askConcern01($waId, $user, $finalCity);
                 }
                 break;
 
@@ -244,7 +272,7 @@ class ChatbotService
             case 'AWAITING_CONCERN_01':
                 $concerns = collect($this->getConcernsList()[0]['rows'])->pluck('title')->toArray();
                 if (!in_array($text, $concerns)) {
-                    $this->sendReply($waId, "🚫 Resposta não permitida. Selecione uma resposta da lista.");
+                    $this->sendReply($waId, "⚠️ Resposta não permitida. Selecione uma resposta da lista.");
                     return $this->askConcern01($waId, $user, $user->city);
                 }
 
@@ -266,7 +294,7 @@ class ChatbotService
             case 'AWAITING_CONCERN_02':
                 $concerns = collect($this->getConcernsList()[0]['rows'])->pluck('title')->toArray();
                 if (!in_array($text, $concerns)) {
-                    $this->sendReply($waId, "🚫 Resposta não permitida. Selecione uma resposta da lista.");
+                    $this->sendReply($waId, "⚠️ Resposta não permitida. Selecione uma resposta da lista.");
                     return $this->whatsapp->sendListMessage(
                         $waId, 
                         "Escolha uma das opções na lista.", 
@@ -297,7 +325,7 @@ class ChatbotService
             case 'AWAITING_GENDER':
                 $genders = ['Masculino', 'Feminino', 'Não informar'];
                 if (!in_array($text, $genders)) {
-                    $this->sendReply($waId, "🚫 Resposta não permitida. Selecione uma resposta da lista.");
+                    $this->sendReply($waId, "⚠️ Resposta não permitida. Selecione uma resposta da lista.");
                     return $this->whatsapp->sendListMessage($waId, "Escolha uma das opções na lista.", "Selecione", [
                         [
                             'title' => 'Gênero',
@@ -344,7 +372,7 @@ class ChatbotService
                 }
 
                 if (!$formattedDate) {
-                    return $this->sendReply($waId, "🚫 A data informada é inválida.\nPor favor revise e tente novamente.");
+                    return $this->sendReply($waId, "⚠️ A data informada é inválida.\nPor favor revise e tente novamente.");
                 }
 
                 $code = $user->code ?: strtoupper(Str::random(10));
