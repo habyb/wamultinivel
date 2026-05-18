@@ -44,6 +44,32 @@ class ChatbotService
         $state = Cache::get($this->statePrefix . $waId);
 
         if (!$state) {
+            $user = User::where('remoteJid', $waId)->first();
+            if ($user && $user->is_add_date_of_birth) {
+                $text = trim($text);
+                if (in_array($text, ['SIM', 'NÃO'])) {
+                    $msg = "\n\nMuito obrigado por sua resposta. Sua participação é muito importante para nós e nos ajuda a melhorar cada vez mais.\n\n" .
+                        "Acompanhe nosso trabalho nessas áreas através de minhas redes sociais:\n\n" .
+                        "*📘 Facebook:* https://www.facebook.com/depandrecorrea1\n" .
+                        "*📸 Instagram:* https://instagram.com/depandrecorrea\n" .
+                        "*🌐 Site:* https://www.andrecorrea.com.br/";
+
+                    return $this->sendReply($waId, "Olá *{$user->name}*!$msg");
+                }
+
+                $inviteLink = config('app.url') . '/' . ($user->code ?: '');
+
+                $msg = "você já faz parte do nosso time vencedor! Segue o seu link de convite. Compartilhe! 🔗✨\n\n" .
+                    "*Seu link de convite:*\n" . 
+                    "{$inviteLink}\n\n" .
+                    "Acompanhe nosso trabalho através de minhas redes sociais:\n\n" .
+                    "*📘 Facebook:* https://www.facebook.com/depandrecorrea1\n" .
+                    "*📸 Instagram:* https://instagram.com/depandrecorrea\n" .
+                    "*🌐 Site:* https://www.andrecorrea.com.br/";
+
+                return $this->sendReply($waId, "{$user->name}, $msg");
+            }
+            
             // Se não tem estado e não é comando de cadastro, poderíamos ignorar ou enviar menu inicial
             return null;
         }
@@ -116,12 +142,16 @@ class ChatbotService
 
         switch ($state) {
             case 'AWAITING_REGISTRATION_CONFIRMATION':
-                if (Str::contains($textLower, ['sim', 'quero', 'ok', 'confirm_yes'])) {
+                if (Str::contains($textLower, ['sim, quero receber'])) {
                     $this->setStep($waId, 'AWAITING_NAME');
                     $user->update(['is_question_name' => true]);
                     $this->sendReply($waId, "Legal! Vamos começar. Digite seu *Nome e Sobrenome*.");
                 } else {
-                    $this->sendReply($waId, "Sem problemas. Se mudar de ideia, é só enviar a mensagem de cadastro novamente.");
+                    $msg = "Sem problemas! 😊\n" .
+                        "Quando estiver pronto(a), estarei por aqui para continuar nossa conversa.\n" .
+                        "Fique à vontade para me chamar quando quiser saber mais ou receber novidades. 😉";
+
+                    $this->sendReply($waId, $msg);
                     $this->clearStep($waId);
                 }
                 break;
