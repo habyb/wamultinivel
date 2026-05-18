@@ -21,15 +21,9 @@ class WhatsAppWebhookController extends Controller
 
         if ($mode && $token) {
             if ($mode === 'subscribe' && $token === $verifyToken) {
-                Log::info('WhatsApp Webhook verified successfully.');
                 return response($challenge, 200);
             }
         }
-
-        Log::warning('WhatsApp Webhook verification failed.', [
-            'mode' => $mode,
-            'token' => $token,
-        ]);
 
         return response('Forbidden', 403);
     }
@@ -39,6 +33,11 @@ class WhatsAppWebhookController extends Controller
      */
     public function handle(Request $request)
     {
+        /*
+        * Para desenvolvimento, é útil logar o payload completo para entender a estrutura dos dados recebidos.
+         * No ambiente de produção, considere usar um canal de log separado ou uma ferramenta de monitoramento.
+         *
+         * Exemplo de log detalhado:
         $payload = $request->all();
 
         // Log para análise
@@ -48,6 +47,7 @@ class WhatsAppWebhookController extends Controller
             'driver' => 'single',
             'path' => storage_path('logs/whatsapp_webhook.log'),
         ])->info(json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        */
 
         // Delegar para o ChatProcessController (Cérebro)
         // Poderia ser um Job assíncrono aqui para resposta imediata ao Facebook

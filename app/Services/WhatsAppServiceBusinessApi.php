@@ -46,20 +46,6 @@ class WhatsAppServiceBusinessApi
             'interactive'       => $interactive,
         ]);
 
-        Log::info('WA list message response', [
-            'status' => $response->status(),
-            'body'   => $response->json(),
-            'phone'  => $phone
-        ]);
-
-        if (!$response->successful()) {
-            Log::error('WA list message send failed', [
-                'status' => $response->status(),
-                'body'   => $response->body(),
-                'phone'  => $phone
-            ]);
-        }
-
         return $response->json();
     }
 
@@ -68,7 +54,6 @@ class WhatsAppServiceBusinessApi
      */
     public function sendInteractiveButtons(string $phone, string $bodyText, array $buttons)
     {
-        Log::info('WA sending interactive buttons to ' . $phone);
         $buttonObjects = [];
         foreach ($buttons as $id => $title) {
             $buttonObjects[] = [
@@ -100,20 +85,6 @@ class WhatsAppServiceBusinessApi
             ],
         ]);
 
-        Log::info('WA interactive buttons response', [
-            'status' => $response->status(),
-            'body'   => $response->json(),
-            'phone'  => $phone
-        ]);
-
-        if (!$response->successful()) {
-            Log::error('WA interactive buttons send failed', [
-                'status' => $response->status(),
-                'body'   => $response->body(),
-                'phone'  => $phone
-            ]);
-        }
-
         return $response->json();
     }
 
@@ -136,20 +107,6 @@ class WhatsAppServiceBusinessApi
                 'body'        => $text,
             ],
         ]);
-
-        Log::info('WA free text response', [
-            'status' => $response->status(),
-            'body'   => $response->json(),
-            'phone'  => $phone
-        ]);
-
-        if (!$response->successful()) {
-            Log::error('WA free text send failed', [
-                'status' => $response->status(),
-                'body'   => $response->body(),
-                'phone'  => $phone
-            ]);
-        }
 
         return $response->json();
     }
@@ -231,13 +188,6 @@ class WhatsAppServiceBusinessApi
                 'language' => ['code' => $language],
                 'components' => $params,
             ],
-        ]);
-
-        Log::info('WA template response', [
-            'status' => $response->status(),
-            'body'   => $response->json(),
-            'phone'  => $phone,
-            'template' => $template
         ]);
 
         return $response->json();

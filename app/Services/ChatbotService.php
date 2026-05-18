@@ -32,7 +32,7 @@ class ChatbotService
                     $message['interactive']['list_reply']['id'] ?? '';
         }
 
-        Log::info("Processing message from $waId: $text");
+        // Log::info("Processing message from $waId: $text");
 
         // 1. Verificar se é uma mensagem de cadastro com ID
         if (preg_match('/ID:\s*([A-Z0-9]+)/i', $text, $matches)) {
@@ -140,7 +140,7 @@ class ChatbotService
 
     protected function handleStateAction($waId, $state, $text)
     {
-        Log::info("Handling state $state for $waId with text: $text");
+        // Log::info("Handling state $state for $waId with text: $text");
 
         $textLower = strtolower(trim($text));
         $user = User::where('remoteJid', $waId)->first();
@@ -374,7 +374,7 @@ class ChatbotService
 
     protected function sendReply($waId, $text)
     {
-        Log::info("Sending reply to $waId: $text");
+        // Log::info("Sending reply to $waId: $text");
         return $this->whatsapp->sendFreeText($waId, $text);
     }
 }
