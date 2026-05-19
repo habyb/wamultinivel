@@ -19,7 +19,7 @@ class ChatbotService
 
     public function processMessage(array $contact, array $message)
     {
-        $waId = $contact['wa_id'];
+        $waId = fix_whatsapp_number($contact['wa_id']);
         $profileName = $contact['profile']['name'] ?? 'Amigo(a)';
         
         $text = '';
