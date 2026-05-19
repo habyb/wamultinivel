@@ -157,9 +157,6 @@ class ChatbotService
 
     protected function handleStateAction($waId, $state, $text)
     {
-        // Log::info("Handling state $state for $waId with text: $text");
-
-        $textLower = strtolower(trim($text));
         $user = User::where('remoteJid', fix_whatsapp_number($waId))->first();
 
         if (!$user) {
@@ -168,264 +165,302 @@ class ChatbotService
 
         switch ($state) {
             case 'AWAITING_REGISTRATION_CONFIRMATION':
-                if (in_array($textLower, ['confirm_yes', 'sim, quero receber'])) {
-                    $this->setStep($waId, 'AWAITING_NAME');
-                    $user->update(['is_question_name' => true]);
-                    $this->sendReply($waId, "Legal! Vamos começar. Digite seu *Nome e Sobrenome*.");
-                } elseif (in_array($textLower, ['confirm_no', 'talvez depois'])) {
-                    $msg = "Sem problemas! 😊\n" .
-                        "Quando estiver pronto(a), estarei por aqui para continuar nossa conversa.\n" .
-                        "Fique à vontade para me chamar quando quiser saber mais ou receber novidades. 😉";
-
-                    $this->sendReply($waId, $msg);
-                    $this->clearStep($waId);
-                } else {
-                    $this->sendReply($waId, "⚠️ Resposta não permitida. Selecione uma resposta dos botões.");
-                }
-                break;
+                return $this->processAwaitingRegistrationConfirmation($waId, $user, $text);
 
             case 'AWAITING_NAME':
-                $cleanedName = preg_replace('/\s+/', ' ', trim($text));
-                
-                // 1. Validar apenas letras e espaços
-                if (!preg_match('/^[a-zA-ZÀ-ÿ\s\-]+$/u', $cleanedName)) {
-                    return $this->sendReply($waId, "⚠️ O nome deve conter apenas letras. Por favor, tente novamente.");
-                }
-
-                // 2. Validar pelo menos duas palavras e comprimento mínimo
-                $parts = explode(' ', $cleanedName);
-                if (count($parts) < 2 || mb_strlen($cleanedName) < 5) {
-                    return $this->sendReply($waId, "⚠️ Por favor, digite seu nome *completo* (Nome e Sobrenome).");
-                }
-
-                // 3. Limite máximo
-                if (mb_strlen($cleanedName) > 100) {
-                    return $this->sendReply($waId, "⚠️ O nome digitado é muito longo. Por favor, tente abreviar um pouco.");
-                }
-
-                // 4. Normalizar para Title Case (mantendo preposições em lowercase)
-                $prepositions = ['da', 'de', 'do', 'das', 'dos', 'e'];
-                $normalizedParts = array_map(function ($part, $index) use ($prepositions) {
-                    $partLower = mb_strtolower($part);
-                    if ($index > 0 && in_array($partLower, $prepositions)) {
-                        return $partLower;
-                    }
-                    return mb_convert_case($partLower, MB_CASE_TITLE, "UTF-8");
-                }, $parts, array_keys($parts));
-                
-                $finalName = implode(' ', $normalizedParts);
-
-                $user->update([
-                    'name' => $finalName,
-                    'is_add_name' => true,
-                    'is_question_city' => true
-                ]);
-                $this->setStep($waId, 'AWAITING_CITY');
-                $this->sendReply($waId, "Legal {$finalName}, agora por favor digite o nome da sua *Cidade*.");
-                break;
+                return $this->processAwaitingName($waId, $user, $text);
 
             case 'AWAITING_CITY':
-                // 1. Limpeza inicial e remoção de sufixos de estado (ex: Valença/RJ, Valença - RJ, Valença RJ)
-                $cleanedCity = preg_replace('/\s+/', ' ', trim($text));
-                // Regex para remover separadores e siglas de estado no final (2 letras maiúsculas ou minúsculas precedidas por espaço, traço, barra ou vírgula)
-                $cleanedCity = preg_replace('/[\/\-\,\s]+[a-zA-Z]{2}$/', '', $cleanedCity);
-                $cleanedCity = trim($cleanedCity);
-
-                // 2. Validar apenas letras e espaços
-                if (!preg_match('/^[a-zA-ZÀ-ÿ\s\-]+$/u', $cleanedCity)) {
-                    return $this->sendReply($waId, "⚠️ O nome da cidade deve conter apenas letras. Por favor, tente novamente.");
-                }
-
-                // 3. Validação de tamanho
-                if (mb_strlen($cleanedCity) < 3 || mb_strlen($cleanedCity) > 50) {
-                    return $this->sendReply($waId, "⚠️ O nome da cidade parece inválido. Por favor, digite o nome completo da sua cidade.");
-                }
-
-                // 4. Normalizar para Title Case (mantendo preposições em lowercase)
-                $parts = explode(' ', mb_strtolower($cleanedCity));
-                $prepositions = ['da', 'de', 'do', 'das', 'dos', 'e'];
-                $normalizedParts = array_map(function ($part, $index) use ($prepositions) {
-                    if ($index > 0 && in_array($part, $prepositions)) {
-                        return $part;
-                    }
-                    return mb_convert_case($part, MB_CASE_TITLE, "UTF-8");
-                }, $parts, array_keys($parts));
-                
-                $finalCity = implode(' ', $normalizedParts);
-
-                $user->update([
-                    'city' => $finalCity,
-                    'is_add_city' => true
-                ]);
-
-                if ($finalCity === 'Rio de Janeiro') {
-                    $this->setStep($waId, 'AWAITING_NEIGHBORHOOD');
-                    $user->update(['is_question_neighborhood' => true]);
-                    $this->sendReply($waId, "Vimos que você é do Rio de Janeiro! Por favor, digite seu *Bairro*.");
-                } else {
-                    $this->askConcern01($waId, $user, $finalCity);
-                }
-                break;
+                return $this->processAwaitingCity($waId, $user, $text);
 
             case 'AWAITING_NEIGHBORHOOD':
-                $cleanedNeighborhood = preg_replace('/\s+/', ' ', trim($text));
-
-                // 1. Validar letras, números, espaços e hifens
-                if (!preg_match('/^[a-zA-ZÀ-ÿ0-9\s\-]+$/u', $cleanedNeighborhood)) {
-                    return $this->sendReply($waId, "⚠️ O nome do bairro contém caracteres inválidos. Por favor, digite apenas letras e números.");
-                }
-
-                // 2. Validação de tamanho
-                if (mb_strlen($cleanedNeighborhood) < 2 || mb_strlen($cleanedNeighborhood) > 50) {
-                    return $this->sendReply($waId, "⚠️ O nome do bairro parece inválido. Por favor, verifique e tente novamente.");
-                }
-
-                // 3. Normalizar para Title Case (mantendo preposições em lowercase)
-                $parts = explode(' ', mb_strtolower($cleanedNeighborhood));
-                $prepositions = ['da', 'de', 'do', 'das', 'dos', 'e'];
-                $normalizedParts = array_map(function ($part, $index) use ($prepositions) {
-                    if ($index > 0 && in_array($part, $prepositions)) {
-                        return $part;
-                    }
-                    return mb_convert_case($part, MB_CASE_TITLE, "UTF-8");
-                }, $parts, array_keys($parts));
-                
-                $finalNeighborhood = implode(' ', $normalizedParts);
-
-                $user->update([
-                    'neighborhood' => $finalNeighborhood,
-                    'is_add_neighborhood' => true
-                ]);
-                $this->askConcern01($waId, $user, $user->city);
-                break;
+                return $this->processAwaitingNeighborhood($waId, $user, $text);
 
             case 'AWAITING_CONCERN_01':
-                $concerns = collect($this->getConcernsList()[0]['rows'])->pluck('title')->toArray();
-                if (!in_array($text, $concerns)) {
-                    $this->sendReply($waId, "⚠️ Resposta não permitida. Selecione uma resposta da lista.");
-                    return $this->askConcern01($waId, $user, $user->city);
-                }
-
-                $user->update([
-                    'concern_01' => $text,
-                    'is_add_concern_01' => true,
-                    'is_question_concern_02' => true
-                ]);
-                $this->setStep($waId, 'AWAITING_CONCERN_02');
-                $this->whatsapp->sendListMessage(
-                    $waId, 
-                    "Escolha uma das opções na lista.", 
-                    "Selecione", 
-                    $this->getConcernsList(),
-                    "Segunda preocupação"
-                );
-                break;
+                return $this->processAwaitingConcern01($waId, $user, $text);
 
             case 'AWAITING_CONCERN_02':
-                $concerns = collect($this->getConcernsList()[0]['rows'])->pluck('title')->toArray();
-                if (!in_array($text, $concerns)) {
-                    $this->sendReply($waId, "⚠️ Resposta não permitida. Selecione uma resposta da lista.");
-                    return $this->whatsapp->sendListMessage(
-                        $waId, 
-                        "Escolha uma das opções na lista.", 
-                        "Selecione", 
-                        $this->getConcernsList(),
-                        "Segunda preocupação"
-                    );
-                }
-
-                $user->update([
-                    'concern_02' => $text,
-                    'is_add_concern_02' => true,
-                    'is_question_gender' => true
-                ]);
-                $this->setStep($waId, 'AWAITING_GENDER');
-                $this->whatsapp->sendListMessage($waId, "Escolha uma das opções na lista.", "Selecione", [
-                    [
-                        'title' => 'Gênero',
-                        'rows' => [
-                            ['id' => 'Masculino', 'title' => 'Masculino', 'description' => 'Pessoas do gênero masculino'],
-                            ['id' => 'Feminino', 'title' => 'Feminino', 'description' => 'Pessoas do gênero feminino'],
-                            ['id' => 'Outro', 'title' => 'Não informar', 'description' => 'Prefiro não informar'],
-                        ]
-                    ]
-                ], "Selecione o seu Gênero");
-                break;
+                return $this->processAwaitingConcern02($waId, $user, $text);
 
             case 'AWAITING_GENDER':
-                $genders = ['Masculino', 'Feminino', 'Não informar'];
-                if (!in_array($text, $genders)) {
-                    $this->sendReply($waId, "⚠️ Resposta não permitida. Selecione uma resposta da lista.");
-                    return $this->whatsapp->sendListMessage($waId, "Escolha uma das opções na lista.", "Selecione", [
-                        [
-                            'title' => 'Gênero',
-                            'rows' => [
-                                ['id' => 'Masculino', 'title' => 'Masculino', 'description' => 'Pessoas do gênero masculino'],
-                                ['id' => 'Feminino', 'title' => 'Feminino', 'description' => 'Pessoas do gênero feminino'],
-                                ['id' => 'Outro', 'title' => 'Não informar', 'description' => 'Prefiro não informar'],
-                            ]
-                        ]
-                    ], "Selecione o seu Gênero");
-                }
-
-                $user->update([
-                    'gender' => $text,
-                    'is_add_gender' => true,
-                    'is_question_date_of_birth' => true
-                ]);
-                $this->setStep($waId, 'AWAITING_DATE_OF_BIRTH');
-                $this->sendReply($waId, "Digite sua *Data de Nascimento*.\nDigite apenas os números.\nEx: *01011980*");
-                break;
+                return $this->processAwaitingGender($waId, $user, $text);
 
             case 'AWAITING_DATE_OF_BIRTH':
-                $dateInput = preg_replace('/\D/', '', $text);
-                $formattedDate = null;
+                return $this->processAwaitingDateOfBirth($waId, $user, $text);
 
-                if (strlen($dateInput) === 6) {
-                    $day = substr($dateInput, 0, 2);
-                    $month = substr($dateInput, 2, 2);
-                    $year = substr($dateInput, 4, 2);
-                    
-                    // Lógica para ano: se > 26 (ano atual 2026), assume 19XX, senão 20XX
-                    $year = (int)$year > 26 ? "19$year" : "20$year";
-                    $dateInput = $day . $month . $year;
-                }
-
-                if (strlen($dateInput) === 8) {
-                    $day = substr($dateInput, 0, 2);
-                    $month = substr($dateInput, 2, 2);
-                    $year = substr($dateInput, 4, 4);
-                    
-                    if (checkdate((int)$month, (int)$day, (int)$year)) {
-                        $formattedDate = "$day/$month/$year";
-                    }
-                }
-
-                if (!$formattedDate) {
-                    return $this->sendReply($waId, "⚠️ A data informada é inválida.\nPor favor revise e tente novamente.");
-                }
-
-                $code = $user->code ?: strtoupper(Str::random(10));
-
-                $user->update([
-                    'date_of_birth' => $formattedDate,
-                    'is_add_date_of_birth' => true,
-                    'code' => $code,
-                ]);
+            default:
                 $this->clearStep($waId);
-                
-                $inviteLink = config('app.url') . '/' . $code;
-                $msg = "você faz parte do nosso time vencedor! Segue o seu link de convite. Compartilhe! 🔗✨\n\n" .
-                "*Seu link de convite:*\n" . 
-                "{$inviteLink}\n\n" .
-                "Acompanhe nosso trabalho através de minhas redes sociais:\n\n" .
-                "*📘 Facebook:* https://www.facebook.com/depandrecorrea1\n" .
-                "*📸 Instagram:* https://instagram.com/depandrecorrea\n" .
-                "*🌐 Site:* https://www.andrecorrea.com.br/";
-                
-                $this->sendReply($waId, "{$user->name}, $msg");
-                break;
+                return $this->sendReply($waId, "Ops, algo deu errado. Por favor, tente novamente.");
         }
+    }
+
+    protected function processAwaitingRegistrationConfirmation($waId, User $user, $text)
+    {
+        $textLower = strtolower(trim($text));
+
+        if (in_array($textLower, ['confirm_yes', 'sim, quero receber'])) {
+            $this->setStep($waId, 'AWAITING_NAME');
+            $user->update(['is_question_name' => true]);
+            $this->sendReply($waId, "Legal! Vamos começar. Digite seu *Nome e Sobrenome*.");
+        } elseif (in_array($textLower, ['confirm_no', 'talvez depois'])) {
+            $msg = "Sem problemas! 😊\n" .
+                "Quando estiver pronto(a), estarei por aqui para continuar nossa conversa.\n" .
+                "Fique à vontade para me chamar quando quiser saber mais ou receber novidades. 😉";
+
+            $this->sendReply($waId, $msg);
+            $this->clearStep($waId);
+        } else {
+            $this->sendReply($waId, "⚠️ Resposta não permitida. Selecione uma resposta dos botões.");
+        }
+    }
+
+    protected function processAwaitingName($waId, User $user, $text)
+    {
+        $cleanedName = preg_replace('/\s+/', ' ', trim($text));
+        
+        // 1. Validar apenas letras e espaços
+        if (!preg_match('/^[a-zA-ZÀ-ÿ\s\-]+$/u', $cleanedName)) {
+            return $this->sendReply($waId, "⚠️ O nome deve conter apenas letras. Por favor, tente novamente.");
+        }
+
+        // 2. Validar pelo menos duas palavras e comprimento mínimo
+        $parts = explode(' ', $cleanedName);
+        if (count($parts) < 2 || mb_strlen($cleanedName) < 5) {
+            return $this->sendReply($waId, "⚠️ Por favor, digite seu nome *completo* (Nome e Sobrenome).");
+        }
+
+        // 3. Limite máximo
+        if (mb_strlen($cleanedName) > 100) {
+            return $this->sendReply($waId, "⚠️ O nome digitado é muito longo. Por favor, tente abreviar um pouco.");
+        }
+
+        // 4. Normalizar para Title Case (mantendo preposições em lowercase)
+        $prepositions = ['da', 'de', 'do', 'das', 'dos', 'e'];
+        $normalizedParts = array_map(function ($part, $index) use ($prepositions) {
+            $partLower = mb_strtolower($part);
+            if ($index > 0 && in_array($partLower, $prepositions)) {
+                return $partLower;
+            }
+            return mb_convert_case($partLower, MB_CASE_TITLE, "UTF-8");
+        }, $parts, array_keys($parts));
+        
+        $finalName = implode(' ', $normalizedParts);
+
+        $user->update([
+            'name' => $finalName,
+            'is_add_name' => true,
+            'is_question_city' => true
+        ]);
+        $this->setStep($waId, 'AWAITING_CITY');
+        $this->sendReply($waId, "Legal {$finalName}, agora por favor digite o nome da sua *Cidade*.");
+    }
+
+    protected function processAwaitingCity($waId, User $user, $text)
+    {
+        // 1. Limpeza inicial e remoção de sufixos de estado (ex: Valença/RJ, Valença - RJ, Valença RJ)
+        $cleanedCity = preg_replace('/\s+/', ' ', trim($text));
+        // Regex para remover separadores e siglas de estado no final (2 letras maiúsculas ou minúsculas precedidas por espaço, traço, barra ou vírgula)
+        $cleanedCity = preg_replace('/[\/\-\,\s]+[a-zA-Z]{2}$/', '', $cleanedCity);
+        $cleanedCity = trim($cleanedCity);
+
+        // 2. Validar apenas letras e espaços
+        if (!preg_match('/^[a-zA-ZÀ-ÿ\s\-]+$/u', $cleanedCity)) {
+            return $this->sendReply($waId, "⚠️ O nome da cidade deve conter apenas letras. Por favor, tente novamente.");
+        }
+
+        // 3. Validação de tamanho
+        if (mb_strlen($cleanedCity) < 3 || mb_strlen($cleanedCity) > 50) {
+            return $this->sendReply($waId, "⚠️ O nome da cidade parece inválido. Por favor, digite o nome completo da sua cidade.");
+        }
+
+        // 4. Normalizar para Title Case (mantendo preposições em lowercase)
+        $parts = explode(' ', mb_strtolower($cleanedCity));
+        $prepositions = ['da', 'de', 'do', 'das', 'dos', 'e'];
+        $normalizedParts = array_map(function ($part, $index) use ($prepositions) {
+            if ($index > 0 && in_array($part, $prepositions)) {
+                return $part;
+            }
+            return mb_convert_case($part, MB_CASE_TITLE, "UTF-8");
+        }, $parts, array_keys($parts));
+        
+        $finalCity = implode(' ', $normalizedParts);
+
+        $user->update([
+            'city' => $finalCity,
+            'is_add_city' => true
+        ]);
+
+        if ($finalCity === 'Rio de Janeiro') {
+            $this->setStep($waId, 'AWAITING_NEIGHBORHOOD');
+            $user->update(['is_question_neighborhood' => true]);
+            $this->sendReply($waId, "Vimos que você é do Rio de Janeiro! Por favor, digite seu *Bairro*.");
+        } else {
+            $this->askConcern01($waId, $user, $finalCity);
+        }
+    }
+
+    protected function processAwaitingNeighborhood($waId, User $user, $text)
+    {
+        $cleanedNeighborhood = preg_replace('/\s+/', ' ', trim($text));
+
+        // 1. Validar letras, números, espaços e hifens
+        if (!preg_match('/^[a-zA-ZÀ-ÿ0-9\s\-]+$/u', $cleanedNeighborhood)) {
+            return $this->sendReply($waId, "⚠️ O nome do bairro contém caracteres inválidos. Por favor, digite apenas letras e números.");
+        }
+
+        // 2. Validação de tamanho
+        if (mb_strlen($cleanedNeighborhood) < 2 || mb_strlen($cleanedNeighborhood) > 50) {
+            return $this->sendReply($waId, "⚠️ O nome do bairro parece inválido. Por favor, verifique e tente novamente.");
+        }
+
+        // 3. Normalizar para Title Case (mantendo preposições em lowercase)
+        $parts = explode(' ', mb_strtolower($cleanedNeighborhood));
+        $prepositions = ['da', 'de', 'do', 'das', 'dos', 'e'];
+        $normalizedParts = array_map(function ($part, $index) use ($prepositions) {
+            if ($index > 0 && in_array($part, $prepositions)) {
+                return $part;
+            }
+            return mb_convert_case($part, MB_CASE_TITLE, "UTF-8");
+        }, $parts, array_keys($parts));
+        
+        $finalNeighborhood = implode(' ', $normalizedParts);
+
+        $user->update([
+            'neighborhood' => $finalNeighborhood,
+            'is_add_neighborhood' => true
+        ]);
+        $this->askConcern01($waId, $user, $user->city);
+    }
+
+    protected function processAwaitingConcern01($waId, User $user, $text)
+    {
+        $concerns = collect($this->getConcernsList()[0]['rows'])->pluck('title')->toArray();
+        if (!in_array($text, $concerns)) {
+            $this->sendReply($waId, "⚠️ Resposta não permitida. Selecione uma resposta da lista.");
+            return $this->askConcern01($waId, $user, $user->city);
+        }
+
+        $user->update([
+            'concern_01' => $text,
+            'is_add_concern_01' => true,
+            'is_question_concern_02' => true
+        ]);
+        $this->setStep($waId, 'AWAITING_CONCERN_02');
+        $this->whatsapp->sendListMessage(
+            $waId, 
+            "Escolha uma das opções na lista.", 
+            "Selecione", 
+            $this->getConcernsList(),
+            "Segunda preocupação"
+        );
+    }
+
+    protected function processAwaitingConcern02($waId, User $user, $text)
+    {
+        $concerns = collect($this->getConcernsList()[0]['rows'])->pluck('title')->toArray();
+        if (!in_array($text, $concerns)) {
+            $this->sendReply($waId, "⚠️ Resposta não permitida. Selecione uma resposta da lista.");
+            return $this->whatsapp->sendListMessage(
+                $waId, 
+                "Escolha uma das opções na lista.", 
+                "Selecione", 
+                $this->getConcernsList(),
+                "Segunda preocupação"
+            );
+        }
+
+        $user->update([
+            'concern_02' => $text,
+            'is_add_concern_02' => true,
+            'is_question_gender' => true
+        ]);
+        $this->setStep($waId, 'AWAITING_GENDER');
+        $this->whatsapp->sendListMessage($waId, "Escolha uma das opções na lista.", "Selecione", [
+            [
+                'title' => 'Gênero',
+                'rows' => [
+                    ['id' => 'Masculino', 'title' => 'Masculino', 'description' => 'Pessoas do gênero masculino'],
+                    ['id' => 'Feminino', 'title' => 'Feminino', 'description' => 'Pessoas do gênero feminino'],
+                    ['id' => 'Outro', 'title' => 'Não informar', 'description' => 'Prefiro não informar'],
+                ]
+            ]
+        ], "Selecione o seu Gênero");
+    }
+
+    protected function processAwaitingGender($waId, User $user, $text)
+    {
+        $genders = ['Masculino', 'Feminino', 'Não informar'];
+        if (!in_array($text, $genders)) {
+            $this->sendReply($waId, "⚠️ Resposta não permitida. Selecione uma resposta da lista.");
+            return $this->whatsapp->sendListMessage($waId, "Escolha uma das opções na lista.", "Selecione", [
+                [
+                    'title' => 'Gênero',
+                    'rows' => [
+                        ['id' => 'Masculino', 'title' => 'Masculino', 'description' => 'Pessoas do gênero masculino'],
+                        ['id' => 'Feminino', 'title' => 'Feminino', 'description' => 'Pessoas do gênero feminino'],
+                        ['id' => 'Outro', 'title' => 'Não informar', 'description' => 'Prefiro não informar'],
+                    ]
+                ]
+            ], "Selecione o seu Gênero");
+        }
+
+        $user->update([
+            'gender' => $text,
+            'is_add_gender' => true,
+            'is_question_date_of_birth' => true
+        ]);
+        $this->setStep($waId, 'AWAITING_DATE_OF_BIRTH');
+        $this->sendReply($waId, "Digite sua *Data de Nascimento*.\nDigite apenas os números.\nEx: *01011980*");
+    }
+
+    protected function processAwaitingDateOfBirth($waId, User $user, $text)
+    {
+        $dateInput = preg_replace('/\D/', '', $text);
+        $formattedDate = null;
+
+        if (strlen($dateInput) === 6) {
+            $day = substr($dateInput, 0, 2);
+            $month = substr($dateInput, 2, 2);
+            $year = substr($dateInput, 4, 2);
+            
+            // Lógica para ano: se > 26 (ano atual 2026), assume 19XX, senão 20XX
+            $year = (int)$year > 26 ? "19$year" : "20$year";
+            $dateInput = $day . $month . $year;
+        }
+
+        if (strlen($dateInput) === 8) {
+            $day = substr($dateInput, 0, 2);
+            $month = substr($dateInput, 2, 2);
+            $year = substr($dateInput, 4, 4);
+            
+            if (checkdate((int)$month, (int)$day, (int)$year)) {
+                $formattedDate = "$day/$month/$year";
+            }
+        }
+
+        if (!$formattedDate) {
+            return $this->sendReply($waId, "⚠️ A data informada é inválida.\nPor favor revise e tente novamente.");
+        }
+
+        $code = $user->code ?: strtoupper(Str::random(10));
+
+        $user->update([
+            'date_of_birth' => $formattedDate,
+            'is_add_date_of_birth' => true,
+            'code' => $code,
+        ]);
+        $this->clearStep($waId);
+        
+        $inviteLink = config('app.url') . '/' . $code;
+        $msg = "você faz parte do nosso time vencedor! Segue o seu link de convite. Compartilhe! 🔗✨\n\n" .
+        "*Seu link de convite:*\n" . 
+        "{$inviteLink}\n\n" .
+        "Acompanhe nosso trabalho através de minhas redes sociais:\n\n" .
+        "*📘 Facebook:* https://www.facebook.com/depandrecorrea1\n" .
+        "*📸 Instagram:* https://instagram.com/depandrecorrea\n" .
+        "*🌐 Site:* https://www.andrecorrea.com.br/";
+        
+        $this->sendReply($waId, "{$user->name}, $msg");
     }
 
     protected function askConcern01($waId, $user, $city)
