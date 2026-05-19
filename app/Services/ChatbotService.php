@@ -34,7 +34,13 @@ class ChatbotService
 
         // Log::info("Processing message from $waId: $text");
 
-        // 1. Verificar se é uma mensagem de cadastro com ID
+        // 1. Comando de reset/reiniciar (Escape)
+        if (Str::upper(trim($text)) === 'REINICIAR') {
+            $this->clearStep($waId);
+            return $this->sendReply($waId, "🔄 Tudo bem! O fluxo foi reiniciado. Para começar novamente, clique no link de convite ou envie a mensagem inicial de cadastro.");
+        }
+
+        // 2. Verificar se é uma mensagem de cadastro com ID
         if (preg_match('/ID:\s*([A-Z0-9]+)/i', $text, $matches)) {
             $invitationCode = $matches[1];
             return $this->handleInitialRegistration($waId, $profileName, $invitationCode);
@@ -459,7 +465,7 @@ class ChatbotService
 
     protected function setStep($waId, $step)
     {
-        Cache::put($this->statePrefix . $waId, $step, now()->addDay());
+        Cache::put($this->statePrefix . $waId, $step, now()->addDays(7));
     }
 
     protected function clearStep($waId)
