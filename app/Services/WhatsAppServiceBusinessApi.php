@@ -35,10 +35,10 @@ class WhatsAppServiceBusinessApi
         }
 
         $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . config('services.business_test.access_token_test'),
+            'Authorization' => 'Bearer ' . config('services.business.access_token'),
             'Accept' => 'application/json',
             'Content-Type'  => 'application/json',
-        ])->post(config('services.business_test.url_test') . '/' . config('services.business_test.version_test') . '/' . config('services.business_test.phone_number_id_test') . '/messages', [
+        ])->post(config('services.business.url') . '/' . config('services.business.version') . '/' . config('services.business.phone_number_id') . '/messages', [
             'messaging_product' => 'whatsapp',
             'recipient_type'    => 'individual',
             'to'                => $phone,
@@ -66,10 +66,10 @@ class WhatsAppServiceBusinessApi
         }
 
         $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . config('services.business_test.access_token_test'),
+            'Authorization' => 'Bearer ' . config('services.business.access_token'),
             'Accept' => 'application/json',
             'Content-Type'  => 'application/json',
-        ])->post(config('services.business_test.url_test') . '/' . config('services.business_test.version_test') . '/' . config('services.business_test.phone_number_id_test') . '/messages', [
+        ])->post(config('services.business.url') . '/' . config('services.business.version') . '/' . config('services.business.phone_number_id') . '/messages', [
             'messaging_product' => 'whatsapp',
             'recipient_type'    => 'individual',
             'to'                => $phone,
@@ -94,10 +94,10 @@ class WhatsAppServiceBusinessApi
     public function sendFreeText(string $phone, string $text)
     {
         $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . config('services.business_test.access_token_test'),
+            'Authorization' => 'Bearer ' . config('services.business.access_token'),
             'Accept' => 'application/json',
             'Content-Type'  => 'application/json',
-        ])->post(config('services.business_test.url_test') . '/' . config('services.business_test.version_test') . '/' . config('services.business_test.phone_number_id_test') . '/messages', [
+        ])->post(config('services.business.url') . '/' . config('services.business.version') . '/' . config('services.business.phone_number_id') . '/messages', [
             'messaging_product' => 'whatsapp',
             'recipient_type'    => 'individual',
             'to'                => $phone,
