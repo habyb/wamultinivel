@@ -109,50 +109,82 @@ class ChatbotService
 
     protected function handleInitialRegistration($waId, $name, $invitationCode)
     {
-        // Validar se o código de convite existe
-        $referrer = User::where('code', $invitationCode)->first();
-        if (!$referrer) {
-            return $this->sendReply($waId, "⚠️ Por favor, envie a mensagem de cadastro com ID de convite válido.");
+        $normalizedId = fix_whatsapp_number($waId);
+
+        // Lock atômico por até 10 segundos, aguardando até 5 segundos para obter o lock
+        $lock = Cache::lock('chatbot:register:' . $normalizedId, 10);
+
+        try {
+            $lock->block(5);
+
+            // Validar se o código de convite existe
+            $referrer = User::where('code', $invitationCode)->first();
+            if (!$referrer) {
+                return $this->sendReply($waId, "⚠️ Por favor, envie a mensagem de cadastro com ID de convite válido.");
+            }
+
+            $user = User::where('remoteJid', $normalizedId)->first();
+
+            if ($user && $user->is_add_date_of_birth) {
+                // Cenário A: Usuário Completo
+                $inviteLink = config('app.url') . '/' . ($user->code ?: '');
+                $msg = "você faz parte do nosso time vencedor! Segue o seu link de convite. Compartilhe! 🔗✨\n\n" .
+                "*Seu link de convite:*\n" . 
+                "{$inviteLink}\n\n" .
+                "Acompanhe nosso trabalho através de minhas redes sociais:\n\n" .
+                "*📘 Facebook:* https://www.facebook.com/depandrecorrea1\n" .
+                "*📸 Instagram:* https://instagram.com/depandrecorrea\n" .
+                "*🌐 Site:* https://www.andrecorrea.com.br/";
+
+                $this->sendReply($waId, "{$user->name}, $msg");
+                return;
+            }
+
+            if (!$user) {
+                try {
+                    // Criar novo usuário
+                    $user = User::create([
+                        'name' => $name,
+                        'email' => $normalizedId . '@s.whatsapp.net',
+                        'password' => bcrypt(Str::random(16)),
+                        'remoteJid' => $normalizedId,
+                        'is_remote_jid' => true,
+                        'invitation_code' => $invitationCode,
+                        'code' => strtoupper(Str::random(10)),
+                    ]);
+                } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
+                    // Caso ocorra exceção de concorrência, busca o usuário existente
+                    $user = User::where('remoteJid', $normalizedId)->first();
+                    if (!$user) {
+                        $user = User::where('email', $normalizedId . '@s.whatsapp.net')->first();
+                    }
+
+                    if ($user) {
+                        $user->update([
+                            'invitation_code' => $invitationCode,
+                            'is_remote_jid' => true,
+                        ]);
+                    } else {
+                        throw $e;
+                    }
+                }
+            } else {
+                // Atualizar código de convite se ainda não estiver completo
+                $user->update([
+                    'invitation_code' => $invitationCode,
+                    'is_remote_jid' => true,
+                ]);
+            }
+
+            // Iniciar fluxo de onboarding
+            return $this->sendInitialWelcome($waId);
+
+        } catch (\Illuminate\Contracts\Cache\LockTimeoutException $e) {
+            Log::warning("Lock timeout ao tentar registrar o usuário com waId: " . $waId);
+            return $this->sendReply($waId, "⚠️ Processando sua mensagem, por favor aguarde um momento.");
+        } finally {
+            $lock->release();
         }
-
-        $user = User::where('remoteJid', fix_whatsapp_number($waId))->first();
-
-        if ($user && $user->is_add_date_of_birth) {
-            // Cenário A: Usuário Completo
-            $inviteLink = config('app.url') . '/' . ($user->code ?: '');
-            $msg = "você faz parte do nosso time vencedor! Segue o seu link de convite. Compartilhe! 🔗✨\n\n" .
-            "*Seu link de convite:*\n" . 
-            "{$inviteLink}\n\n" .
-            "Acompanhe nosso trabalho através de minhas redes sociais:\n\n" .
-            "*📘 Facebook:* https://www.facebook.com/depandrecorrea1\n" .
-            "*📸 Instagram:* https://instagram.com/depandrecorrea\n" .
-            "*🌐 Site:* https://www.andrecorrea.com.br/";
-
-            $this->sendReply($waId, "{$user->name}, $msg");
-            return;
-        }
-
-        if (!$user) {
-            // Criar novo usuário
-            $user = User::create([
-                'name' => $name,
-                'email' => $waId . '@s.whatsapp.net',
-                'password' => bcrypt(Str::random(16)),
-                'remoteJid' => $waId,
-                'is_remote_jid' => true,
-                'invitation_code' => $invitationCode,
-                'code' => strtoupper(Str::random(10)),
-            ]);
-        } else {
-            // Atualizar código de convite se ainda não estiver completo
-            $user->update([
-                'invitation_code' => $invitationCode,
-                'is_remote_jid' => true,
-            ]);
-        }
-
-        // Iniciar fluxo de onboarding
-        return $this->sendInitialWelcome($waId);
     }
 
     protected function handleStateAction($waId, $state, $text)
