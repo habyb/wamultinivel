@@ -31,9 +31,9 @@ class CustomLogin extends Login
     protected function getLoginFormComponent(): Component
     {
         return TextInput::make('login')
-            ->label('Email or WhatsApp')
-            ->helperText(__('ie: user@domain.com or 219998887777'))
-            ->placeholder(__('Enter your Email or Whatsapp with DDD'))
+            ->label('WhatsApp')
+            ->helperText(__('ie: 219998887777'))
+            ->placeholder(__('Enter your WhatsApp number with DDD'))
             ->required()
             ->autocomplete()
             ->autofocus()

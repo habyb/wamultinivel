@@ -45,9 +45,9 @@ class CustomRequestPasswordReset extends RequestPasswordReset
     protected function getEmailFormComponent(): Component
     {
         return TextInput::make('email')
-            ->label(__('Email or WhatsApp'))
-            ->helperText(__('ie: user@domain.com or 219998887777'))
-            ->placeholder(__('Enter your Email or Whatsapp with DDD'))
+            ->label(__('WhatsApp'))
+            ->helperText(__('ie: 219998887777'))
+            ->placeholder(__('Enter your WhatsApp number with DDD'))
             ->required()
             ->autocomplete()
             ->autofocus();
