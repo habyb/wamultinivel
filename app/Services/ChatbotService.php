@@ -19,7 +19,7 @@ class ChatbotService
 
     public function processMessage(array $contact, array $message)
     {
-        $waId = fix_whatsapp_number($contact['wa_id']);
+        $waId = $contact['wa_id'];
         $profileName = $contact['profile']['name'] ?? 'Amigo(a)';
         
         $text = '';
@@ -50,7 +50,7 @@ class ChatbotService
         $state = Cache::get($this->statePrefix . $waId);
 
         if (!$state) {
-            $user = User::where('remoteJid', fix_whatsapp_number($waId))->first();
+            $user = User::where('remoteJid', $waId)->first();
             
             // Caso 1: Usuário já completou o cadastro
             if ($user && $user->is_add_date_of_birth) {
@@ -109,10 +109,8 @@ class ChatbotService
 
     protected function handleInitialRegistration($waId, $name, $invitationCode)
     {
-        $normalizedId = fix_whatsapp_number($waId);
-
         // Lock atômico por até 10 segundos, aguardando até 5 segundos para obter o lock
-        $lock = Cache::lock('chatbot:register:' . $normalizedId, 10);
+        $lock = Cache::lock('chatbot:register:' . $waId, 10);
 
         try {
             $lock->block(5);
@@ -123,7 +121,7 @@ class ChatbotService
                 return $this->sendReply($waId, "⚠️ Por favor, envie a mensagem de cadastro com ID de convite válido.");
             }
 
-            $user = User::where('remoteJid', $normalizedId)->first();
+            $user = User::where('remoteJid', $waId)->first();
 
             if ($user && $user->is_add_date_of_birth) {
                 // Cenário A: Usuário Completo
@@ -145,18 +143,18 @@ class ChatbotService
                     // Criar novo usuário
                     $user = User::create([
                         'name' => $name,
-                        'email' => $normalizedId . '@s.whatsapp.net',
+                        'email' => $waId . '@s.whatsapp.net',
                         'password' => bcrypt(Str::random(16)),
-                        'remoteJid' => $normalizedId,
+                        'remoteJid' => $waId,
                         'is_remote_jid' => true,
                         'invitation_code' => $invitationCode,
                         'code' => strtoupper(Str::random(10)),
                     ]);
                 } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
                     // Caso ocorra exceção de concorrência, busca o usuário existente
-                    $user = User::where('remoteJid', $normalizedId)->first();
+                    $user = User::where('remoteJid', $waId)->first();
                     if (!$user) {
-                        $user = User::where('email', $normalizedId . '@s.whatsapp.net')->first();
+                        $user = User::where('email', $waId . '@s.whatsapp.net')->first();
                     }
 
                     if ($user) {
@@ -189,7 +187,7 @@ class ChatbotService
 
     protected function handleStateAction($waId, $state, $text)
     {
-        $user = User::where('remoteJid', fix_whatsapp_number($waId))->first();
+        $user = User::where('remoteJid', $waId)->first();
 
         if (!$user) {
             return $this->sendReply($waId, "Ops, ocorreu um erro. Por favor, envie a mensagem de cadastro novamente.");
