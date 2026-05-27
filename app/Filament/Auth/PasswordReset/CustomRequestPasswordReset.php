@@ -119,7 +119,7 @@ class CustomRequestPasswordReset extends RequestPasswordReset
             return;
         } elseif ($login_type == 'remoteJid' && is_numeric($emailOrWhatsapp)) {
 
-            $remoteJid = $emailOrWhatsapp . '@s.whatsapp.net';
+            $remoteJid = $emailOrWhatsapp;
 
             $user = User::select('*')
                 ->where('remoteJid', $remoteJid)

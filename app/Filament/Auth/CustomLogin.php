@@ -52,9 +52,9 @@ class CustomLogin extends Login
             $number = $data['login'];
 
             $user = User::select('*')
-                ->where('remoteJid', $number . '@s.whatsapp.net')
-                ->Orwhere('remoteJid', '55' . $number . '@s.whatsapp.net')
-                ->Orwhere('remoteJid', '55' . remove_third_digit($number) . '@s.whatsapp.net')
+                ->where('remoteJid', $number)
+                ->Orwhere('remoteJid', '55' . $number)
+                ->Orwhere('remoteJid', '55' . remove_third_digit($number))
                 ->first();
 
             if ($user) {
