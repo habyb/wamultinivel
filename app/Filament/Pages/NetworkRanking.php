@@ -97,95 +97,9 @@ class NetworkRanking extends Page implements HasTable
     }
 
     /**
-     * Count cumulative NETWORK (all levels) up to a cutoff ($until) for a given root user,
-     * filtering ONLY completed registrations to match "Cadastros Completos".
-     *
-     * IMPORTANT FIX (EN):
-     * - The recursive CTE now restricts **every level** (seed and recursion) to
-     *   `created_at <= :until_at` (and completed when available). This produces a
-     *   snapshot of the network **as of the cutoff date**, preventing new users
-     *   created after the week from “bridging” older descendants into the count.
+     * Get the single recursive CTE SQL query to compute cumulative network sizes for all users.
      */
-    protected function countNetworkUntil(int $rootUserId, CarbonImmutable $until): int
-    {
-        $cacheKey = $rootUserId . '|<=|' . $until->toDateTimeString();
-        if (isset($this->networkUntilCache[$cacheKey])) {
-            return $this->networkUntilCache[$cacheKey];
-        }
-
-        $user       = new User();
-        $table      = $user->getTable();
-        $relation   = $user->firstLevelGuests();         // HasMany
-        $fkCol      = $relation->getForeignKeyName();    // child column -> parent owner
-        $ownerKey   = $relation->getLocalKeyName();      // parent owner key (may be id or code)
-
-        $completedCol = $this->detectCompletedColumn($table);
-
-        // Owner key value for ROOT user (keeps types consistent on PostgreSQL)
-        $rootOwnerVal = DB::table($table)->where('id', $rootUserId)->value($ownerKey);
-
-        // Wrap identifiers safely
-        $grammar          = DB::getQueryGrammar();
-        $wrappedTable     = $grammar->wrap($table);
-        $wrappedFkCol     = $grammar->wrap($fkCol);
-        $wrappedOwnerKey  = $grammar->wrap($ownerKey);
-        $wrappedCreated   = $grammar->wrap('created_at');
-        $wrappedCompleted = $completedCol ? $grammar->wrap($completedCol) : null;
-
-        // Filters applied INSIDE the recursion to generate “as-of” snapshot
-        $seedExtra = "AND u.{$wrappedCreated} <= :until_at";
-        $joinExtra = "AND c.{$wrappedCreated} <= :until_at";
-        if ($wrappedCompleted) {
-            $seedExtra .= " AND u.{$wrappedCompleted} = true";
-            $joinExtra .= " AND c.{$wrappedCompleted} = true";
-        }
-
-        $finalCountExtra = '';
-        if ($wrappedCompleted) {
-            $finalCountExtra = " AND x.{$wrappedCompleted} = true";
-        }
-
-        $sql = <<<SQL
-            WITH RECURSIVE subtree AS (
-                SELECT u.id, u.{$wrappedOwnerKey} AS owner_key
-                FROM {$wrappedTable} u
-                WHERE u.{$wrappedFkCol} = :root_owner_val
-                  {$seedExtra}
-
-                UNION ALL
-
-                SELECT c.id, c.{$wrappedOwnerKey} AS owner_key
-                FROM {$wrappedTable} c
-                INNER JOIN subtree s ON c.{$wrappedFkCol} = s.owner_key
-                WHERE 1=1
-                  {$joinExtra}
-            )
-            SELECT COUNT(*) AS c
-            FROM {$wrappedTable} x
-            WHERE x.id IN (SELECT id FROM subtree)
-              AND x.{$wrappedCreated} <= :until_at
-              {$finalCountExtra}
-        SQL;
-
-        $row = DB::selectOne($sql, [
-            'root_owner_val' => $rootOwnerVal,
-            'until_at'       => $until->toDateTimeString(),
-        ]);
-
-        $count = (int) ($row->c ?? 0);
-        $this->networkUntilCache[$cacheKey] = $count;
-
-        return $count;
-    }
-
-    /**
-     * ORDER BY cumulative network up to current week end, DESC.
-     *
-     * NOTE (EN):
-     * - Mirrors the same “as-of cutoff” logic used by countNetworkUntil() so the
-     *   ordering stays consistent with the visible numbers.
-     */
-    protected function orderByNetworkCurrentWeekDesc(Builder $query): Builder
+    protected function getNetworkSizeSubquery(): string
     {
         $user       = new User();
         $table      = $user->getTable();
@@ -204,40 +118,63 @@ class NetworkRanking extends Page implements HasTable
 
         $seedExtra = "AND u.{$wrappedCreated} <= ?";
         $joinExtra = "AND c.{$wrappedCreated} <= ?";
-        $finalExtra = '';
         if ($wrappedCompleted) {
             $seedExtra  .= " AND u.{$wrappedCompleted} = true";
             $joinExtra  .= " AND c.{$wrappedCompleted} = true";
-            $finalExtra .= " AND x.{$wrappedCompleted} = true";
         }
 
-        $expr = <<<SQL
+        return <<<SQL
             (
-                WITH RECURSIVE subtree AS (
-                    SELECT u.id, u.{$wrappedOwnerKey} AS owner_key
+                WITH RECURSIVE network_paths AS (
+                    SELECT 
+                        u.{$wrappedFkCol} AS ancestor_code,
+                        u.{$wrappedOwnerKey} AS descendant_code,
+                        1 AS depth
                     FROM {$wrappedTable} u
-                    WHERE u.{$wrappedFkCol} = {$wrappedTable}.{$wrappedOwnerKey}
+                    WHERE u.{$wrappedFkCol} IS NOT NULL
                       {$seedExtra}
 
                     UNION ALL
 
-                    SELECT c.id, c.{$wrappedOwnerKey} AS owner_key
+                    SELECT 
+                        np.ancestor_code,
+                        c.{$wrappedOwnerKey} AS descendant_code,
+                        np.depth + 1 AS depth
                     FROM {$wrappedTable} c
-                    INNER JOIN subtree s ON c.{$wrappedFkCol} = s.owner_key
+                    INNER JOIN network_paths np ON c.{$wrappedFkCol} = np.descendant_code
                     WHERE 1=1
                       {$joinExtra}
+                      AND np.depth < 100
                 )
-                SELECT COUNT(*)
-                FROM {$wrappedTable} x
-                WHERE x.id IN (SELECT id FROM subtree)
-                  AND x.{$wrappedCreated} <= ?
-                  {$finalExtra}
+                SELECT ancestor_code, COUNT(*) AS network_size
+                FROM network_paths
+                GROUP BY ancestor_code
             )
         SQL;
+    }
 
-        $cut = $this->currWeekEnd->toDateTimeString();
-        // Bind the same cutoff three times: seed, join, final
-        return $query->orderByRaw("{$expr} DESC", [$cut, $cut, $cut]);
+    /**
+     * Add network sizes to query and sort by the current week's size.
+     */
+    protected function orderByNetworkCurrentWeekDesc(Builder $query): Builder
+    {
+        $subW1Sql = $this->getNetworkSizeSubquery();
+        $subW0Sql = $this->getNetworkSizeSubquery();
+
+        $w1Cut = $this->currWeekEnd->toDateTimeString();
+        $w0Cut = $this->prevWeekEnd->toDateTimeString();
+
+        return $query
+            ->addSelect('users.*')
+            ->selectRaw('COALESCE(net_w1.network_size, 0) as network_w1')
+            ->selectRaw('COALESCE(net_w0.network_size, 0) as network_w0')
+            ->leftJoinSub(function ($joinQuery) use ($subW1Sql, $w1Cut) {
+                $joinQuery->fromRaw($subW1Sql, [$w1Cut, $w1Cut]);
+            }, 'net_w1', 'users.code', '=', 'net_w1.ancestor_code')
+            ->leftJoinSub(function ($joinQuery) use ($subW0Sql, $w0Cut) {
+                $joinQuery->fromRaw($subW0Sql, [$w0Cut, $w0Cut]);
+            }, 'net_w0', 'users.code', '=', 'net_w0.ancestor_code')
+            ->orderBy('network_w1', 'desc');
     }
 
     public function table(Table $table): Table
@@ -281,9 +218,7 @@ class NetworkRanking extends Page implements HasTable
                 ColumnGroup::make($currRange, [
                     TextColumn::make('network_w1')
                         ->label('Rede')
-                        ->state(fn ($record): int =>
-                            $this->countNetworkUntil((int) $record->id, $this->currWeekEnd)
-                        )
+                        ->state(fn ($record): int => (int) ($record->network_w1 ?? 0))
                         ->numeric(thousandsSeparator: '.', decimalPlaces: 0)
                         ->badge()
                         ->color(fn (int $state): string => $state === 0 ? 'gray' : ($state <= 50 ? 'primary' : 'success'))
@@ -301,9 +236,7 @@ class NetworkRanking extends Page implements HasTable
                 ColumnGroup::make($prevRange, [
                     TextColumn::make('network_w0')
                         ->label('Rede')
-                        ->state(fn ($record): int =>
-                            $this->countNetworkUntil((int) $record->id, $this->prevWeekEnd)
-                        )
+                        ->state(fn ($record): int => (int) ($record->network_w0 ?? 0))
                         ->numeric(thousandsSeparator: '.', decimalPlaces: 0)
                         ->badge()
                         ->color(fn (int $state): string => $state === 0 ? 'gray' : ($state <= 50 ? 'primary' : 'success'))
@@ -325,8 +258,8 @@ class NetworkRanking extends Page implements HasTable
                         'class' => 'whitespace-nowrap',
                     ])
                     ->state(function ($record): string {
-                        $nw1 = $this->countNetworkUntil((int) $record->id, $this->currWeekEnd);
-                        $nw0 = $this->countNetworkUntil((int) $record->id, $this->prevWeekEnd);
+                        $nw1 = (int) ($record->network_w1 ?? 0);
+                        $nw0 = (int) ($record->network_w0 ?? 0);
 
                         if ($nw0 === 0) {
                             return $nw1 > 0 ? '∞%' : '0%';
@@ -338,8 +271,8 @@ class NetworkRanking extends Page implements HasTable
                     ->badge()
                     ->alignment('right')
                     ->color(function ($record): string {
-                        $nw1 = $this->countNetworkUntil((int) $record->id, $this->currWeekEnd);
-                        $nw0 = $this->countNetworkUntil((int) $record->id, $this->prevWeekEnd);
+                        $nw1 = (int) ($record->network_w1 ?? 0);
+                        $nw0 = (int) ($record->network_w0 ?? 0);
 
                         if ($nw0 === 0 && $nw1 > 0) {
                             return 'warning';
@@ -393,8 +326,8 @@ class NetworkRanking extends Page implements HasTable
 
                             foreach ($builder->cursor() as $record) {
                                 /** @var \App\Models\User $record */
-                                $nw1 = $this->countNetworkUntil((int) $record->id, $this->currWeekEnd);
-                                $nw0 = $this->countNetworkUntil((int) $record->id, $this->prevWeekEnd);
+                                $nw1 = (int) ($record->network_w1 ?? 0);
+                                $nw0 = (int) ($record->network_w0 ?? 0);
                                 $m1  = (int) ($record->members_w1 ?? 0);
                                 $m0  = (int) ($record->members_w0 ?? 0);
 
