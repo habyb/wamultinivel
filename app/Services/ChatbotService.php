@@ -30,6 +30,9 @@ class ChatbotService
                     $message['interactive']['button_reply']['title'] ?? 
                     $message['interactive']['list_reply']['title'] ?? 
                     $message['interactive']['list_reply']['id'] ?? '';
+        } elseif (($message['type'] ?? '') === 'button') {
+            $text = $message['button']['text'] ?? 
+                    $message['button']['payload'] ?? '';
         }
 
         // Log::info("Processing message from $waId: $text");
