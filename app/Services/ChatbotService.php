@@ -55,7 +55,7 @@ class ChatbotService
         if (!$state) {
             $user = User::where('remoteJid', $waId)->first();
             
-            // Caso 1: Usuário já completou o cadastro
+            // Caso 1: Usuário já completou o cadastro.
             if ($user && $user->is_add_date_of_birth) {
                 $text = trim($text);
                 if (in_array($text, ['SIM', 'NÃO'])) {
