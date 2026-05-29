@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Jobs\SendWhatsappFreeTextJob;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -56,7 +55,7 @@ class ChatbotService
         if (!$state) {
             $user = User::where('remoteJid', $waId)->first();
             
-            // Caso 1: Usuário já completou o cadastro
+            // Caso 1: Usuário já completou o cadastro.
             if ($user && $user->is_add_date_of_birth) {
                 $text = trim($text);
                 if (in_array($text, ['SIM', 'NÃO'])) {
@@ -69,26 +68,17 @@ class ChatbotService
                     return $this->sendReply($waId, "Olá *{$user->name}*!$msg");
                 }
 
-                $code = $user->code ?: '';
+                $inviteLink = config('app.url') . '/' . ($user->code ?: '');
 
-                $msg1 = "{$user->name}, você já faz parte do nosso time vencedor! 🚀\n\n" .
-                        "Utilize a mensagem abaixo para facilitar o compartilhamento com seus amigos!";
+                $msg = "você já faz parte do nosso time vencedor! Segue o seu link de convite. Compartilhe! 🔗✨\n\n" .
+                    "*Seu link de convite:*\n" . 
+                    "{$inviteLink}\n\n" .
+                    "Acompanhe nosso trabalho através de minhas redes sociais:\n\n" .
+                    "*📘 Facebook:* https://www.facebook.com/depandrecorrea1\n" .
+                    "*📸 Instagram:* https://instagram.com/depandrecorrea\n" .
+                    "*🌐 Site:* https://www.andrecorrea.com.br/";
 
-                $msg2 = "Convite especial!\n\n" .
-                        "Quero te convidar para fazer parte do Time André Corrêa, uma equipe que acredita no trabalho sério e na construção de um futuro melhor.\n\n" .
-                        "Para participar, é só clicar no link abaixo e responder 5 perguntas rápidas.\n\n" .
-                        "https://convite.andrecorrea.com.br/{$code}\n\n" .
-                        "Também estou enviando os links das redes sociais do deputado para você conhecer melhor seu trabalho.\n\n" .
-                        "📘 Facebook: https://www.facebook.com/depandrecorrea1\n" .
-                        "📸 Instagram: https://instagram.com/depandrecorrea\n" .
-                        "🌐 Site: https://www.andrecorrea.com.br/\n\n" .
-                        "Contamos com você nessa caminhada!";
-
-                $response = $this->sendReply($waId, $msg1);
-
-                SendWhatsappFreeTextJob::dispatch($waId, $msg2)->delay(now()->addSeconds(3));
-
-                return $response;
+                return $this->sendReply($waId, "{$user->name}, $msg");
             }
             
             // Caso 2: Usuário não existe (Tentativa de contato sem ID de convite)
@@ -138,25 +128,16 @@ class ChatbotService
 
             if ($user && $user->is_add_date_of_birth) {
                 // Cenário A: Usuário Completo
-                $code = $user->code ?: '';
+                $inviteLink = config('app.url') . '/' . ($user->code ?: '');
+                $msg = "você faz parte do nosso time vencedor! Segue o seu link de convite. Compartilhe! 🔗✨\n\n" .
+                "*Seu link de convite:*\n" . 
+                "{$inviteLink}\n\n" .
+                "Acompanhe nosso trabalho através de minhas redes sociais:\n\n" .
+                "*📘 Facebook:* https://www.facebook.com/depandrecorrea1\n" .
+                "*📸 Instagram:* https://instagram.com/depandrecorrea\n" .
+                "*🌐 Site:* https://www.andrecorrea.com.br/";
 
-                $msg1 = "{$user->name}, *você já está cadastrado* e faz parte do nosso time vencedor! 🚀\n\n" .
-                        "Utilize a mensagem abaixo para facilitar o compartilhamento com seus amigos!";
-
-                $msg2 = "Convite especial!\n\n" .
-                        "Quero te convidar para fazer parte do Time André Corrêa, uma equipe que acredita no trabalho sério e na construção de um futuro melhor.\n\n" .
-                        "Para participar, é só clicar no link abaixo e responder 5 perguntas rápidas.\n\n" .
-                        "https://convite.andrecorrea.com.br/{$code}\n\n" .
-                        "Também estou enviando os links das redes sociais do deputado para você conhecer melhor seu trabalho.\n\n" .
-                        "📘 Facebook: https://www.facebook.com/depandrecorrea1\n" .
-                        "📸 Instagram: https://instagram.com/depandrecorrea\n" .
-                        "🌐 Site: https://www.andrecorrea.com.br/\n\n" .
-                        "Contamos com você nessa caminhada!";
-
-                $this->sendReply($waId, $msg1);
-
-                SendWhatsappFreeTextJob::dispatch($waId, $msg2)->delay(now()->addSeconds(3));
-
+                $this->sendReply($waId, "{$user->name}, $msg");
                 return;
             }
 
@@ -433,7 +414,7 @@ class ChatbotService
                 'rows' => [
                     ['id' => 'Masculino', 'title' => 'Masculino', 'description' => 'Pessoas do gênero masculino'],
                     ['id' => 'Feminino', 'title' => 'Feminino', 'description' => 'Pessoas do gênero feminino'],
-                    ['id' => 'Outro', 'title' => 'Não Informar', 'description' => 'Prefiro não informar'],
+                    ['id' => 'Outro', 'title' => 'Não informar', 'description' => 'Prefiro não informar'],
                 ]
             ]
         ], "Selecione o seu Gênero");
@@ -441,7 +422,7 @@ class ChatbotService
 
     protected function processAwaitingGender($waId, User $user, $text)
     {
-        $genders = ['Masculino', 'Feminino', 'Não Informar'];
+        $genders = ['Masculino', 'Feminino', 'Não informar'];
         if (!in_array($text, $genders)) {
             $this->sendReply($waId, "⚠️ Resposta não permitida. Selecione uma resposta da lista.");
             return $this->whatsapp->sendListMessage($waId, "Escolha uma das opções na lista.", "Selecione", [
@@ -450,7 +431,7 @@ class ChatbotService
                     'rows' => [
                         ['id' => 'Masculino', 'title' => 'Masculino', 'description' => 'Pessoas do gênero masculino'],
                         ['id' => 'Feminino', 'title' => 'Feminino', 'description' => 'Pessoas do gênero feminino'],
-                        ['id' => 'Outro', 'title' => 'Não Informar', 'description' => 'Prefiro não informar'],
+                        ['id' => 'Outro', 'title' => 'Não informar', 'description' => 'Prefiro não informar'],
                     ]
                 ]
             ], "Selecione o seu Gênero");
@@ -503,24 +484,16 @@ class ChatbotService
         ]);
         $this->clearStep($waId);
         
-        $msg1 = "{$user->name}, agora você faz parte do nosso time vencedor! 🚀\n\n" .
-                "Utilize a mensagem abaixo para facilitar o compartilhamento com seus amigos!";
-                
-        $msg2 = "Convite especial!\n\n" .
-                "Quero te convidar para fazer parte do Time André Corrêa, uma equipe que acredita no trabalho sério e na construção de um futuro melhor.\n\n" .
-                "Para participar, é só clicar no link abaixo e responder 5 perguntas rápidas.\n\n" .
-                "https://convite.andrecorrea.com.br/{$code}\n\n" .
-                "Também estou enviando os links das redes sociais do deputado para você conhecer melhor seu trabalho.\n\n" .
-                "📘 Facebook: https://www.facebook.com/depandrecorrea1\n" .
-                "📸 Instagram: https://instagram.com/depandrecorrea\n" .
-                "🌐 Site: https://www.andrecorrea.com.br/\n\n" .
-                "Contamos com você nessa caminhada!";
+        $inviteLink = config('app.url') . '/' . $code;
+        $msg = "você faz parte do nosso time vencedor! Segue o seu link de convite. Compartilhe! 🔗✨\n\n" .
+        "*Seu link de convite:*\n" . 
+        "{$inviteLink}\n\n" .
+        "Acompanhe nosso trabalho através de minhas redes sociais:\n\n" .
+        "*📘 Facebook:* https://www.facebook.com/depandrecorrea1\n" .
+        "*📸 Instagram:* https://instagram.com/depandrecorrea\n" .
+        "*🌐 Site:* https://www.andrecorrea.com.br/";
         
-        $response = $this->sendReply($waId, $msg1);
-        
-        SendWhatsappFreeTextJob::dispatch($waId, $msg2)->delay(now()->addSeconds(3));
-        
-        return $response;
+        $this->sendReply($waId, "{$user->name}, $msg");
     }
 
     protected function askConcern01($waId, $user, $city)
