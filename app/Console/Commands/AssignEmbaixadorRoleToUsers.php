@@ -83,7 +83,7 @@ class AssignEmbaixadorRoleToUsers extends Command
                         ]
                     );
 
-                    // Dispatch password template with a 5-second delay via queue
+                    // Dispatch password template with a 25-second delay via queue
                     SendTemplateMessageJob::dispatch(
                         $number,
                         'senha',
@@ -104,7 +104,7 @@ class AssignEmbaixadorRoleToUsers extends Command
                                 ]
                             ]
                         ]
-                    )->delay(now()->addSeconds(10));
+                    )->delay(now()->addSeconds(25));
                 }
             }
         });
