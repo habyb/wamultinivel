@@ -104,7 +104,7 @@ class AssignEmbaixadorRoleToUsers extends Command
                                 ]
                             ]
                         ]
-                    )->delay(now()->addSeconds(5));
+                    )->delay(now()->addSeconds(10));
                 }
             }
         });
