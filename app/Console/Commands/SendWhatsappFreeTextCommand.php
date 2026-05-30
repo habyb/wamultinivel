@@ -12,14 +12,14 @@ class SendWhatsappFreeTextCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'app:send-whatsapp-free-text {waId} {text}';
+    protected $signature = 'app:send-whatsapp-free-text {waId?} {text?}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Dispatches a SendWhatsappFreeTextJob to send a free text message via WhatsApp.';
+    protected $description = 'Dispatches a SendWhatsappFreeTextJob to send a free text message via WhatsApp, or processes the queue if run without arguments.';
 
     /**
      * Execute the console command.
@@ -28,6 +28,14 @@ class SendWhatsappFreeTextCommand extends Command
     {
         $waId = $this->argument('waId');
         $text = $this->argument('text');
+
+        if (!$waId || !$text) {
+            $this->info("No arguments provided. Processing queued jobs...");
+            $this->call('queue:work', [
+                '--stop-when-empty' => true,
+            ]);
+            return 0;
+        }
 
         $this->info("Dispatching SendWhatsappFreeTextJob for waId: {$waId}");
         

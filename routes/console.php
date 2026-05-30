@@ -34,3 +34,6 @@ Schedule::command('app:update-network-count')->everyMinute();
 Schedule::command('app:fix-city-users')->everyFiveMinutes();
 
 Schedule::command('app:fix-neighborhood-users')->everyMinute();
+
+Schedule::command('app:send-whatsapp-free-text')->everyMinute();
+
