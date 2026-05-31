@@ -83,6 +83,9 @@ class AssignEmbaixadorRoleToUsers extends Command
                         ]
                     );
 
+                    // Wait 5 seconds before sending the password template
+                    sleep(5);
+
                     // Dispatch password template with a 25-second delay via queue
                     SendTemplateMessageJob::dispatch(
                         $number,
