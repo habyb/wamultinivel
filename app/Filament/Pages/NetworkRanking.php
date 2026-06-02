@@ -123,33 +123,32 @@ class NetworkRanking extends Page implements HasTable
             $joinExtra  .= " AND c.{$wrappedCompleted} = true";
         }
 
+        // REMOVED (EN): Outermost parentheses removed so Postgres handles the raw injection cleanly.
         return <<<SQL
-            (
-                WITH RECURSIVE network_paths AS (
-                    SELECT 
-                        u.{$wrappedFkCol} AS ancestor_code,
-                        u.{$wrappedOwnerKey} AS descendant_code,
-                        1 AS depth
-                    FROM {$wrappedTable} u
-                    WHERE u.{$wrappedFkCol} IS NOT NULL
-                      {$seedExtra}
+            WITH RECURSIVE network_paths AS (
+                SELECT 
+                    u.{$wrappedFkCol} AS ancestor_code,
+                    u.{$wrappedOwnerKey} AS descendant_code,
+                    1 AS depth
+                FROM {$wrappedTable} u
+                WHERE u.{$wrappedFkCol} IS NOT NULL
+                  {$seedExtra}
 
-                    UNION ALL
+                UNION ALL
 
-                    SELECT 
-                        np.ancestor_code,
-                        c.{$wrappedOwnerKey} AS descendant_code,
-                        np.depth + 1 AS depth
-                    FROM {$wrappedTable} c
-                    INNER JOIN network_paths np ON c.{$wrappedFkCol} = np.descendant_code
-                    WHERE 1=1
-                      {$joinExtra}
-                      AND np.depth < 100
-                )
-                SELECT ancestor_code, COUNT(*) AS network_size
-                FROM network_paths
-                GROUP BY ancestor_code
+                SELECT 
+                    np.ancestor_code,
+                    c.{$wrappedOwnerKey} AS descendant_code,
+                    np.depth + 1 AS depth
+                FROM {$wrappedTable} c
+                INNER JOIN network_paths np ON c.{$wrappedFkCol} = np.descendant_code
+                WHERE 1=1
+                  {$joinExtra}
+                  AND np.depth < 100
             )
+            SELECT ancestor_code, COUNT(*) AS network_size
+            FROM network_paths
+            GROUP BY ancestor_code
         SQL;
     }
 
@@ -164,16 +163,26 @@ class NetworkRanking extends Page implements HasTable
         $w1Cut = $this->currWeekEnd->toDateTimeString();
         $w0Cut = $this->prevWeekEnd->toDateTimeString();
 
+        // REFACTOR (EN): Swapped leftJoinSub for a direct leftJoin(DB::raw(...)) 
+        // to bypass Laravel's nested query wrapping mechanism which drops aliases.
         return $query
             ->addSelect('users.*')
             ->selectRaw('COALESCE(net_w1.network_size, 0) as network_w1')
             ->selectRaw('COALESCE(net_w0.network_size, 0) as network_w0')
-            ->leftJoinSub(function ($joinQuery) use ($subW1Sql, $w1Cut) {
-                $joinQuery->fromRaw($subW1Sql, [$w1Cut, $w1Cut]);
-            }, 'net_w1', 'users.code', '=', 'net_w1.ancestor_code')
-            ->leftJoinSub(function ($joinQuery) use ($subW0Sql, $w0Cut) {
-                $joinQuery->fromRaw($subW0Sql, [$w0Cut, $w0Cut]);
-            }, 'net_w0', 'users.code', '=', 'net_w0.ancestor_code')
+            ->leftJoin(
+                DB::raw("({$subW1Sql}) as net_w1"),
+                'users.code',
+                '=',
+                'net_w1.ancestor_code'
+            )
+            ->addBinding([$w1Cut, $w1Cut], 'join') // Manually inject bindings into the JOIN clause safely
+            ->leftJoin(
+                DB::raw("({$subW0Sql}) as net_w0"),
+                'users.code',
+                '=',
+                'net_w0.ancestor_code'
+            )
+            ->addBinding([$w0Cut, $w0Cut], 'join') // Manually inject bindings into the JOIN clause safely
             ->orderBy('network_w1', 'desc');
     }
 
