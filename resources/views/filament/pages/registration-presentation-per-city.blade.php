@@ -33,7 +33,7 @@
         <!-- Grande Destaque do Contador com Atualização Real-time -->
         <div wire:poll.5s class="relative inline-flex flex-col items-center justify-center px-12 py-2">
             <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-indigo-500 tracking-tight transition-all duration-500 ease-in-out" style="font-size: 78px; font-weight: 900;">
-                {{ sprintf('%02d', $this->registrationsCount) }}
+                {{ number_format($this->registrationsCount, 0, ',', '.') }}
             </span>
             <div class="absolute -top-2 -right-2 flex h-4 w-4">
                 <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
