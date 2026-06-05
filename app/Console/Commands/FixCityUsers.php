@@ -112,7 +112,7 @@ class FixCityUsers extends Command
             'Silva Jardim' => ['silva jardim'],
             'Sumidouro' => ['sumidouro'],
             'Tanguá' => ['Tangua', 'tanguá', 'tangua', 'Tanguá-RJ'],
-            'Teresópolis' => ['Teresópolis rj', 'Teresópolis RJ', 'teresópolis', 'teresopolis', 'Taresopolis', 'Teresópolis, Rj', 'Teresópolis Estado do Rio', 'Rafael Teresópolis', 'Teresópolis Rio de Janeiro', 'Rj Teresópolis'],
+            'Teresópolis' => ['Teresópolis rj', 'Teresópolis RJ', 'teresópolis', 'teresopolis', 'Taresopolis', 'Teresópolis, Rj', 'Teresópolis Estado do Rio', 'Rafael Teresópolis', 'Teresópolis Rio de Janeiro', 'Rj Teresópolis', 'Teresópolis Barra do Imbui'],
             'Trajano de Moraes' => ['trajano de moraes'],
             'Três Rios' => ['três rios', 'tres rios', 'Três Rios RJ'],
             'Valença' => ['Valença.', 'Valença RJ', 'Valença Rj', 'Valença. RJ', 'Valença rj', 'Valença/ RJ', 'valença', 'valenca', 'Valença, RJ', 'Valença-RJ', 'Valença-Rj', 'Valença - RJ', 'Valenca Rj', 'Valenca rj', 'VALENÇA', 'Valença/RJ.', 'Santa Isabel do Rio Preto - Valença', 'Valença E d R', 'Valença Estado do Rio .', 'Valença estado do Rio', 'Valençarj', 'Valença/RJ', 'Valença/Rj', 'Valença/rj', 'Santa Isabel do rio preto', 'Valença -rj', 'Valença estado rj', 'Valença ,interior do Rio de janeiro.', 'Est Do Rio De Janeiro Valença', 'Valença/ Santa Isabel do Rio preto!', 'Valença ..', 'Valença  RJ', 'Barão de Juparanã', 'Barão de juparanã', 'Barão de juparana', 'barão de juparana', 'Barao de Juparanã', 'Barao de juparanã', 'BARÃO DE JUPARANA.', 'Parapeúna', 'Parapeuna', 'parapeuna', 'Conservatória', 'Conservatoria', 'conservatoria', 'Valença  Estado do Rio'],
