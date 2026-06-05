@@ -2,7 +2,7 @@
     <div class="flex flex-col items-center justify-center min-h-[60vh] py-8 text-center">
         <!-- LOGO (Custom Image - Avatar style) -->
         <div class="mb-6 flex justify-center">
-            <img src="{{ asset('storage/presentation/time-ac-2026.png') }}" alt="Logo" class="rounded-full object-cover shadow-lg border-2 border-gray-200 dark:border-gray-700" style="width: 200px; height: 200px;" />
+            <img src="{{ asset('storage/presentation/time-ac-2026.png') }}" alt="Logo" class="rounded-full object-cover shadow-lg border-2 border-gray-200 dark:border-gray-700" style="width: 150px; height: 150px;" />
         </div>
 
         <!-- H3 Time André Corrêa -->
@@ -32,7 +32,7 @@
 
         <!-- Grande Destaque do Contador com Atualização Real-time -->
         <div wire:poll.5s class="relative inline-flex flex-col items-center justify-center px-12 py-2">
-            <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-indigo-500 tracking-tight transition-all duration-500 ease-in-out" style="font-size: 78px; font-weight: 900;">
+            <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-indigo-500 tracking-tight transition-all duration-500 ease-in-out" style="font-size: 86px; font-weight: 900;">
                 {{ number_format($this->registrationsCount, 0, ',', '.') }}
             </span>
             <div class="absolute -top-2 -right-2 flex h-4 w-4">
