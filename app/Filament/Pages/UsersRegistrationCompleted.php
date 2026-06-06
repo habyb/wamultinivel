@@ -95,7 +95,8 @@ class UsersRegistrationCompleted extends Page implements HasTable
                         ->orderBy('city')
                         ->pluck('city', 'city')
                         ->toArray()
-                ),
+                )
+                ->searchable(),
 
             SelectFilter::make('roles')
                 ->relationship('roles', 'name')
