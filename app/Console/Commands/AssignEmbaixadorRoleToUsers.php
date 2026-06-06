@@ -68,21 +68,6 @@ class AssignEmbaixadorRoleToUsers extends Command
                         'password' => bcrypt($password),
                     ])->saveQuietly();
 
-                    // Dispatch congratulations template immediately via queue
-                    SendTemplateMessageJob::dispatch(
-                        $number,
-                        'parabens',
-                        'pt_BR',
-                        [
-                            [
-                                'type' => 'body',
-                                'parameters' => [
-                                    ['type' => 'text', 'text' => $user->name]
-                                ],
-                            ]
-                        ]
-                    );
-
                     app(WhatsAppServiceBusinessApi::class)->sendText(
                         phone: $number,
                         template: 'parabens',
