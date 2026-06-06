@@ -8,6 +8,8 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\Filter;
+use Filament\Forms\Components\DateTimePicker;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 use Filament\Tables\Actions\Action;
@@ -15,6 +17,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 use App\Models\User;
 use Filament\Tables\Actions\BulkAction;
 use Carbon\Carbon;
+
 
 class UsersRegistrationCompleted extends Page implements HasTable
 {
@@ -60,6 +63,30 @@ class UsersRegistrationCompleted extends Page implements HasTable
     protected function getTableFilters(): array
     {
         return [
+            Filter::make('created_at')
+                ->label(__('Created at'))
+                ->form([
+                    DateTimePicker::make('created_from')
+                        ->label(__('From'))
+                        ->native(false)
+                        ->displayFormat('d/m/Y H:i'),
+                    DateTimePicker::make('created_until')
+                        ->label(__('Until'))
+                        ->native(false)
+                        ->displayFormat('d/m/Y H:i'),
+                ])
+                ->query(function (Builder $query, array $data): Builder {
+                    return $query
+                        ->when(
+                            $data['created_from'],
+                            fn (Builder $query, $date): Builder => $query->where('created_at', '>=', $date),
+                        )
+                        ->when(
+                            $data['created_until'],
+                            fn (Builder $query, $date): Builder => $query->where('created_at', '<=', $date),
+                        );
+                }),
+
             SelectFilter::make('city')
                 ->label(__('City'))
                 ->options(
@@ -69,6 +96,10 @@ class UsersRegistrationCompleted extends Page implements HasTable
                         ->pluck('city', 'city')
                         ->toArray()
                 ),
+
+            SelectFilter::make('roles')
+                ->relationship('roles', 'name')
+                ->label(__('Role')),
         ];
     }
 
