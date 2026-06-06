@@ -68,21 +68,43 @@ class AssignEmbaixadorRoleToUsers extends Command
                         'password' => bcrypt($password),
                     ])->saveQuietly();
 
-                    app(WhatsAppServiceBusinessApi::class)->sendText(
-                        phone: $number,
-                        template: 'parabens',
-                        language: 'pt_BR',
-                        params: [
+                    // Dispatch congratulations template immediately via queue
+                    SendTemplateMessageJob::dispatch(
+                        $number,
+                        'parabens',
+                        'pt_BR',
+                        [
                             [
                                 'type' => 'body',
                                 'parameters' => [
-                                    ['type' => 'text', "parameter_name" => "name", 'text' => $user->name]
+                                    ['type' => 'text', 'text' => $user->name]
                                 ],
                             ]
                         ]
                     );
 
-                    dispatch(new SendPasswordMessageJob($number, $password))->delay(now()->addSeconds(3));
+                    // Dispatch password template with a 10-second delay via queue
+                    SendTemplateMessageJob::dispatch(
+                        $number,
+                        'senha',
+                        'pt_BR',
+                        [
+                            [
+                                'type' => 'body',
+                                'parameters' => [
+                                    ['type' => 'text', 'text' => $password]
+                                ],
+                            ],
+                            [
+                                'type' => 'button',
+                                'sub_type' => 'url',
+                                'index' => 0,
+                                'parameters' => [
+                                    ['type' => 'text', 'text' => $password]
+                                ]
+                            ]
+                        ]
+                    )->delay(now()->addSeconds(10));
                 }
             }
         });
