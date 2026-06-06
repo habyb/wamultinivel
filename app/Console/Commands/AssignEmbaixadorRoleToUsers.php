@@ -83,28 +83,21 @@ class AssignEmbaixadorRoleToUsers extends Command
                         ]
                     );
 
-                    // Dispatch password template with a 10-second delay via queue
-                    SendTemplateMessageJob::dispatch(
-                        $number,
-                        'senha',
-                        'pt_BR',
-                        [
+                    app(WhatsAppServiceBusinessApi::class)->sendText(
+                        phone: $number,
+                        template: 'parabens',
+                        language: 'pt_BR',
+                        params: [
                             [
                                 'type' => 'body',
                                 'parameters' => [
-                                    ['type' => 'text', 'text' => $password]
+                                    ['type' => 'text', "parameter_name" => "name", 'text' => $user->name]
                                 ],
-                            ],
-                            [
-                                'type' => 'button',
-                                'sub_type' => 'url',
-                                'index' => 0,
-                                'parameters' => [
-                                    ['type' => 'text', 'text' => $password]
-                                ]
                             ]
                         ]
-                    )->delay(now()->addSeconds(10));
+                    );
+
+                    dispatch(new SendPasswordMessageJob($number, $password))->delay(now()->addSeconds(3));
                 }
             }
         });
