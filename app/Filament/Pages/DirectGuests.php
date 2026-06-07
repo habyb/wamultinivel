@@ -65,13 +65,11 @@ class DirectGuests extends Page implements HasTable
                             __('Number of guests'),
                             __('Network'),
                             __('Invited by'),
-                            __('Gender'),
                             __('Date of Birth'),
                             __('Age'),
                             __('City'),
                             __('Neighborhood'),
-                            __('Main concern'),
-                            __('Secondary concern')
+                            __('Main concern')
                         ]);
 
                         foreach ($records as $user) {
@@ -98,13 +96,11 @@ class DirectGuests extends Page implements HasTable
                                 $user->first_level_guests_count ?? 0,
                                 $user->total_network_count,
                                 optional($user->referrerGuest)->name . ' - ' . $user->invitation_code,
-                                $user->gender,
                                 $user->date_of_birth,
                                 $age,
                                 $user->city,
                                 $user->neighborhood,
-                                $user->concern_01,
-                                $user->concern_02,
+                                $user->concern_01
                             ]);
                         }
 
@@ -165,11 +161,6 @@ class DirectGuests extends Page implements HasTable
                     $state <= 50 => 'success',
                     default => 'warning',
                 }),
-            TextColumn::make('gender')
-                ->label('Gender')
-                ->sortable()
-                ->searchable()
-                ->toggleable(isToggledHiddenByDefault: true),
             TextColumn::make('date_of_birth')
                 ->label('Date of Birth')
                 ->sortable()
@@ -188,11 +179,6 @@ class DirectGuests extends Page implements HasTable
                 ->toggleable(isToggledHiddenByDefault: true),
             TextColumn::make('concern_01')
                 ->label('Main concern')
-                ->sortable()
-                ->searchable()
-                ->toggleable(isToggledHiddenByDefault: true),
-            TextColumn::make('concern_02')
-                ->label('Secondary concern')
                 ->sortable()
                 ->searchable()
                 ->toggleable(isToggledHiddenByDefault: true),
@@ -228,13 +214,11 @@ class DirectGuests extends Page implements HasTable
                             __('Number of guests'),
                             __('Network'),
                             __('Invited by'),
-                            __('Gender'),
                             __('Date of Birth'),
                             __('Age'),
                             __('City'),
                             __('Neighborhood'),
-                            __('Main concern'),
-                            __('Secondary concern')
+                            __('Main concern')
                         ]);
 
                         foreach ($records as $user) {
@@ -261,13 +245,11 @@ class DirectGuests extends Page implements HasTable
                                 $user->first_level_guests_count ?? 0,
                                 $user->total_network_count,
                                 optional($user->referrerGuest)->name . ' - ' . $user->invitation_code,
-                                $user->gender,
                                 $user->date_of_birth,
                                 $age,
                                 $user->city,
                                 $user->neighborhood,
-                                $user->concern_01,
-                                $user->concern_02,
+                                $user->concern_01
                             ]);
                         }
 

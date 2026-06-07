@@ -51,4 +51,9 @@ class GenderPieChart extends ChartWidget
     {
         return 'pie';
     }
+
+    public static function canView(): bool
+{
+    return false;
+}
 }
