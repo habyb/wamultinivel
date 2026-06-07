@@ -69,15 +69,15 @@ class AssignEmbaixadorRoleToUsers extends Command
                     ])->saveQuietly();
 
                     // Dispatch congratulations template immediately via queue
-                    SendTemplateMessageJob::dispatch(
-                        $number,
-                        'parabens',
-                        'pt_BR',
-                        [
+                    app(WhatsAppServiceBusinessApi::class)->sendText(
+                        phone: $number,
+                        template: 'parabens',
+                        language: 'pt_BR',
+                        params: [
                             [
                                 'type' => 'body',
                                 'parameters' => [
-                                    ['type' => 'text', 'text' => $user->name]
+                                    ['type' => 'text', "parameter_name" => "name", 'text' => $user->name]
                                 ],
                             ]
                         ]
