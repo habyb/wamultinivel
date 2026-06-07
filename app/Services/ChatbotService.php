@@ -231,12 +231,6 @@ class ChatbotService
             case 'AWAITING_CONCERN_01':
                 return $this->processAwaitingConcern01($waId, $user, $text);
 
-            case 'AWAITING_CONCERN_02':
-                return $this->processAwaitingConcern02($waId, $user, $text);
-
-            case 'AWAITING_GENDER':
-                return $this->processAwaitingGender($waId, $user, $text);
-
             case 'AWAITING_DATE_OF_BIRTH':
                 return $this->processAwaitingDateOfBirth($waId, $user, $text);
 
@@ -395,70 +389,6 @@ class ChatbotService
         $user->update([
             'concern_01' => $text,
             'is_add_concern_01' => true,
-            'is_question_concern_02' => true
-        ]);
-        $this->setStep($waId, 'AWAITING_CONCERN_02');
-        $this->whatsapp->sendListMessage(
-            $waId, 
-            "Escolha uma das opções na lista.", 
-            "Selecione", 
-            $this->getConcernsList(),
-            "Segunda preocupação"
-        );
-    }
-
-    protected function processAwaitingConcern02($waId, User $user, $text)
-    {
-        $concerns = collect($this->getConcernsList()[0]['rows'])->pluck('title')->toArray();
-        if (!in_array($text, $concerns)) {
-            $this->sendReply($waId, "⚠️ Resposta não permitida. Selecione uma resposta da lista.");
-            return $this->whatsapp->sendListMessage(
-                $waId, 
-                "Escolha uma das opções na lista.", 
-                "Selecione", 
-                $this->getConcernsList(),
-                "Segunda preocupação"
-            );
-        }
-
-        $user->update([
-            'concern_02' => $text,
-            'is_add_concern_02' => true,
-            'is_question_gender' => true
-        ]);
-        $this->setStep($waId, 'AWAITING_GENDER');
-        $this->whatsapp->sendListMessage($waId, "Escolha uma das opções na lista.", "Selecione", [
-            [
-                'title' => 'Gênero',
-                'rows' => [
-                    ['id' => 'Masculino', 'title' => 'Masculino', 'description' => 'Pessoas do gênero masculino'],
-                    ['id' => 'Feminino', 'title' => 'Feminino', 'description' => 'Pessoas do gênero feminino'],
-                    ['id' => 'Outro', 'title' => 'Não Informar', 'description' => 'Prefiro não informar'],
-                ]
-            ]
-        ], "Selecione o seu Gênero");
-    }
-
-    protected function processAwaitingGender($waId, User $user, $text)
-    {
-        $genders = ['Masculino', 'Feminino', 'Não Informar'];
-        if (!in_array($text, $genders)) {
-            $this->sendReply($waId, "⚠️ Resposta não permitida. Selecione uma resposta da lista.");
-            return $this->whatsapp->sendListMessage($waId, "Escolha uma das opções na lista.", "Selecione", [
-                [
-                    'title' => 'Gênero',
-                    'rows' => [
-                        ['id' => 'Masculino', 'title' => 'Masculino', 'description' => 'Pessoas do gênero masculino'],
-                        ['id' => 'Feminino', 'title' => 'Feminino', 'description' => 'Pessoas do gênero feminino'],
-                        ['id' => 'Outro', 'title' => 'Não Informar', 'description' => 'Prefiro não informar'],
-                    ]
-                ]
-            ], "Selecione o seu Gênero");
-        }
-
-        $user->update([
-            'gender' => $text,
-            'is_add_gender' => true,
             'is_question_date_of_birth' => true
         ]);
         $this->setStep($waId, 'AWAITING_DATE_OF_BIRTH');
