@@ -44,6 +44,14 @@ class UserPolicy
      */
     public function delete(User $user, User $model): bool
     {
-        return $user->hasPermissionTo(permission: 'user_delete');
+        return $user->hasRole('Superadmin');
+    }
+
+    /**
+     * Determine whether the user can delete any models.
+     */
+    public function deleteAny(User $user): bool
+    {
+        return $user->hasRole('Superadmin');
     }
 }

@@ -35,5 +35,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         User::observe(UserObserver::class);
+
+        foreach ($this->policies as $model => $policy) {
+            \Illuminate\Support\Facades\Gate::policy($model, $policy);
+        }
     }
 }

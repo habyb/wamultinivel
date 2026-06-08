@@ -167,7 +167,7 @@ class UserResource extends Resource
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
-                ]),
+                ])->visible(fn() => Auth::user()?->hasRole('Superadmin')),
             ]);
     }
 
@@ -193,7 +193,7 @@ class UserResource extends Resource
     public static function getBulkActions(): array
     {
         return [
-            DeleteBulkAction::make()->visible(fn() => Auth::user()->can('delete', User::class)),
+            DeleteBulkAction::make()->visible(fn() => Auth::user()?->hasRole('Superadmin')),
         ];
     }
 
