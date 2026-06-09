@@ -145,6 +145,14 @@ class UserResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\TextColumn::make('created_at')
+                    ->dateTime(format: 'd/m/Y H:i:s')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('updated_at')
+                    ->dateTime(format: 'd/m/Y H:i:s')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('code')->label('Invitation ID'),
                 Tables\Columns\TextColumn::make('name')
                     ->sortable()
@@ -183,13 +191,9 @@ class UserResource extends Resource
                         fn($state, $record) =>
                         $state ? "{$record->referrerGuest->name} ({$record->invitation_code})" : null
                     ),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime(format: 'd/m/Y H:i:s')
+                Tables\Columns\TextColumn::make('city')
                     ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
-                    ->dateTime(format: 'd/m/Y H:i:s')
-                    ->sortable()
+                    ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
