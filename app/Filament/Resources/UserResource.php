@@ -11,6 +11,8 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Get;
 use Illuminate\Support\Facades\Auth;
 use STS\FilamentImpersonate\Tables\Actions\Impersonate;
 use Filament\Tables\Columns\TextColumn;
@@ -78,6 +80,39 @@ class UserResource extends Resource
                         )
                         ->visible(fn(string $operation): bool => $operation !== 'create'),
                 ])->columns(3),
+                Grid::make(2)->schema([
+                    Forms\Components\TextInput::make('city')
+                        ->required()
+                        ->maxLength(255)
+                        ->live(onBlur: true),
+                    Forms\Components\TextInput::make('neighborhood')
+                        ->required(fn (Get $get): bool => $get('city') === 'Rio de Janeiro')
+                        ->maxLength(255),
+                ])->columns(2),
+                Grid::make(2)->schema([
+                    Select::make('concern_01')
+                        ->label('Main concern')
+                        ->options([
+                            'Asfalto ruim' => 'Asfalto ruim',
+                            'Cultura e Lazer' => 'Cultura e Lazer',
+                            'Falta de água' => 'Falta de água',
+                            'Falta de creches' => 'Falta de creches',
+                            'Falta de emprego' => 'Falta de emprego',
+                            'Iluminação e segurança' => 'Iluminação e segurança',
+                            'Qualidade na educação' => 'Qualidade na educação',
+                            'Saneamento básico' => 'Saneamento básico',
+                            'Saúde precária' => 'Saúde precária',
+                            'Transporte insuficiente' => 'Transporte insuficiente',
+                        ])
+                        ->required(),
+                    DatePicker::make('date_of_birth')
+                        ->label('Date of Birth')
+                        ->native(false)
+                        ->extraInputAttributes(['readonly' => 'readonly'])
+                        ->displayFormat('d/m/Y')
+                        ->format('d/m/Y')
+                        ->required(),
+                ])->columns(2),
                 Grid::make(2)->schema([
                     Forms\Components\TextInput::make('password')
                         ->password()
