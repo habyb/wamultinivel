@@ -605,7 +605,11 @@ class FixCityUsers extends Command
                 'varre sai'
             ],
             'Vassouras' => [
-                'vassouras'
+                'vassouras',
+                'vassoura',
+                'Vassoura',
+                'Vassouras - RJ',
+                'Vassoura - RJ'
             ],
             'Volta Redonda' => [
                 'volta redonda',
