@@ -115,7 +115,9 @@ class FixCityUsers extends Command
                 'Barra do Piraí  RJ',
                 'Barra do Pirahy', 
                 'Barra do Pirahi',
-                'Barão de Piraí'
+                'Barão de Piraí',
+                'Ipiabas',
+                'Ipiabas Barra do Piraí'
             ],
             'Barra Mansa' => [
                 'barra mansa',
