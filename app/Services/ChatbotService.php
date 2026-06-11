@@ -13,6 +13,9 @@ class ChatbotService
     protected $whatsapp;
     protected $statePrefix = 'chatbot:state:';
 
+    // Hash bcrypt pré-computado para a string 'password'
+    protected static string $dummyPasswordHash = '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi';
+
     public function __construct(WhatsAppServiceBusinessApi $whatsapp)
     {
         $this->whatsapp = $whatsapp;
@@ -166,7 +169,7 @@ class ChatbotService
                     $user = User::create([
                         'name' => $name,
                         'email' => $waId . '@s.whatsapp.net',
-                        'password' => bcrypt(Str::random(16)),
+                        'password' => self::$dummyPasswordHash,
                         'remoteJid' => $waId,
                         'is_remote_jid' => true,
                         'invitation_code' => $invitationCode,

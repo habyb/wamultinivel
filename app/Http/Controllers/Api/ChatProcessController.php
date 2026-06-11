@@ -3,19 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Services\ChatbotService;
+use App\Jobs\ProcessChatbotMessageJob;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 
 class ChatProcessController extends Controller
 {
-    protected $chatbot;
-
-    public function __construct(ChatbotService $chatbot)
-    {
-        $this->chatbot = $chatbot;
-    }
-
     /**
      * Process incoming message from Webhook
      */
@@ -34,7 +26,7 @@ class ChatProcessController extends Controller
         $message = $change['messages'][0] ?? null;
 
         if ($contact && $message) {
-            $this->chatbot->processMessage($contact, $message);
+            ProcessChatbotMessageJob::dispatch($contact, $message);
         }
 
         return response('OK', 200);
