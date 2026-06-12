@@ -432,7 +432,8 @@ class FixCityUsers extends Command
                 'Rio de Janeito',
                 'Rio de Janeuro',
                 'Rio de Janieiro',
-                'Rio do Janeiro'
+                'Rio do Janeiro',
+                'Ro do Janeiro'
             ],
             'Santa Maria Madalena' => [
                 'Santa maria madalena',
