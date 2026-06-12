@@ -426,7 +426,13 @@ class FixCityUsers extends Command
                 'Rio de Janeiro Penha',
                 'Penha',
                 'Vargem Grande,  RJ',
-                'Rio de Janeiro cordovil'
+                'Rio de Janeiro cordovil',
+                'Rio Dejaneiro',
+                'Rio de Janeieo',
+                'Rio de Janeito',
+                'Rio de Janeuro',
+                'Rio de Janieiro',
+                'Rio do Janeiro'
             ],
             'Santa Maria Madalena' => [
                 'Santa maria madalena',
