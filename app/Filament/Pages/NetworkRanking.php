@@ -103,6 +103,7 @@ class NetworkRanking extends Page implements HasTable
     {
         $user       = new User();
         $table      = $user->getTable();
+        $pkCol      = $user->getKeyName();
         $relation   = $user->firstLevelGuests();
         $fkCol      = $relation->getForeignKeyName();
         $ownerKey   = $relation->getLocalKeyName();
@@ -111,6 +112,7 @@ class NetworkRanking extends Page implements HasTable
 
         $grammar          = DB::getQueryGrammar();
         $wrappedTable     = $grammar->wrap($table);
+        $wrappedPkCol     = $grammar->wrap($pkCol);
         $wrappedFkCol     = $grammar->wrap($fkCol);
         $wrappedOwnerKey  = $grammar->wrap($ownerKey);
         $wrappedCreated   = $grammar->wrap('created_at');
@@ -129,7 +131,8 @@ class NetworkRanking extends Page implements HasTable
                     SELECT 
                         u.{$wrappedFkCol} AS ancestor_code,
                         u.{$wrappedOwnerKey} AS descendant_code,
-                        1 AS depth
+                        1 AS depth,
+                        ARRAY[u.{$wrappedPkCol}] AS visited_ids
                     FROM {$wrappedTable} u
                     WHERE u.{$wrappedFkCol} IS NOT NULL
                       {$seedExtra}
@@ -139,19 +142,22 @@ class NetworkRanking extends Page implements HasTable
                     SELECT 
                         np.ancestor_code,
                         c.{$wrappedOwnerKey} AS descendant_code,
-                        np.depth + 1 AS depth
+                        np.depth + 1 AS depth,
+                        np.visited_ids || c.{$wrappedPkCol} AS visited_ids
                     FROM {$wrappedTable} c
                     INNER JOIN network_paths np ON c.{$wrappedFkCol} = np.descendant_code
                     WHERE 1=1
                       {$joinExtra}
+                      AND NOT (c.{$wrappedPkCol} = ANY(np.visited_ids))
                       AND np.depth < 100
                 )
-                SELECT ancestor_code, COUNT(*) AS network_size
+                SELECT ancestor_code, COUNT(DISTINCT descendant_code) AS network_size
                 FROM network_paths
                 GROUP BY ancestor_code
             )
         SQL;
     }
+
 
     /**
      * Add network sizes to query and sort by the current week's size.
