@@ -85,7 +85,7 @@ class RegistrationPresentationPerCity extends Page implements Forms\Contracts\Ha
             ]);
     }
 
-    public function getRegistrationsCountProperty(): int
+    public function getTotalCountProperty(): int
     {
         $completed = $this->completionColumn();
         $query = User::query()->where($completed, true);
@@ -99,6 +99,57 @@ class RegistrationPresentationPerCity extends Page implements Forms\Contracts\Ha
         }
 
         return $query->count();
+    }
+
+    public function getAmbassadorsCountProperty(): int
+    {
+        $completed = $this->completionColumn();
+        $query = User::role('Embaixador')->where($completed, true);
+
+        if ($this->selectedCity) {
+            $query->where('city', $this->selectedCity);
+        }
+
+        if ($this->selectedDateTime) {
+            $query->where('created_at', '>=', $this->selectedDateTime);
+        }
+
+        $ambassadors = $query->get();
+        $ambassadorsByCode = $ambassadors->keyBy('code');
+        $memo = [];
+
+        $isInE = function ($user) use (&$isInE, &$memo, $ambassadorsByCode) {
+            $code = $user->code;
+            if (isset($memo[$code])) {
+                return $memo[$code];
+            }
+
+            $invitationCode = $user->invitation_code;
+            if (!$invitationCode) {
+                return $memo[$code] = true;
+            }
+
+            $referrer = $ambassadorsByCode->get($invitationCode);
+            if (!$referrer) {
+                return $memo[$code] = true;
+            }
+
+            return $memo[$code] = !$isInE($referrer);
+        };
+
+        $count = 0;
+        foreach ($ambassadors as $user) {
+            if ($isInE($user)) {
+                $count++;
+            }
+        }
+
+        return $count;
+    }
+
+    public function getMembersCountProperty(): int
+    {
+        return max(0, $this->getTotalCountProperty() - $this->getAmbassadorsCountProperty());
     }
 
     public static function canAccess(): bool
