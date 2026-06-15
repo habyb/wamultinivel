@@ -48,7 +48,8 @@ class DirectRegistrations extends Page implements HasTable
 
         return $user->firstLevelGuests()
             ->getQuery()
-            ->with(['roles', 'referrerGuest'])
+            ->with(['roles'])
+            ->withCount('firstLevelGuests')
             ->orderByDesc('first_level_guests_count');
     }
 
@@ -60,16 +61,13 @@ class DirectRegistrations extends Page implements HasTable
         return [
             TextColumn::make('created_at')
                 ->dateTime(format: 'd/m/Y H:i:s')
-                ->sortable()
                 ->toggleable(isToggledHiddenByDefault: true),
             TextColumn::make('updated_at')
                 ->dateTime(format: 'd/m/Y H:i:s')
-                ->sortable()
                 ->toggleable(isToggledHiddenByDefault: true),
             TextColumn::make('code')->label('Invitation ID'),
             TextColumn::make('name')
                 ->label('Name')
-                ->sortable()
                 ->searchable(),
             TextColumn::make('remoteJid')
                 ->formatStateUsing(function (string $state): string {
@@ -78,13 +76,11 @@ class DirectRegistrations extends Page implements HasTable
                 ->label('WhatsApp')
                 ->searchable(),
             TextColumn::make('roles.name')
-                ->sortable()
                 ->searchable()
                 ->badge()
                 ->separator(', '),
             TextColumn::make('first_level_guests_count')
                 ->label('Number of guests')
-                ->counts('firstLevelGuests')
                 ->badge()
                 ->alignment('right')
                 ->color(fn(string $state): string => match (true) {
@@ -92,20 +88,20 @@ class DirectRegistrations extends Page implements HasTable
                     $state <= 5 => 'success',
                     default => 'warning',
                 }),
-            TextColumn::make('referrerGuest.name')
+            TextColumn::make('invitation_code')
                 ->label('Invited by')
-                ->sortable()
-                ->formatStateUsing(function ($state, $record) {
-                    if (!$state) {
+                ->formatStateUsing(function ($state) {
+                    $currentUser = Auth::user();
+                    if (!$currentUser) {
                         return '—';
                     }
 
-                    $nomeLimitado = Str::limit($state, 10, '...');
-                    return "{$nomeLimitado} ({$record->invitation_code})";
+                    $nomeLimitado = Str::limit($currentUser->name, 10, '...');
+                    return "{$nomeLimitado} ({$state})";
                 })
                 ->tooltip(
-                    fn($state, $record) =>
-                    $state ? "{$record->referrerGuest->name} ({$record->invitation_code})" : null
+                    fn($state) =>
+                    Auth::user() ? Auth::user()->name . " ({$state})" : null
                 ),
         ];
     }
