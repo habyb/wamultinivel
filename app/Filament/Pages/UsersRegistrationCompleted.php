@@ -49,9 +49,7 @@ class UsersRegistrationCompleted extends Page implements HasTable
     {
         $query = auth()->user()
             ->completedRegistrationsQuery()
-            ->withCount([
-                'firstLevelGuests as first_level_guests_count_x',
-            ]);
+            ->with(['roles', 'referrerGuest']);
 
         if (empty($this->tableSortColumn)) {
             $query->orderBy('total_network_count', 'desc');
@@ -90,7 +88,9 @@ class UsersRegistrationCompleted extends Page implements HasTable
             SelectFilter::make('city')
                 ->label(__('City'))
                 ->options(
-                    User::whereNotNull('city')
+                    fn () => User::query()
+                        ->whereNotNull('city')
+                        ->where('is_add_date_of_birth', true)
                         ->distinct()
                         ->orderBy('city')
                         ->pluck('city', 'city')
@@ -114,7 +114,7 @@ class UsersRegistrationCompleted extends Page implements HasTable
                 ->requiresConfirmation()
                 ->deselectRecordsAfterCompletion()
                 ->action(function ($records) {
-                    $records = $records->loadCount('firstLevelGuests')->sortByDesc('total_network_count');
+                    $records = $records->load(['roles', 'referrerGuest'])->loadCount('firstLevelGuests')->sortByDesc('total_network_count');
 
                     $filename = 'contatos_' . now()->format('Ymd_His') . '.csv';
 
