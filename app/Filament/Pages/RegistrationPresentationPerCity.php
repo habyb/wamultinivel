@@ -87,71 +87,62 @@ class RegistrationPresentationPerCity extends Page implements Forms\Contracts\Ha
             ]);
     }
 
-    public function getTotalCountProperty(): int
+    protected ?array $cachedCounts = null;
+
+    protected function getCounts(): array
     {
+        if ($this->cachedCounts !== null) {
+            return $this->cachedCounts;
+        }
+
         $completed = $this->completionColumn();
-        $query = User::query()->where($completed, true);
+        $embaixadorRoleId = \DB::table('roles')->where('name', 'Embaixador')->value('id');
+
+        $query = User::query()
+            ->from('users as u')
+            ->selectRaw('COUNT(*)::int as total')
+            ->selectRaw('COUNT(mhr.role_id)::int as ambassadors')
+            ->leftJoin('model_has_roles as mhr', function ($join) use ($embaixadorRoleId) {
+                $join->on('mhr.model_id', '=', 'u.id')
+                    ->where('mhr.model_type', '=', User::class)
+                    ->where('mhr.role_id', '=', $embaixadorRoleId);
+            })
+            ->where("u.$completed", true);
 
         if ($this->selectedCity) {
-            $query->where('city', $this->selectedCity);
+            $query->where('u.city', $this->selectedCity);
         }
 
         if ($this->selectedDateTime) {
-            $query->where('created_at', '>=', $this->selectedDateTime);
+            $query->where('u.created_at', '>=', $this->selectedDateTime);
         }
 
-        return $query->count();
+        $data = $query->first();
+
+        $total = $data?->total ?? 0;
+        $ambassadors = $data?->ambassadors ?? 0;
+        $members = max(0, $total - $ambassadors);
+
+        return $this->cachedCounts = [
+            'total' => $total,
+            'ambassadors' => $ambassadors,
+            'members' => $members,
+        ];
+    }
+
+    public function getTotalCountProperty(): int
+    {
+        return $this->getCounts()['total'];
     }
 
     public function getAmbassadorsCountProperty(): int
     {
-        $completed = $this->completionColumn();
-        $query = User::role('Embaixador')->where($completed, true);
-
-        if ($this->selectedCity) {
-            $query->where('city', $this->selectedCity);
-        }
-
-        if ($this->selectedDateTime) {
-            $query->where('created_at', '>=', $this->selectedDateTime);
-        }
-
-        $ambassadors = $query->get();
-        $ambassadorsByCode = $ambassadors->keyBy('code');
-        $memo = [];
-
-        $isInE = function ($user) use (&$isInE, &$memo, $ambassadorsByCode) {
-            $code = $user->code;
-            if (isset($memo[$code])) {
-                return $memo[$code];
-            }
-
-            $invitationCode = $user->invitation_code;
-            if (!$invitationCode) {
-                return $memo[$code] = true;
-            }
-
-            $referrer = $ambassadorsByCode->get($invitationCode);
-            if (!$referrer) {
-                return $memo[$code] = true;
-            }
-
-            return $memo[$code] = !$isInE($referrer);
-        };
-
-        $count = 0;
-        foreach ($ambassadors as $user) {
-            if ($isInE($user)) {
-                $count++;
-            }
-        }
-
-        return $count;
+        return $this->getCounts()['ambassadors'];
     }
 
     public function getMembersCountProperty(): int
     {
-        return max(0, $this->getTotalCountProperty() - $this->getAmbassadorsCountProperty());
+        return $this->getCounts()['members'];
     }
 
     public static function canAccess(): bool

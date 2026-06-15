@@ -50,13 +50,28 @@ class UsersRegistrationPerCityTotal extends Page implements HasTable
         $completed = $this->completionColumn();
 
         $q = User::query()
-            ->selectRaw('users.city AS city')
-            ->selectRaw('COUNT(*)::int AS quantity')
-            ->selectRaw("md5(coalesce(users.city, '')) AS _key")
-            ->where("users.$completed", true)
-            ->whereNotNull('users.city')
-            ->where('users.city', '!=', '')
-            ->groupBy('users.city');
+            ->from('users as u')
+            ->selectRaw('u.city AS city')
+            ->selectRaw('COUNT(*)::int AS total')
+            ->selectRaw('SUM(CASE WHEN EXISTS (
+                SELECT 1 FROM model_has_roles mhr 
+                JOIN roles r ON r.id = mhr.role_id 
+                WHERE mhr.model_id = u.id 
+                  AND mhr.model_type = \'' . User::class . '\' 
+                  AND r.name = \'Embaixador\'
+            ) THEN 1 ELSE 0 END)::int as ambassadors_count')
+            ->selectRaw('COUNT(*)::int - SUM(CASE WHEN EXISTS (
+                SELECT 1 FROM model_has_roles mhr 
+                JOIN roles r ON r.id = mhr.role_id 
+                WHERE mhr.model_id = u.id 
+                  AND mhr.model_type = \'' . User::class . '\' 
+                  AND r.name = \'Embaixador\'
+            ) THEN 1 ELSE 0 END)::int as members_count')
+            ->selectRaw("md5(coalesce(u.city, '')) AS _key")
+            ->where("u.$completed", true)
+            ->whereNotNull('u.city')
+            ->where('u.city', '!=', '')
+            ->groupBy('u.city');
 
         // === Ordenação final, guiada pelo estado atual da tabela ===
         // (evita fallback "users.id" e garante que o clique funcione)
@@ -65,9 +80,13 @@ class UsersRegistrationPerCityTotal extends Page implements HasTable
         $dir = $dir === 'asc' ? 'asc' : 'desc';
 
         if ($col === 'city') {
-            $q->orderBy('users.city', $dir)->orderBy('quantity'); // desempate opcional
-        } else { // default: quantity
-            $q->orderBy('quantity', $dir)->orderBy('users.city');
+            $q->orderBy('u.city', $dir)->orderBy('total'); // desempate opcional
+        } elseif ($col === 'members_count') {
+            $q->orderBy('members_count', $dir)->orderBy('u.city');
+        } elseif ($col === 'ambassadors_count') {
+            $q->orderBy('ambassadors_count', $dir)->orderBy('u.city');
+        } else { // default: total
+            $q->orderBy('total', $dir)->orderBy('u.city');
         }
 
         return $q;
@@ -76,15 +95,37 @@ class UsersRegistrationPerCityTotal extends Page implements HasTable
     protected function getTableColumns(): array
     {
         return [
-            TextColumn::make('city')
-                ->label('City')
+            Tables\Columns\TextColumn::make('city')
+                ->label('Cidade')
                 ->searchable()
-                ->sortable(),   // sem callback
+                ->sortable(
+                    query: fn(\Illuminate\Database\Eloquent\Builder $query, string $direction) =>
+                    $query->reorder()->orderByRaw('city ' . $direction)
+                ),
 
-            TextColumn::make('quantity')
-                ->label('Quantity')
+            Tables\Columns\TextColumn::make('members_count')
+                ->label('Membros')
                 ->numeric()
-                ->sortable(),   // sem callback
+                ->sortable(
+                    query: fn(\Illuminate\Database\Eloquent\Builder $query, string $direction) =>
+                    $query->reorder()->orderByRaw('members_count ' . $direction)
+                ),
+
+            Tables\Columns\TextColumn::make('ambassadors_count')
+                ->label('Embaixadores')
+                ->numeric()
+                ->sortable(
+                    query: fn(\Illuminate\Database\Eloquent\Builder $query, string $direction) =>
+                    $query->reorder()->orderByRaw('ambassadors_count ' . $direction)
+                ),
+
+            Tables\Columns\TextColumn::make('total')
+                ->label('Total')
+                ->numeric()
+                ->sortable(
+                    query: fn(\Illuminate\Database\Eloquent\Builder $query, string $direction) =>
+                    $query->reorder()->orderByRaw('total ' . $direction)
+                ),
         ];
     }
 
@@ -95,7 +136,7 @@ class UsersRegistrationPerCityTotal extends Page implements HasTable
 
     public function getTableDefaultSortColumn(): ?string
     {
-        return 'quantity';
+        return 'total';
     }
 
     public function getTableDefaultSortDirection(): ?string
@@ -113,26 +154,42 @@ class UsersRegistrationPerCityTotal extends Page implements HasTable
                 ->color('success')
                 ->action(function (): StreamedResponse {
                     $completed = $this->completionColumn();
+                    $embaixadorRoleId = \DB::table('roles')->where('name', 'Embaixador')->value('id');
 
                     $records = User::query()
-                        ->selectRaw('users.city AS city')
-                        ->selectRaw('COUNT(*)::int AS quantity')
-                        ->where("users.$completed", true)
-                        ->whereNotNull('users.city')
-                        ->where('users.city', '!=', '')
-                        ->groupBy('users.city')
-                        ->orderByDesc('quantity')
-                        ->orderBy('users.city')
+                        ->from('users as u')
+                        ->selectRaw('u.city AS city')
+                        ->selectRaw('COUNT(*)::int AS total')
+                        ->selectRaw('COUNT(mhr.role_id)::int as ambassadors_count')
+                        ->selectRaw('(COUNT(*) - COUNT(mhr.role_id))::int as members_count')
+                        ->leftJoin('model_has_roles as mhr', function ($join) use ($embaixadorRoleId) {
+                            $join->on('mhr.model_id', '=', 'u.id')
+                                ->where('mhr.model_type', '=', User::class)
+                                ->where('mhr.role_id', '=', $embaixadorRoleId);
+                        })
+                        ->where("u.$completed", true)
+                        ->whereNotNull('u.city')
+                        ->where('u.city', '!=', '')
+                        ->groupBy('u.city')
+                        ->orderByDesc('total')
+                        ->orderBy('u.city')
                         ->get();
 
                     $filename = 'cadastros_por_cidade_total_' . now()->format('Ymd_His') . '.csv';
 
                     return response()->streamDownload(function () use ($records) {
                         $h = fopen('php://output', 'w');
-                        fputcsv($h, ['Cidade', 'Quantidade']);
+                        
+                        // Cabeçalho do CSV: Cidade, Membros, Embaixadores, Total
+                        fputcsv($h, ['Cidade', 'Membros', 'Embaixadores', 'Total']);
 
                         foreach ($records as $row) {
-                            fputcsv($h, [(string) $row->city, (int) $row->quantity]);
+                            fputcsv($h, [
+                                (string) $row->city,
+                                (int) $row->members_count,
+                                (int) $row->ambassadors_count,
+                                (int) $row->total
+                            ]);
                         }
 
                         fclose($h);

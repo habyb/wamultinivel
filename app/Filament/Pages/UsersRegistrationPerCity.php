@@ -91,13 +91,21 @@ class UsersRegistrationPerCity extends Page implements HasTable, Forms\Contracts
     protected function getTableQuery(): Builder
     {
         $completed = $this->completionColumn();
+        $embaixadorRoleId = \DB::table('roles')->where('name', 'Embaixador')->value('id');
 
         $q = \App\Models\User::query()
             ->from('users as u')
             ->selectRaw('DATE(u.created_at) as day')
             ->selectRaw('u.city as city')
-            ->selectRaw('COUNT(*)::int as quantity')
+            ->selectRaw('COUNT(*)::int as total')
+            ->selectRaw('COUNT(mhr.role_id)::int as ambassadors_count')
+            ->selectRaw('(COUNT(*) - COUNT(mhr.role_id))::int as members_count')
             ->selectRaw("md5((DATE(u.created_at))::text || '|' || coalesce(u.city, '')) as _key")
+            ->leftJoin('model_has_roles as mhr', function ($join) use ($embaixadorRoleId) {
+                $join->on('mhr.model_id', '=', 'u.id')
+                    ->where('mhr.model_type', '=', User::class)
+                    ->where('mhr.role_id', '=', $embaixadorRoleId);
+            })
             ->where("u.$completed", true)
             ->where('u.city', '!=', '');
 
@@ -120,15 +128,7 @@ class UsersRegistrationPerCity extends Page implements HasTable, Forms\Contracts
                 ->formatStateUsing(fn($state) => \Carbon\Carbon::parse($state)->format('d/m/Y'))
                 ->sortable(
                     query: fn(\Illuminate\Database\Eloquent\Builder $query, string $direction) =>
-                    $query->reorder()->orderByRaw('day ' . $direction) // alias do SELECT
-                ),
-
-            Tables\Columns\TextColumn::make('quantity')
-                ->label('Quantity')
-                ->numeric()
-                ->sortable(
-                    query: fn(\Illuminate\Database\Eloquent\Builder $query, string $direction) =>
-                    $query->reorder()->orderByRaw('quantity ' . $direction) // alias do SELECT
+                    $query->reorder()->orderByRaw('day ' . $direction)
                 ),
 
             Tables\Columns\TextColumn::make('city')
@@ -136,7 +136,31 @@ class UsersRegistrationPerCity extends Page implements HasTable, Forms\Contracts
                 ->searchable()
                 ->sortable(
                     query: fn(\Illuminate\Database\Eloquent\Builder $query, string $direction) =>
-                    $query->reorder()->orderByRaw('city ' . $direction) // alias do SELECT
+                    $query->reorder()->orderByRaw('city ' . $direction)
+                ),
+
+            Tables\Columns\TextColumn::make('members_count')
+                ->label('Membros')
+                ->numeric()
+                ->sortable(
+                    query: fn(\Illuminate\Database\Eloquent\Builder $query, string $direction) =>
+                    $query->reorder()->orderByRaw('members_count ' . $direction)
+                ),
+
+            Tables\Columns\TextColumn::make('ambassadors_count')
+                ->label('Embaixadores')
+                ->numeric()
+                ->sortable(
+                    query: fn(\Illuminate\Database\Eloquent\Builder $query, string $direction) =>
+                    $query->reorder()->orderByRaw('ambassadors_count ' . $direction)
+                ),
+
+            Tables\Columns\TextColumn::make('total')
+                ->label('Total')
+                ->numeric()
+                ->sortable(
+                    query: fn(\Illuminate\Database\Eloquent\Builder $query, string $direction) =>
+                    $query->reorder()->orderByRaw('total ' . $direction)
                 ),
         ];
     }
@@ -167,6 +191,7 @@ class UsersRegistrationPerCity extends Page implements HasTable, Forms\Contracts
                 ->color('success')
                 ->action(function (): StreamedResponse {
                     $completed = $this->completionColumn();
+                    $embaixadorRoleId = \DB::table('roles')->where('name', 'Embaixador')->value('id');
 
                     // monta a mesma consulta da tabela (agregada por dia+cidade),
                     // respeitando a cidade selecionada (se houver)
@@ -174,7 +199,14 @@ class UsersRegistrationPerCity extends Page implements HasTable, Forms\Contracts
                         ->from('users as u')
                         ->selectRaw('DATE(u.created_at) as day')
                         ->selectRaw('u.city as city')
-                        ->selectRaw('COUNT(*)::int as quantity')
+                        ->selectRaw('COUNT(*)::int as total')
+                        ->selectRaw('COUNT(mhr.role_id)::int as ambassadors_count')
+                        ->selectRaw('(COUNT(*) - COUNT(mhr.role_id))::int as members_count')
+                        ->leftJoin('model_has_roles as mhr', function ($join) use ($embaixadorRoleId) {
+                            $join->on('mhr.model_id', '=', 'u.id')
+                                ->where('mhr.model_type', '=', User::class)
+                                ->where('mhr.role_id', '=', $embaixadorRoleId);
+                        })
                         ->where("u.$completed", true)
                         ->where('u.city', '!=', '');
 
@@ -186,7 +218,7 @@ class UsersRegistrationPerCity extends Page implements HasTable, Forms\Contracts
                         ->groupBy('day', 'u.city')
                         ->orderByDesc('day')
                         ->orderBy('u.city')
-                        ->get(); // Collection de stdClass com day, city, quantity
+                        ->get(); // Collection de stdClass com day, city, total, ambassadors_count, members_count
 
                     $suffix = $this->selectedCity ? ('_' . str($this->selectedCity)->slug('_')) : '_all';
                     $filename = 'cadastros_por_cidade' . $suffix . '_' . now()->format('Ymd_His') . '.csv';
@@ -195,13 +227,16 @@ class UsersRegistrationPerCity extends Page implements HasTable, Forms\Contracts
                         $handle = fopen('php://output', 'w');
 
                         // Cabeçalho do CSV
-                        fputcsv($handle, ['Data', 'Quantidade', 'Cidade']);
+                        // 1. Data, 2. Cidade, 3. Membros, 4. Embaixadores, 5. Total
+                        fputcsv($handle, ['Data', 'Cidade', 'Membros', 'Embaixadores', 'Total']);
 
                         foreach ($records as $row) {
                             fputcsv($handle, [
                                 \Carbon\Carbon::parse($row->day)->format('d/m/Y'),
-                                (int) $row->quantity,
                                 (string) $row->city,
+                                (int) $row->members_count,
+                                (int) $row->ambassadors_count,
+                                (int) $row->total,
                             ]);
                         }
 
