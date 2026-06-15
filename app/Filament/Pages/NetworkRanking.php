@@ -132,6 +132,7 @@ class NetworkRanking extends Page implements HasTable
                         u.{$wrappedFkCol} AS ancestor_code,
                         u.{$wrappedOwnerKey} AS descendant_code,
                         1 AS depth,
+                        (u.{$wrappedCreated} <= ?) AS is_w0,
                         ARRAY[u.{$wrappedPkCol}] AS visited_ids
                     FROM {$wrappedTable} u
                     WHERE u.{$wrappedFkCol} IS NOT NULL
@@ -143,6 +144,7 @@ class NetworkRanking extends Page implements HasTable
                         np.ancestor_code,
                         c.{$wrappedOwnerKey} AS descendant_code,
                         np.depth + 1 AS depth,
+                        (np.is_w0 AND c.{$wrappedCreated} <= ?) AS is_w0,
                         np.visited_ids || c.{$wrappedPkCol} AS visited_ids
                     FROM {$wrappedTable} c
                     INNER JOIN network_paths np ON c.{$wrappedFkCol} = np.descendant_code
@@ -151,7 +153,10 @@ class NetworkRanking extends Page implements HasTable
                       AND NOT (c.{$wrappedPkCol} = ANY(np.visited_ids))
                       AND np.depth < 100
                 )
-                SELECT ancestor_code, COUNT(DISTINCT descendant_code) AS network_size
+                SELECT 
+                    ancestor_code, 
+                    COUNT(DISTINCT descendant_code) AS network_size_w1,
+                    COUNT(DISTINCT CASE WHEN is_w0 THEN descendant_code END) AS network_size_w0
                 FROM network_paths
                 GROUP BY ancestor_code
             )
@@ -164,22 +169,18 @@ class NetworkRanking extends Page implements HasTable
      */
     protected function orderByNetworkCurrentWeekDesc(Builder $query): Builder
     {
-        $subW1Sql = $this->getNetworkSizeSubquery();
-        $subW0Sql = $this->getNetworkSizeSubquery();
+        $subSql = $this->getNetworkSizeSubquery();
 
         $w1Cut = $this->currWeekEnd->toDateTimeString();
         $w0Cut = $this->prevWeekEnd->toDateTimeString();
 
         return $query
             ->addSelect('users.*')
-            ->selectRaw('COALESCE(net_w1.network_size, 0) as network_w1')
-            ->selectRaw('COALESCE(net_w0.network_size, 0) as network_w0')
-            ->leftJoinSub(function ($joinQuery) use ($subW1Sql, $w1Cut) {
-                $joinQuery->fromRaw($subW1Sql, [$w1Cut, $w1Cut]);
-            }, 'net_w1', 'users.code', '=', 'net_w1.ancestor_code')
-            ->leftJoinSub(function ($joinQuery) use ($subW0Sql, $w0Cut) {
-                $joinQuery->fromRaw($subW0Sql, [$w0Cut, $w0Cut]);
-            }, 'net_w0', 'users.code', '=', 'net_w0.ancestor_code')
+            ->selectRaw('COALESCE(net.network_size_w1, 0) as network_w1')
+            ->selectRaw('COALESCE(net.network_size_w0, 0) as network_w0')
+            ->leftJoinSub(function ($joinQuery) use ($subSql, $w1Cut, $w0Cut) {
+                $joinQuery->fromRaw($subSql, [$w0Cut, $w1Cut, $w0Cut, $w1Cut]);
+            }, 'net', 'users.code', '=', 'net.ancestor_code')
             ->orderBy('network_w1', 'desc');
     }
 
