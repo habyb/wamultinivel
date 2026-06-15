@@ -441,6 +441,7 @@ class FixCityUsers extends Command
                 'Rio de Janeiro Nova Iguaçu',
                 'Tio de Janeiro',
                 'Rio de Janeiro-',
+                'Rio de Laneiro',
             ],
             'Santa Maria Madalena' => [
                 'Santa maria madalena',
