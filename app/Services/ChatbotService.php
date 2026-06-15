@@ -77,8 +77,8 @@ class ChatbotService
                 $msg1 = "{$user->name}, você já faz parte do nosso time vencedor! 🚀\n\n" .
                         "Utilize a mensagem abaixo para facilitar o compartilhamento com seus amigos!";
 
-                $msg2 = "Convite especial!\n\n" .
-                        "Quero te convidar para fazer parte do Time André Corrêa, uma equipe que acredita no trabalho sério e na construção de um futuro melhor.\n\n" .
+                $msg2 = "*CONVITE especial!*\n\n" .
+                        "*Quero te convidar para fazer parte do Time André Corrêa, uma equipe que acredita no trabalho sério e na construção de um futuro melhor.*\n\n" .
                         "Para participar, é só clicar no link abaixo e responder 5 perguntas rápidas.\n\n" .
                         "https://convite.andrecorrea.com.br/{$code}\n\n" .
                         "Também estou enviando os links das redes sociais do deputado para você conhecer melhor seu trabalho.\n\n" .
@@ -146,8 +146,8 @@ class ChatbotService
                 $msg1 = "{$user->name}, *você já está cadastrado* e faz parte do nosso time vencedor! 🚀\n\n" .
                         "Utilize a mensagem abaixo para facilitar o compartilhamento com seus amigos!";
 
-                $msg2 = "Convite especial!\n\n" .
-                        "Quero te convidar para fazer parte do Time André Corrêa, uma equipe que acredita no trabalho sério e na construção de um futuro melhor.\n\n" .
+                $msg2 = "*CONVITE especial!*\n\n" .
+                        "*Quero te convidar para fazer parte do Time André Corrêa, uma equipe que acredita no trabalho sério e na construção de um futuro melhor.*\n\n" .
                         "Para participar, é só clicar no link abaixo e responder 5 perguntas rápidas.\n\n" .
                         "https://convite.andrecorrea.com.br/{$code}\n\n" .
                         "Também estou enviando os links das redes sociais do deputado para você conhecer melhor seu trabalho.\n\n" .
@@ -439,8 +439,8 @@ class ChatbotService
         $msg1 = "{$user->name}, agora você faz parte do nosso time vencedor! 🚀\n\n" .
                 "Utilize a mensagem abaixo para facilitar o compartilhamento com seus amigos!";
                 
-        $msg2 = "Convite especial!\n\n" .
-                "Quero te convidar para fazer parte do Time André Corrêa, uma equipe que acredita no trabalho sério e na construção de um futuro melhor.\n\n" .
+        $msg2 = "*CONVITE especial!*\n\n" .
+                "*Quero te convidar para fazer parte do Time André Corrêa, uma equipe que acredita no trabalho sério e na construção de um futuro melhor.*\n\n" .
                 "Para participar, é só clicar no link abaixo e responder 5 perguntas rápidas.\n\n" .
                 "https://convite.andrecorrea.com.br/{$code}\n\n" .
                 "Também estou enviando os links das redes sociais do deputado para você conhecer melhor seu trabalho.\n\n" .
