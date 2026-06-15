@@ -46,7 +46,10 @@ class DirectRegistrations extends Page implements HasTable
     {
         $user = Auth::user();
 
-        return $user->firstLevelGuests()->getQuery()->orderByDesc('first_level_guests_count');
+        return $user->firstLevelGuests()
+            ->getQuery()
+            ->with(['roles', 'referrerGuest'])
+            ->orderByDesc('first_level_guests_count');
     }
 
     /**
