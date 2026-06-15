@@ -80,6 +80,8 @@ class RegistrationPresentationPerCity extends Page implements Forms\Contracts\Ha
                             ->label(__('Data/Hora Inicial'))
                             ->native(false)
                             ->displayFormat('d/m/Y H:i')
+                            ->minDate(now()->subDays(30))
+                            ->maxDate(now())
                             ->live(),
                     ])
             ]);
