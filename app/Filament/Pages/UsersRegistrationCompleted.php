@@ -225,7 +225,6 @@ class UsersRegistrationCompleted extends Page implements HasTable
                 ->label('Number of guests')
                 ->counts('firstLevelGuests')
                 ->badge()
-                ->sortable()
                 ->alignment('right')
                 ->color(fn(string $state): string => match (true) {
                     $state == 0 => 'gray',
@@ -235,7 +234,6 @@ class UsersRegistrationCompleted extends Page implements HasTable
             TextColumn::make('total_network_count')
                 ->label('Network')
                 ->badge()
-                ->sortable()
                 ->alignment('right')
                 ->color(fn(int $state) => match (true) {
                     $state === 0 => 'gray',
