@@ -16,7 +16,9 @@ use Carbon\Carbon;
 
 class DirectGuests extends Page implements HasTable
 {
-    use InteractsWithTable;
+    use InteractsWithTable {
+        table as traitTable;
+    }
 
     protected static ?string $navigationIcon = 'heroicon-o-users';
     protected static string $view = 'filament.pages.direct-guests';
@@ -51,6 +53,7 @@ class DirectGuests extends Page implements HasTable
                 ->requiresConfirmation()
                 ->deselectRecordsAfterCompletion()
                 ->action(function ($records): StreamedResponse {
+                    $records->load(['roles', 'referrerGuest']);
                     $filename = 'cadastros_selecionados_' . now()->format('Ymd_His') . '.csv';
 
                     return response()->streamDownload(function () use ($records) {
@@ -273,5 +276,11 @@ class DirectGuests extends Page implements HasTable
     public static function canAccess(): bool
     {
         return auth()->user()?->hasAnyRole(['Superadmin', 'Admin']);
+    }
+
+    public function table(\Filament\Tables\Table $table): \Filament\Tables\Table
+    {
+        return $this->traitTable($table)
+            ->paginated([10, 25, 50, 100]);
     }
 }
