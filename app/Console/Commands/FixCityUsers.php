@@ -553,6 +553,8 @@ class FixCityUsers extends Command
                 'Três Rios RJ'
             ],
             'Valença' => [
+                'Concevatoria',
+                'Conservatória-Valença',
                 'Valença.',
                 'Valença RJ',
                 'Valença Rj',
@@ -592,6 +594,7 @@ class FixCityUsers extends Command
                 'Barao de Juparanã',
                 'Barao de juparanã',
                 'BARÃO DE JUPARANA.',
+                'Barão de Juparana Valença',
                 'Parapeúna',
                 'Parapeuna',
                 'parapeuna',
