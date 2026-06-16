@@ -18,7 +18,9 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class UsersRegistrationPerCity extends Page implements HasTable, Forms\Contracts\HasForms
 {
-    use InteractsWithTable, Forms\Concerns\InteractsWithForms;
+    use InteractsWithTable, Forms\Concerns\InteractsWithForms {
+        InteractsWithTable::table as traitTable;
+    }
 
     protected static ?string $navigationIcon = 'heroicon-o-map-pin';
     protected static ?int $navigationSort = 2;
@@ -250,11 +252,14 @@ class UsersRegistrationPerCity extends Page implements HasTable, Forms\Contracts
     }
 
 
-    /*
-     * Restrict access to Superadmin and Admin roles only.
-     */
     public static function canAccess(): bool
     {
         return auth()->user()?->hasAnyRole(['Superadmin', 'Admin']);
+    }
+
+    public function table(Tables\Table $table): Tables\Table
+    {
+        return $this->traitTable($table)
+            ->paginated([10, 25, 50, 100]);
     }
 }

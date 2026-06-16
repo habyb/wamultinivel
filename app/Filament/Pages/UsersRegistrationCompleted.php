@@ -21,7 +21,9 @@ use Carbon\Carbon;
 
 class UsersRegistrationCompleted extends Page implements HasTable
 {
-    use InteractsWithTable;
+    use InteractsWithTable {
+        table as traitTable;
+    }
 
     protected static ?string $navigationIcon = 'heroicon-o-user-group';
     protected static string $view = 'filament.pages.users-registrations-completed';
@@ -362,5 +364,11 @@ class UsersRegistrationCompleted extends Page implements HasTable
     public static function canAccess(): bool
     {
         return auth()->user()?->hasAnyRole(['Superadmin', 'Admin']);
+    }
+
+    public function table(Tables\Table $table): Tables\Table
+    {
+        return $this->traitTable($table)
+            ->paginated([10, 25, 50, 100]);
     }
 }

@@ -13,7 +13,9 @@ use App\Models\User;
 
 class TotalEmbaixadores extends Page implements HasTable
 {
-    use InteractsWithTable;
+    use InteractsWithTable {
+        table as traitTable;
+    }
 
     protected static ?string $navigationIcon = 'heroicon-o-user-circle';
     protected static string $view = 'filament.pages.total-embaixadores';
@@ -93,5 +95,11 @@ class TotalEmbaixadores extends Page implements HasTable
                     $state ? "{$record->referrerGuest->name} ({$record->invitation_code})" : null
                 ),
         ];
+    }
+
+    public function table(Tables\Table $table): Tables\Table
+    {
+        return $this->traitTable($table)
+            ->paginated([10, 25, 50, 100]);
     }
 }

@@ -18,7 +18,9 @@ use Carbon\Carbon;
 
 class DirectRegistrations extends Page implements HasTable
 {
-    use InteractsWithTable;
+    use InteractsWithTable {
+        table as traitTable;
+    }
 
     protected static ?string $navigationIcon = 'heroicon-o-user-plus';
     protected static string $view = 'filament.pages.direct-registrations';
@@ -104,5 +106,11 @@ class DirectRegistrations extends Page implements HasTable
                     Auth::user() ? Auth::user()->name . " ({$state})" : null
                 ),
         ];
+    }
+
+    public function table(Tables\Table $table): Tables\Table
+    {
+        return $this->traitTable($table)
+            ->paginated([10, 25, 50, 100]);
     }
 }
