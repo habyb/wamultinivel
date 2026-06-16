@@ -620,7 +620,12 @@ class FixCityUsers extends Command
                 'Santa Isabel - Valença',
                 'Valnça',
                 'Parapeuna Valença',
-                'Valença R-J'
+                'Valença R-J',
+                'Valecia',
+                'Valensa',
+                'Valença Conservatória',
+                'Valanca',
+                'Vslenca',
             ],
             'Varre-Sai' => [
                 'varre-sai',
