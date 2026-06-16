@@ -207,7 +207,8 @@ class UserResource extends Resource
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ])->visible(fn() => Auth::user()?->hasRole('Superadmin')),
-            ]);
+            ])
+            ->paginated([10, 25, 50, 100]);
     }
 
     public static function getRelations(): array
@@ -243,7 +244,7 @@ class UserResource extends Resource
         // Superadmin
         if ($user->hasRole('Superadmin')) {
             return parent::getEloquentQuery()
-                ->with(['referrerGuest'])
+                ->with(['roles', 'referrerGuest'])
                 ->withCount('firstLevelGuests');
         }
 
@@ -255,7 +256,7 @@ class UserResource extends Resource
                     fn(Builder $query) =>
                     $query->whereIn('name', ['Admin', 'Embaixador', 'Membro'])
                 )
-                ->with(['referrerGuest'])
+                ->with(['roles', 'referrerGuest'])
                 ->where('is_add_date_of_birth', true)
                 ->withCount('firstLevelGuests');
         }
@@ -264,7 +265,7 @@ class UserResource extends Resource
         if ($user->hasRole('Embaixador') || $user->hasRole('Membro')) {
             return parent::getEloquentQuery()
                 ->where('invitation_code', $user->code)
-                ->with(['referrerGuest'])
+                ->with(['roles', 'referrerGuest'])
                 ->where('is_add_date_of_birth', true)
                 ->withCount('firstLevelGuests');
         }
