@@ -46,6 +46,7 @@ class MyNetwork extends Page implements HasTable
     {
         return auth()->user()
             ->networkGuestsQuery()
+            ->with(['roles', 'referrerGuest'])
             ->withCount([
                 // ajuste o nome da relação se for diferente de firstLevelGuests
                 'firstLevelGuests as first_level_guests_count',

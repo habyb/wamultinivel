@@ -41,7 +41,9 @@ class TotalEmbaixadores extends Page implements HasTable
      */
     protected function getTableQuery(): Builder
     {
-        return User::embaixadoresQuery()->orderByDesc('first_level_guests_count');
+        return User::embaixadoresQuery()
+            ->with(['referrerGuest'])
+            ->orderByDesc('first_level_guests_count');
     }
 
     /**
