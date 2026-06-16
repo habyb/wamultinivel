@@ -113,13 +113,10 @@ class ChatbotService
         
         $greeting = get_greeting();
         $msg = "Olá. {$greeting}! Seja Bem-vindo(a) ao time do Dep. André Corrêa.\n\n" .
-               "Que ótimo ter você aqui! 🎉\n" .
-               "Percebi que este é o nosso primeiro contato, e para continuarmos essa conversa, preciso da sua autorização para enviar informativos e novidades da nossa equipe. 📩\n\n" .
-               "Basta tocar no botão abaixo para confirmar. 👇";
+               "Percebi que este é o nosso primeiro contato e para continuarmos basta tocar no botão abaixo. Ao continuar, você aceita receber nossos informativos. 📩👇";
         
         return $this->whatsapp->sendInteractiveButtons($waId, $msg, [
-            'confirm_yes' => 'Sim, quero receber',
-            'confirm_no' => 'Talvez depois',
+            'confirm_yes' => 'Continuar',
         ]);
     }
 
@@ -246,20 +243,14 @@ class ChatbotService
     protected function processAwaitingRegistrationConfirmation($waId, User $user, $text)
     {
         $textLower = strtolower(trim($text));
+        $textClean = preg_replace('/[!.?~,;]/', '', $textLower);
 
-        if (in_array($textLower, ['confirm_yes', 'sim, quero receber'])) {
+        if (in_array($textClean, ['confirm_yes', 'continuar', 'sim', 'yes', 'ok', 'aceito', 'quero', 'sim, quero receber'])) {
             $this->setStep($waId, 'AWAITING_NAME');
             $user->update(['is_question_name' => true]);
             $this->sendReply($waId, "Legal! Vamos começar. Digite seu *Nome e Sobrenome*.");
-        } elseif (in_array($textLower, ['confirm_no', 'talvez depois'])) {
-            $msg = "Sem problemas! 😊\n" .
-                "Quando estiver pronto(a), estarei por aqui para continuar nossa conversa.\n" .
-                "Fique à vontade para me chamar quando quiser saber mais ou receber novidades. 😉";
-
-            $this->sendReply($waId, $msg);
-            $this->clearStep($waId);
         } else {
-            $this->sendReply($waId, "⚠️ Resposta não permitida. Selecione uma resposta dos botões.");
+            $this->sendReply($waId, "⚠️ Resposta não permitida. Por favor, clique no botão *Continuar* para prosseguir.");
         }
     }
 
