@@ -106,6 +106,7 @@ class UsersRegistrationPerCityTotal extends Page implements HasTable
             Tables\Columns\TextColumn::make('members_count')
                 ->label('Membros')
                 ->numeric()
+                ->alignment('right')
                 ->sortable(
                     query: fn(\Illuminate\Database\Eloquent\Builder $query, string $direction) =>
                     $query->reorder()->orderByRaw('members_count ' . $direction)
@@ -114,6 +115,7 @@ class UsersRegistrationPerCityTotal extends Page implements HasTable
             Tables\Columns\TextColumn::make('ambassadors_count')
                 ->label('Embaixadores')
                 ->numeric()
+                ->alignment('right')
                 ->sortable(
                     query: fn(\Illuminate\Database\Eloquent\Builder $query, string $direction) =>
                     $query->reorder()->orderByRaw('ambassadors_count ' . $direction)
@@ -122,6 +124,7 @@ class UsersRegistrationPerCityTotal extends Page implements HasTable
             Tables\Columns\TextColumn::make('total')
                 ->label('Total')
                 ->numeric()
+                ->alignment('right')
                 ->sortable(
                     query: fn(\Illuminate\Database\Eloquent\Builder $query, string $direction) =>
                     $query->reorder()->orderByRaw('total ' . $direction)
