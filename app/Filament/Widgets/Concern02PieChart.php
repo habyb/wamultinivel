@@ -58,7 +58,7 @@ class Concern02PieChart extends ChartWidget
     }
 
     public static function canView(): bool
-{
-    return false;
-}
+    {
+        return false;
+    }
 }
