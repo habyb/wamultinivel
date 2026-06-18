@@ -46,7 +46,8 @@ class FixCityUsers extends Command
             ],
             'Araruama' => [
                 'araruama',
-                'ARARUAMA'
+                'ARARUAMA',
+                'Araruama Região dos Lagos',
             ],
             'Areal' => [
                 'areal',
@@ -117,14 +118,17 @@ class FixCityUsers extends Command
                 'Barra do Pirahi',
                 'Barão de Piraí',
                 'Ipiabas',
-                'Ipiabas Barra do Piraí'
+                'Ipiabas Barra do Piraí',
+                'Barra do Piraî',
+                'Barra do Pirar',
             ],
             'Barra Mansa' => [
                 'barra mansa',
                 'BARRA MANSA',
                 'Barra Mansa, Siderlandia',
                 'Barra Mansa.',
-                'BarraMansa'
+                'BarraMansa',
+                'Barra',
             ],
             'Belford Roxo' => [
                 'belford roxo',
@@ -138,7 +142,8 @@ class FixCityUsers extends Command
             ],
             'Bom Jesus do Itabapoana' => [
                 'bom jesus do itabapoana',
-                'bom jesus do ita'
+                'bom jesus do ita',
+                'Carabuçu Bom Jesus do Itabapoana',
             ],
             'Cabo Frio' => [
                 'cabo frio',
@@ -151,7 +156,8 @@ class FixCityUsers extends Command
                 'Cachoeiras de Macacu.',
                 'Cachoeiras Macacu',
                 'Cachoeiras de Macau',
-                'Cachoeiras de  Macacu'
+                'Cachoeiras de  Macacu',
+                'Papucaia-Cachoeiras de Macacu',
             ],
             'Campos dos Goytacazes' => [
                 'Campos dos Goitacazes',
@@ -294,7 +300,9 @@ class FixCityUsers extends Command
             'Nova Friburgo' => [
                 'Nova friburgo',
                 'nova friburgo',
-                'Nf friburgo'
+                'Nf friburgo',
+                'Nova Fraiburgo',
+                'Nv Friburgo',
             ],
             'Nova Iguaçu' => [
                 'nova iguaçu',
@@ -359,7 +367,8 @@ class FixCityUsers extends Command
             ],
             'Rio Claro' => [
                 'Rio claro',
-                'rio claro'
+                'rio claro',
+                'Lidice Segundo Distrito de Rio Claro',
             ],
             'Rio das Flores' => [
                 'Rio das flores',
@@ -390,6 +399,7 @@ class FixCityUsers extends Command
                 'rio de janeiro, campo grande',
                 'Campo Grande RJ',
                 'Campo Grande Rio de Janeiro',
+                'Campo Grande - Rio de Janeiro',
                 'Campo grande',
                 'Rio  de  Janeiro',
                 'Rio  de Janeiro',
@@ -443,7 +453,7 @@ class FixCityUsers extends Command
                 'Rio de Janeiro-',
                 'Rio de Laneiro',
                 'Rio de Janeiro Inhoaiba',
-                'Rio de Janeiro Valença',
+                'Mangueira Rio de Janeiro',
             ],
             'Santa Maria Madalena' => [
                 'Santa maria madalena',
@@ -626,6 +636,7 @@ class FixCityUsers extends Command
                 'Valença Conservatória',
                 'Valanca',
                 'Vslenca',
+                'Rio de Janeiro Valença',
             ],
             'Varre-Sai' => [
                 'varre-sai',
