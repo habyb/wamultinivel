@@ -147,8 +147,7 @@ class UserResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime(format: 'd/m/Y H:i:s')
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('updated_at')
                     ->dateTime(format: 'd/m/Y H:i:s')
                     ->sortable()
@@ -168,34 +167,11 @@ class UserResource extends Resource
                     ->searchable()
                     ->badge()
                     ->separator(', '),
-                TextColumn::make('first_level_guests_count')
-                    ->label('Number of guests')
-                    ->badge()
-                    ->sortable()
-                    ->color(fn(string $state): string => match (true) {
-                        $state == 0 => 'gray',
-                        $state <= 5 => 'success',
-                        default => 'warning',
-                    }),
-                Tables\Columns\TextColumn::make('referrerGuest.name')
-                    ->label('Invited by')
-                    ->formatStateUsing(function ($state, $record) {
-                        if (!$state) {
-                            return '—';
-                        }
-
-                        $nomeLimitado = Str::limit($state, 10, '...');
-                        return "{$nomeLimitado} ({$record->invitation_code})";
-                    })
-                    ->tooltip(
-                        fn($state, $record) =>
-                        $state ? "{$record->referrerGuest->name} ({$record->invitation_code})" : null
-                    ),
                 Tables\Columns\TextColumn::make('city')
                     ->sortable()
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
-            ])
+            ])->defaultSort('created_at', 'desc')
             ->filters([
                 //
             ])
