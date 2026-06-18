@@ -144,6 +144,7 @@ class FixCityUsers extends Command
                 'bom jesus do itabapoana',
                 'bom jesus do ita',
                 'Carabuçu Bom Jesus do Itabapoana',
+                'Bom Jesus Itabapoana',
             ],
             'Cabo Frio' => [
                 'cabo frio',
@@ -481,7 +482,8 @@ class FixCityUsers extends Command
                 'sao goncalo',
                 'São Gonçalo RJ',
                 'São Gonçalo/RJ',
-                'São Gonçalo Rio de janeiro'
+                'São Gonçalo Rio de janeiro',
+                'S G',
             ],
             'São João da Barra' => [
                 'São joão da barra',
@@ -637,6 +639,7 @@ class FixCityUsers extends Command
                 'Valanca',
                 'Vslenca',
                 'Rio de Janeiro Valença',
+                'Parapeuns Valença Bairro dos Bastos',
             ],
             'Varre-Sai' => [
                 'varre-sai',
