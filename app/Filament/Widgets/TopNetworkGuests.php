@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class TopNetworkGuests extends BaseWidget
 {
-    protected static ?string $heading = 'Top Convidados da Rede';
+    protected static ?string $heading = 'Top 10 Convidados da Rede';
     protected static ?int $sort = 2;
 
     /** Default page size and options for TableWidget */

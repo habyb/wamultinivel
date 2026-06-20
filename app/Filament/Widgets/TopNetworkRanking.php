@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Auth;
 
 class TopNetworkRanking extends BaseWidget
 {
-    protected static ?string $heading = 'Top Cadastros Diretos';
+    protected static ?string $heading = 'Top 10 Cadastros Diretos';
     protected static ?int $sort = 1;
 
     protected function getTableRecordsPerPageSelectOptions(): array
