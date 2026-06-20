@@ -157,6 +157,7 @@ class UserResource extends Resource
                     ->sortable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('remoteJid')
+                    ->visible(fn () => auth()->user()?->hasAnyRole(['Superadmin', 'Admin']))
                     ->label('WhatsApp')
                     ->formatStateUsing(function (string $state): string {
                         return format_phone_number(fix_whatsapp_number($state));

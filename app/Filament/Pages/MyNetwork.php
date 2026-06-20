@@ -47,17 +47,13 @@ class MyNetwork extends Page implements HasTable
         return auth()->user()
             ->networkGuestsQuery()
             ->with(['roles', 'referrerGuest'])
-            ->withCount([
-                // ajuste o nome da relação se for diferente de firstLevelGuests
-                'firstLevelGuests as first_level_guests_count',
-            ])
             ->withMin(
                 // relação do Spatie HasRoles
                 'roles as role_name',
                 'name',
             )
             ->reorder()
-            ->orderByDesc('first_level_guests_count');
+            ->orderByDesc('total_network_count');
     }
 
     /**
@@ -84,6 +80,7 @@ class MyNetwork extends Page implements HasTable
                 ->searchable(),
 
             TextColumn::make('remoteJid')
+                ->visible(fn () => auth()->user()?->hasAnyRole(['Superadmin', 'Admin']))
                 ->formatStateUsing(function (string $state): string {
                     return format_phone_number(fix_whatsapp_number($state));
                 })
@@ -101,10 +98,11 @@ class MyNetwork extends Page implements HasTable
                 ->sortable()
                 ->separator(', '),
 
-            TextColumn::make('first_level_guests_count')
+            TextColumn::make('total_network_count')
                 ->label('Number of guests')
                 ->badge()
                 ->alignment('right')
+                ->sortable()
                 ->color(fn(string $state): string => match (true) {
                     $state == 0 => 'gray',
                     $state <= 5 => 'success',

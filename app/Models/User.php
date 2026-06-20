@@ -134,15 +134,11 @@ class User extends Authenticatable implements FilamentUser
      */
     public function networkGuestsQuery()
     {
-        // Get the first-level guest codes
-        $firstLevelCodes = $this->firstLevelGuests()->pluck('code')->toArray();
+        $ids = $this->allNetworkIds()->toArray();
 
-        // First-level guests: invited directly
-        // Second-level guests: invited by first-level guests
         return static::query()
+            ->whereIn('id', $ids)
             ->where('is_add_date_of_birth', true)
-            ->where('invitation_code', $this->code) // first-level
-            ->orWhereIn('invitation_code', $firstLevelCodes) // second-level
             ->orderBy('created_at', 'desc');
     }
 

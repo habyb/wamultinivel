@@ -31,7 +31,8 @@ class TopNetworkRanking extends BaseWidget
             ->getQuery()
             ->withCount(['firstLevelGuests as network_guests_count'])
             ->orderByDesc('network_guests_count')
-            ->orderBy('id'); // tie-break para ranking estável
+            ->orderBy('id') // tie-break para ranking estável
+            ->limit(10);
     }
 
     protected function getTableColumns(): array
@@ -45,8 +46,7 @@ class TopNetworkRanking extends BaseWidget
                 ->color('gray'),
 
             TextColumn::make('name')
-                ->label('Nome')
-                ->searchable(),
+                ->label('Nome'),
 
             TextColumn::make('network_guests_count')
                 ->label('Convidados')
@@ -63,6 +63,6 @@ class TopNetworkRanking extends BaseWidget
 
     protected function isTablePaginationEnabled(): bool
     {
-        return true;
+        return false;
     }
 }

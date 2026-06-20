@@ -23,12 +23,9 @@ class TopNetworkGuests extends BaseWidget
             ->query(
                 auth()->user()
                     ->networkGuestsQuery()
-                    ->withCount([
-                        // Alias used for sorting:
-                        'firstLevelGuests as network_total_count',
-                    ])
                     // IMPORTANT: Drop any prior ORDER BY from scopes so defaultSort wins.
                     ->reorder()
+                    ->limit(10)
             )
             ->columns([
                 TextColumn::make('position')
@@ -39,10 +36,9 @@ class TopNetworkGuests extends BaseWidget
                     ->color('gray'),
 
                 TextColumn::make('name')
-                    ->label('Nome')
-                    ->searchable(),
+                    ->label('Nome'),
 
-                TextColumn::make('network_total_count')
+                TextColumn::make('total_network_count')
                     ->label('Convidados')
                     ->badge()
                     ->alignment('right')
@@ -54,9 +50,9 @@ class TopNetworkGuests extends BaseWidget
                     }),
             ])
             // Open already sorted by Total (Rede) DESC:
-            ->defaultSort('network_total_count', 'desc')
+            ->defaultSort('total_network_count', 'desc')
             // Avoid cross-widget state collisions:
             ->queryStringIdentifier('top_network_guests')
-            ->paginated([10, 25, 50]);
+            ->paginated(false);
     }
 }

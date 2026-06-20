@@ -72,6 +72,7 @@ class DirectRegistrations extends Page implements HasTable
                 ->label('Name')
                 ->searchable(),
             TextColumn::make('remoteJid')
+                ->visible(fn () => auth()->user()?->hasAnyRole(['Superadmin', 'Admin']))
                 ->formatStateUsing(function (string $state): string {
                     return format_phone_number(fix_whatsapp_number($state));
                 })
