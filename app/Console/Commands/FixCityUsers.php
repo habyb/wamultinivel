@@ -121,6 +121,7 @@ class FixCityUsers extends Command
                 'Ipiabas Barra do Piraí',
                 'Barra do Piraî',
                 'Barra do Pirar',
+                'Barra do Paraí',
             ],
             'Barra Mansa' => [
                 'barra mansa',
@@ -199,7 +200,8 @@ class FixCityUsers extends Command
             'Duque de Caxias' => [
                 'duque de caxias',
                 'DUQUE DE CAXIAS',
-                'caxias'
+                'caxias',
+                'Rio de Janeiro - Duque de Caxias',
             ],
             'Engenheiro Paulo de Frontin' => [
                 'engenheiro paulo de frontin'
@@ -304,6 +306,7 @@ class FixCityUsers extends Command
                 'Nf friburgo',
                 'Nova Fraiburgo',
                 'Nv Friburgo',
+                'N F',
             ],
             'Nova Iguaçu' => [
                 'nova iguaçu',
@@ -415,6 +418,7 @@ class FixCityUsers extends Command
                 'Vila da Penha',
                 'Rio e teresopolis',
                 'Rio de Janeiro/Bairro C.Grande',
+                'Rio de Janeiro Campo Grande',
                 'Rio de janeiro, RJ',
                 'Pavuna',
                 'Rio de Janeiro urucania.',
@@ -510,7 +514,8 @@ class FixCityUsers extends Command
             'São Pedro da Aldeia' => [
                 'são pedro da aldeia',
                 'sao pedro da aldeia',
-                'São Pedro da Aldeia  RJ'
+                'São Pedro da Aldeia  RJ',
+                'São Pedro',
             ],
             'São Sebastião do Alto' => [
                 'são sebastião do alto',
@@ -606,6 +611,7 @@ class FixCityUsers extends Command
                 'Barao de Juparanã',
                 'Barao de juparanã',
                 'BARÃO DE JUPARANA.',
+                'Juparanã',
                 'Barão de Juparana Valença',
                 'Parapeúna',
                 'Parapeuna',
@@ -632,6 +638,7 @@ class FixCityUsers extends Command
                 'Santa Isabel - Valença',
                 'Valnça',
                 'Parapeuna Valença',
+                'Parapeuna Rj Paiolinho',
                 'Valença R-J',
                 'Valecia',
                 'Valensa',
@@ -640,6 +647,7 @@ class FixCityUsers extends Command
                 'Vslenca',
                 'Rio de Janeiro Valença',
                 'Parapeuns Valença Bairro dos Bastos',
+                'Valença Parapeùna',
             ],
             'Varre-Sai' => [
                 'varre-sai',
