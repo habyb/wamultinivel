@@ -663,6 +663,9 @@ class FixCityUsers extends Command
                 'Rio de Janeiro Valença',
                 'Parapeuns Valença Bairro dos Bastos',
                 'Valença Parapeùna',
+                'Parapeúna - Valença',
+                'Parapeuna - Valença',
+                'Marquês de Valença',
             ],
             'Varre-Sai' => [
                 'varre-sai',
