@@ -492,6 +492,7 @@ class FixCityUsers extends Command
             ],
             'São Gonçalo' => [
                 'São gonçalo',
+                'São Gonsalo',
                 'São goncalo',
                 'São Goncalo',
                 'são gonçalo',
