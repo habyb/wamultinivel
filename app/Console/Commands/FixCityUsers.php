@@ -380,11 +380,14 @@ class FixCityUsers extends Command
             'Rio das Flores' => [
                 'Rio das flores',
                 'Rio das Flôres',
-                'rio das flores'
+                'rio das flores',
+                'Rio de Florês',
             ],
             'Rio das Ostras' => [
                 'Rio das ostras',
-                'rio das ostras'
+                'rio das ostras',
+                'Rio das Ostra',
+                'Rio das Outras',
             ],
             'Rio de Janeiro' => [
                 'Rio de janeiro',
@@ -462,6 +465,10 @@ class FixCityUsers extends Command
                 'Rio de Laneiro',
                 'Rio de Janeiro Inhoaiba',
                 'Mangueira Rio de Janeiro',
+                'Riio de Janeiro',
+                'Rio de Janiro',
+                'Rio de Januário',
+                'Rio de Azevedo',
             ],
             'Santa Maria Madalena' => [
                 'Santa maria madalena',
@@ -519,6 +526,10 @@ class FixCityUsers extends Command
                 'sao pedro da aldeia',
                 'São Pedro da Aldeia  RJ',
                 'São Pedro',
+                'São Pedro de Apdeia',
+                'Sao Pedro D Aldeia',
+                'Sao Adro da Aldeia',
+                'Sao Pedro da Aldeie',
             ],
             'São Sebastião do Alto' => [
                 'são sebastião do alto',
