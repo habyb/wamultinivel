@@ -382,6 +382,7 @@ class FixCityUsers extends Command
                 'Rio das Flôres',
                 'rio das flores',
                 'Rio de Florês',
+                'Rio das Florês',
             ],
             'Rio das Ostras' => [
                 'Rio das ostras',
