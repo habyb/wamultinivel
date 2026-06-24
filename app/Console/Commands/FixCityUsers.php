@@ -122,6 +122,8 @@ class FixCityUsers extends Command
                 'Barra do Piraî',
                 'Barra do Pirar',
                 'Barra do Paraí',
+                'Barra do Pira',
+                'Barra do Piria',
             ],
             'Barra Mansa' => [
                 'barra mansa',
@@ -160,6 +162,7 @@ class FixCityUsers extends Command
                 'Cachoeiras de Macau',
                 'Cachoeiras de  Macacu',
                 'Papucaia-Cachoeiras de Macacu',
+                'Cachoeira de Macacu',
             ],
             'Campos dos Goytacazes' => [
                 'Campos dos Goitacazes',
