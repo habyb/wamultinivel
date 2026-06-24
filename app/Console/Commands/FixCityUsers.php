@@ -316,7 +316,8 @@ class FixCityUsers extends Command
                 'nova iguacu',
                 'Nova iguacu',
                 'Nova iguaçu',
-                'Novo Iguaçu'
+                'Novo Iguaçu',
+                'Nova Iguaçú',
             ],
             'Paracambi' => [
                 'paracambi'
@@ -499,6 +500,8 @@ class FixCityUsers extends Command
                 'São Gonçalo/RJ',
                 'São Gonçalo Rio de janeiro',
                 'S G',
+                'Sao Gonçalo',
+                'São Gonçalo Estado do Rio',
             ],
             'São João da Barra' => [
                 'São joão da barra',
