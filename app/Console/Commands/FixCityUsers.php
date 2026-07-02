@@ -377,6 +377,8 @@ class FixCityUsers extends Command
                 'Rio claro',
                 'rio claro',
                 'Lidice Segundo Distrito de Rio Claro',
+                'Lídice',
+                'Lidice',
             ],
             'Rio das Flores' => [
                 'Rio das flores',
