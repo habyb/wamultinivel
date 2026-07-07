@@ -190,7 +190,15 @@ class WhatsAppServiceBusinessApi
             ],
         ]);
 
-        return $response->json();
+        $data = $response->json();
+
+        if (isset($data['error']) || empty($data['messages'][0]['id'])) {
+            $errorMsg = $data['error']['message'] ?? 'Unknown WhatsApp Business API error';
+            $errorCode = $data['error']['code'] ?? 'N/A';
+            throw new \Exception("Meta API Error: {$errorMsg} (Code: {$errorCode}). Response: " . json_encode($data));
+        }
+
+        return $data;
     }
 
     public function templateInfo(string $name, ?string $language = null): ?array

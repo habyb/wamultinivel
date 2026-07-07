@@ -136,28 +136,31 @@ class SendScheduledMessagesJob implements ShouldQueue
                         ];
                     }
 
+                    $params = [];
+                    if (!empty($param_type_header)) {
+                        $params[] = $param_type_header;
+                    }
+                    $params[] = [
+                        'type' => 'body',
+                        'parameters' => [
+                            [
+                                'type' => 'text',
+                                "parameter_name" => "name",
+                                'text' => $user['name']
+                            ],
+                            [
+                                'type' => 'text',
+                                "parameter_name" => "info",
+                                'text' => $info
+                            ],
+                        ],
+                    ];
+
                     $response = app(WhatsAppServiceBusinessApi::class)->sendText(
                         phone: $number,
                         template: $message->template_name,
                         language: $message->template_language ?? 'pt_BR',
-                        params: [
-                            $param_type_header,
-                            [
-                                'type' => 'body',
-                                'parameters' => [
-                                    [
-                                        'type' => 'text',
-                                        "parameter_name" => "name",
-                                        'text' => $user['name']
-                                    ],
-                                    [
-                                        'type' => 'text',
-                                        "parameter_name" => "info",
-                                        'text' => $info
-                                    ],
-                                ],
-                            ]
-                        ]
+                        params: $params
                     );
 
                     $status = $response['messages'][0]['message_status'] ?? null;
