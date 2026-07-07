@@ -133,14 +133,13 @@ class CreateSentMessage extends CreateRecord
             // IDs base
             if ($all) {
                 if (!empty($selectedCity)) {
-                    $baseIds = User::query()
-                        ->whereHas('firstLevelGuestsNetwork')
+                    $baseIds = User::role('Embaixador')
                         ->where('is_add_date_of_birth', true)
                         ->where('city', $selectedCity)
                         ->pluck('id');
                 } else {
-                    $baseIds = User::query()
-                        ->whereHas('firstLevelGuestsNetwork')->where('is_add_date_of_birth', true)
+                    $baseIds = User::role('Embaixador')
+                        ->where('is_add_date_of_birth', true)
                         ->pluck('id');
                 }
             } else {

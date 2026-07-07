@@ -305,8 +305,7 @@ class SentMessageResource extends Resource
                                         ->reactive()
                                         ->afterStateUpdated(function ($state, Set $set, Get $get) {
                                             if ($state === true) {
-                                                $query = User::query()
-                                                    ->whereHas('firstLevelGuestsNetwork')
+                                                $query = User::role('Embaixador')
                                                     ->where('is_add_date_of_birth', true);
 
                                                 // Se houver cidade selecionada, filtra por ela
@@ -347,8 +346,7 @@ class SentMessageResource extends Resource
                                         ->afterStateUpdated(function ($state, Set $set, Get $get) {
                                             // Só recalcula quando "todos os embaixadores" estiver ativo
                                             if ($get('all_ambassadors') === true) {
-                                                $query = User::query()
-                                                    ->whereHas('firstLevelGuestsNetwork')
+                                                $query = User::role('Embaixador')
                                                     ->where('is_add_date_of_birth', true);
 
                                                 // Se limpou a cidade, volta a contar todos; se selecionou, filtra
@@ -375,7 +373,7 @@ class SentMessageResource extends Resource
                                 ->dehydrated(true)
                                 ->options(function () {
                                     return User::select('id', 'name', 'code')
-                                        ->whereHas('firstLevelGuestsNetwork')
+                                        ->role('Embaixador')
                                         ->where('is_add_date_of_birth', true)
                                         ->orderBy('name')
                                         ->get()
