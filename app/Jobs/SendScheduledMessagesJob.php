@@ -19,6 +19,11 @@ class SendScheduledMessagesJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     /**
+     * O tempo limite (em segundos) que o job pode rodar.
+     */
+    public int $timeout = 900;
+
+    /**
      * Tamanho do lote de mensagens (sent_messages) por execução.
      * Cada mensagem pode ter N contatos em contacts_result.
      */
@@ -79,10 +84,6 @@ class SendScheduledMessagesJob implements ShouldQueue
         foreach ($messages as $message) {
             $info = wa_single_line($message->description);
 
-            $logsToInsert = [];
-            $successCount = 0;
-            $failCount    = 0;
-
             // 3.1) Decodifica contacts_result de forma robusta
             $users = collect();
             $cr = $message->contacts_result;
@@ -117,10 +118,20 @@ class SendScheduledMessagesJob implements ShouldQueue
                 continue;
             }
 
-            // 3.2) Monta parâmetros do template (header/body) por contato
+            // 3.2) Monta parâmetros do template (header/body) por contato e envia
             foreach ($users as $user) {
+                $number = fix_whatsapp_number($user['remoteJid']);
+
+                // Evita reenvio se o log já existir no banco (idempotência)
+                $alreadySent = SentMessagesLog::where('sent_message_id', $message->id)
+                    ->where('remote_jid', $number)
+                    ->exists();
+
+                if ($alreadySent) {
+                    continue;
+                }
+
                 try {
-                    $number = fix_whatsapp_number($user['remoteJid']);
                     $param_type_header = [];
 
                     if ($message->type == 'image' || $message->type == 'video') {
@@ -165,36 +176,34 @@ class SendScheduledMessagesJob implements ShouldQueue
 
                     $status = $response['messages'][0]['message_status'] ?? null;
 
-                    // Sucesso: contabiliza e prepara log
-                    $successCount++;
-                    $logsToInsert[] = [
+                    // Salva log de sucesso imediatamente
+                    SentMessagesLog::create([
                         'sent_message_id'   => $message->id,
                         'remote_jid'        => $number,
                         'contact_name'      => $user['name'],
                         'message_status'    => $status,
-                        'sent_at'        => now(),
-                    ];
+                        'sent_at'           => now(),
+                    ]);
                 } catch (\Throwable $e) {
-                    $failCount++;
                     Log::error("[SendScheduledMessagesJob] Falha ao enviar para {$number}. msg_id={$message->id}. erro={$e->getMessage()}");
-                    $logsToInsert[] = [
+
+                    // Salva log de falha imediatamente
+                    SentMessagesLog::create([
                         'sent_message_id'   => $message->id,
                         'remote_jid'        => $number,
                         'contact_name'      => $user['name'],
                         'message_status'    => 'failed',
-                        'sent_at'        => now(),
-                    ];
+                        'sent_at'           => now(),
+                    ]);
                 }
             }
 
-            // 3.3) Insere logs em lote (menos round-trips ao DB)
-            if (!empty($logsToInsert)) {
-                // Se preferir, usar chunk para > 1000 linhas
-                SentMessagesLog::insert($logsToInsert);
-            }
+            // 3.3) Define status final da mensagem baseado em TODOS os logs salvos até o momento
+            $totalLogs = SentMessagesLog::where('sent_message_id', $message->id)->get();
+            $dbSuccessCount = $totalLogs->where('message_status', '!=', 'failed')->count();
+            $dbFailCount = $totalLogs->where('message_status', 'failed')->count();
 
-            // 3.4) Define status final da mensagem + métricas; libera o lock
-            if ($successCount > 0) {
+            if ($dbSuccessCount > 0) {
                 $message->update([
                     'status'         => 'sent',
                     'contacts_count' => $users->count(),
@@ -202,13 +211,13 @@ class SendScheduledMessagesJob implements ShouldQueue
                     'lock_token'     => null, // liberar
                 ]);
                 Log::info("info: {$info}");
-                Log::info("[SendScheduledMessagesJob] Mensagem enviada. id={$message->id} ok={$successCount} fail={$failCount}");
+                Log::info("[SendScheduledMessagesJob] Mensagem enviada. id={$message->id} ok={$dbSuccessCount} fail={$dbFailCount}");
             } else {
                 $message->update([
                     'status'     => 'failed',
                     'lock_token' => null, // liberar
                 ]);
-                Log::warning("[SendScheduledMessagesJob] Mensagem sem sucessos. id={$message->id} fail={$failCount}");
+                Log::warning("[SendScheduledMessagesJob] Mensagem sem sucessos. id={$message->id} fail={$dbFailCount}");
             }
         }
     }
