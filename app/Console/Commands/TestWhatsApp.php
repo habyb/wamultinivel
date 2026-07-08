@@ -58,7 +58,7 @@ class TestWhatsApp extends Command
             [
                 'type' => 'body',
                 'parameters' => [
-                    ['type' => 'text', 'parameter_name' => '1', 'text' => $user->name]
+                    ['type' => 'text', 'parameter_name' => 'name', 'text' => $user->name]
                 ],
             ]
         ];
