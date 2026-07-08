@@ -77,7 +77,7 @@ class AssignEmbaixadorRoleToUsers extends Command
                             [
                                 'type' => 'body',
                                 'parameters' => [
-                                    ['type' => 'text', 'text' => $user->name]
+                                    ['type' => 'text', 'parameter_name' => '1', 'text' => $user->name]
                                 ],
                             ]
                         ]

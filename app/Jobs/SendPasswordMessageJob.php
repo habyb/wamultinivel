@@ -32,7 +32,7 @@ class SendPasswordMessageJob implements ShouldQueue
                 [
                     'type' => 'body',
                     'parameters' => [
-                        ['type' => 'text', 'text' => $this->password]
+                        ['type' => 'text', 'parameter_name' => '1', 'text' => $this->password]
                     ],
                 ],
                 [
@@ -40,7 +40,7 @@ class SendPasswordMessageJob implements ShouldQueue
                     'sub_type' => 'url',
                     'index' => 0,
                     'parameters' => [
-                        ['type' => 'text', 'text' => $this->password]
+                        ['type' => 'text', 'parameter_name' => '1', 'text' => $this->password]
                     ]
                 ]
             ]
