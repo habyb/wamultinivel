@@ -156,12 +156,10 @@ class SendScheduledMessagesJob implements ShouldQueue
                         'parameters' => [
                             [
                                 'type' => 'text',
-                                "parameter_name" => "name",
                                 'text' => $user['name']
                             ],
                             [
                                 'type' => 'text',
-                                "parameter_name" => "info",
                                 'text' => $info
                             ],
                         ],
