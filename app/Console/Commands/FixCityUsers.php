@@ -57,7 +57,12 @@ class FixCityUsers extends Command
                 'armacao dos buzios',
                 'armação dos búzios',
                 'ARMAÇÃO DOS BÚZIOS',
-                'buzios'
+                'buzios',
+                'Armacao dos Búzios',
+                'Armacão dos Búzios',
+                'Armaçao dos Búzios',
+                'Armação do Búzios',
+                'Armação dos Buzios',
             ],
             'Arraial do Cabo' => [
                 'arraial do cabo',
@@ -124,6 +129,11 @@ class FixCityUsers extends Command
                 'Barra do Paraí',
                 'Barra do Pira',
                 'Barra do Piria',
+                'Barra do Pirau',
+                'Barro do Piraí',
+                'Barra do PIraí',
+                'Barra do Piraí Melhorar Asfalto',
+                'Barra do Pirai Bairro Boca do Mato',
             ],
             'Barra Mansa' => [
                 'barra mansa',
@@ -132,12 +142,16 @@ class FixCityUsers extends Command
                 'Barra Mansa.',
                 'BarraMansa',
                 'Barra',
+                'Barra Manda',
+                'Barra Nansa',
+                'Barra Mansa Ré',
             ],
             'Belford Roxo' => [
                 'belford roxo',
                 'BELFORD ROXO',
                 'belford roxo RJ centro',
-                'Belford'
+                'Belford',
+                'Berford Roxo'
             ],
             'Bom Jardim' => [
                 'bom jardim',
@@ -163,6 +177,7 @@ class FixCityUsers extends Command
                 'Cachoeiras de  Macacu',
                 'Papucaia-Cachoeiras de Macacu',
                 'Cachoeira de Macacu',
+                'Cachoeira de Macau'
             ],
             'Campos dos Goytacazes' => [
                 'Campos dos Goitacazes',
@@ -271,7 +286,8 @@ class FixCityUsers extends Command
             'Mangaratiba' => [
                 'mangaratiba',
                 'MANGARATIBA',
-                'Muriqui (Mangaratiba RJ)'
+                'Muriqui (Mangaratiba RJ)',
+                'Managratiba',
             ],
             'Maricá' => [
                 'maricá',
@@ -473,6 +489,23 @@ class FixCityUsers extends Command
                 'Rio de Janiro',
                 'Rio de Januário',
                 'Rio de Azevedo',
+                'Rio de Jane',
+                'Rio de Janeiroo',
+                'Rio de Janejro',
+                'Rio de Já',
+                'Rio de Janeiro Jacaré',
+                'Rio de Janeiro Manquinhos',
+                'Rio de Janeiro Realengo',
+                'Rio de Janeiro Sepetiba',
+                'Rio de Jaú Euro',
+                'Rio de Janeiro Ilha do Governador',
+                'Rio de Janeiro - Ilha do Governador',
+                'Riode Janeiro',
+                'Rii de Janeiro',
+                'Fio de Janeiro',
+                'Ruo de Janeiro',
+                'Rj Campo Grande',
+                'Rio Campo Grande',
             ],
             'Santa Maria Madalena' => [
                 'Santa maria madalena',
@@ -580,7 +613,9 @@ class FixCityUsers extends Command
                 'Rafael Teresópolis',
                 'Teresópolis Rio de Janeiro',
                 'Rj Teresópolis',
-                'Teresópolis Barra do Imbui'
+                'Teresópolis Barra do Imbui',
+                'Teresopolis Rio de Janeiro',
+                'Teresópolis Estado do Rio de Janeiro',
             ],
             'Trajano de Moraes' => [
                 'trajano de moraes'
@@ -672,6 +707,7 @@ class FixCityUsers extends Command
                 'Parapeúna - Valença',
                 'Parapeuna - Valença',
                 'Marquês de Valença',
+                'Valencia',
             ],
             'Varre-Sai' => [
                 'varre-sai',
