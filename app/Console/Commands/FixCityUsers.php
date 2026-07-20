@@ -145,6 +145,7 @@ class FixCityUsers extends Command
                 'Barra Manda',
                 'Barra Nansa',
                 'Barra Mansa Ré',
+                'Barra Massa',
             ],
             'Belford Roxo' => [
                 'belford roxo',
@@ -360,7 +361,8 @@ class FixCityUsers extends Command
             ],
             'Piraí' => [
                 'piraí',
-                'pirai'
+                'pirai',
+                'Pirai Rio de Janeiro',
             ],
             'Porciúncula' => [
                 'porciúncula',
@@ -509,6 +511,8 @@ class FixCityUsers extends Command
                 'Rui de Janeiro',
                 'Rui O de Janeiro',
                 'Tudo de Janeiro',
+                'Eio de Janeiro',
+                'Campo Grande Rio',
             ],
             'Santa Maria Madalena' => [
                 'Santa maria madalena',
@@ -610,7 +614,8 @@ class FixCityUsers extends Command
                 'Seropédica RJ',
                 'Seropedica RJ',
                 'Seropédica/RJ',
-                'Seropedica/RJ'
+                'Seropedica/RJ',
+                'Seropédica Campo Lindi',
             ],
             'Silva Jardim' => [
                 'silva jardim'
