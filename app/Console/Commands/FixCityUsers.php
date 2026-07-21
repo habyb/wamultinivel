@@ -223,7 +223,8 @@ class FixCityUsers extends Command
                 'Rio de Janeiro - Duque de Caxias',
             ],
             'Engenheiro Paulo de Frontin' => [
-                'engenheiro paulo de frontin'
+                'engenheiro paulo de frontin',
+                'Frontin'
             ],
             'Guapimirim' => [
                 'guapimirim',
@@ -643,6 +644,8 @@ class FixCityUsers extends Command
                 'Teresópolis Barra do Imbui',
                 'Teresopolis Rio de Janeiro',
                 'Teresópolis Estado do Rio de Janeiro',
+                'Teres',
+                'Teleresopolis',
             ],
             'Trajano de Moraes' => [
                 'trajano de moraes'
