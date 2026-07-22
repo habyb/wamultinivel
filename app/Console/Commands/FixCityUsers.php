@@ -63,6 +63,8 @@ class FixCityUsers extends Command
                 'Armaçao dos Búzios',
                 'Armação do Búzios',
                 'Armação dos Buzios',
+                'Buzios Cem Braças',
+                'Búzios',
             ],
             'Arraial do Cabo' => [
                 'arraial do cabo',
@@ -166,7 +168,8 @@ class FixCityUsers extends Command
             ],
             'Cabo Frio' => [
                 'cabo frio',
-                'CABO FRIO'
+                'CABO FRIO',
+                'Unamar- Cabo Frio',
             ],
             'Cachoeiras de Macacu' => [
                 'Cachoeiras de macacu',
@@ -229,6 +232,10 @@ class FixCityUsers extends Command
             'Guapimirim' => [
                 'guapimirim',
                 'GUAPIMIRIM'
+            ],
+            'Iguaba Grande' => [
+                'iguaba grande',
+                'iguaba',
             ],
             'Itaboraí' => [
                 'itaboraí',
@@ -606,6 +613,9 @@ class FixCityUsers extends Command
                 'Moro Em São Pedro da Aldeia',
                 'S Pedro D Aldea',
                 'São Pedro de Estado do Rio de Janeiro',
+                'São Pedro da Aldeia Boa Vista',
+                'Sao Pedro',
+                'Sâo Pedro da Aldeia',
             ],
             'São Sebastião do Alto' => [
                 'são sebastião do alto',
@@ -747,6 +757,7 @@ class FixCityUsers extends Command
                 'Parapeuna - Valença',
                 'Marquês de Valença',
                 'Valencia',
+                'Valença Est do Rio de Janeiro',
             ],
             'Varre-Sai' => [
                 'varre-sai',
