@@ -136,6 +136,7 @@ class FixCityUsers extends Command
                 'Barra do PIraí',
                 'Barra do Piraí Melhorar Asfalto',
                 'Barra do Pirai Bairro Boca do Mato',
+                'Barra do Piraí Estado do Rio de Janeiro',
             ],
             'Barra Mansa' => [
                 'barra mansa',
@@ -154,7 +155,8 @@ class FixCityUsers extends Command
                 'BELFORD ROXO',
                 'belford roxo RJ centro',
                 'Belford',
-                'Berford Roxo'
+                'Berford Roxo',
+                'Rio de Janeiro Belford Roxo',
             ],
             'Bom Jardim' => [
                 'bom jardim',
@@ -335,6 +337,19 @@ class FixCityUsers extends Command
                 'Nova Fraiburgo',
                 'Nv Friburgo',
                 'N F',
+                'Cidade Nova Friburgo',
+                'Friburgo',
+                'N Friburgo',
+                'Nava Friburgo',
+                'Niva Friburgo',
+                'Nossa Friburgo',
+                'Nov Friburgo',
+                'Rj Nova Friburgo',
+                'Npva Friburgo',
+                'Novo Friburgo',
+                'Nova Friburgo Y',
+                'Nova Friburgo R J',
+                'Nova Friburgo Estado do Rio de Janeiro',
             ],
             'Nova Iguaçu' => [
                 'nova iguaçu',
@@ -343,6 +358,11 @@ class FixCityUsers extends Command
                 'Nova iguaçu',
                 'Novo Iguaçu',
                 'Nova Iguaçú',
+                'Sou de Nova Iguaçu',
+                'Jardim Paraíso Nova Iguaçu',
+                'Nove Iguaçu',
+                'Nova Iguaçu Ipiranga',
+                'Nova Iguaçu Cabuçu',
             ],
             'Paracambi' => [
                 'paracambi'
@@ -665,6 +685,7 @@ class FixCityUsers extends Command
                 'Teresópolis Estado do Rio de Janeiro',
                 'Teres',
                 'Teleresopolis',
+                'Teresópolis Est do Rio Janeiro',
             ],
             'Trajano de Moraes' => [
                 'trajano de moraes'
