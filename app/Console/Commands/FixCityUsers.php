@@ -779,6 +779,7 @@ class FixCityUsers extends Command
                 'Marquês de Valença',
                 'Valencia',
                 'Valença Est do Rio de Janeiro',
+                'Santa Isabel do Rio Preto Valença',
             ],
             'Varre-Sai' => [
                 'varre-sai',
