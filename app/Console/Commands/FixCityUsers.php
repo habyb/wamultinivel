@@ -567,6 +567,7 @@ class FixCityUsers extends Command
                 'Vanessa Rio de Janeiro',
                 'Bonsucesso Rio de Janeiro',
                 'Rio D Janeiro',
+                'Rioo de Janeiro',
             ],
             'Santa Maria Madalena' => [
                 'Santa maria madalena',
@@ -673,6 +674,8 @@ class FixCityUsers extends Command
                 'Seropédica/RJ',
                 'Seropedica/RJ',
                 'Seropédica Campo Lindi',
+                'Rj Seropédica',
+                'Rj- Seropedica',
             ],
             'Silva Jardim' => [
                 'silva jardim'
