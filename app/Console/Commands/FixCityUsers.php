@@ -570,6 +570,7 @@ class FixCityUsers extends Command
                 'Bonsucesso Rio de Janeiro',
                 'Rio D Janeiro',
                 'Rioo de Janeiro',
+                'Rio de',
             ],
             'Santa Maria Madalena' => [
                 'Santa maria madalena',
