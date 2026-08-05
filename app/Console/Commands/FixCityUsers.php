@@ -137,6 +137,7 @@ class FixCityUsers extends Command
                 'Barra do Piraí Melhorar Asfalto',
                 'Barra do Pirai Bairro Boca do Mato',
                 'Barra do Piraí Estado do Rio de Janeiro',
+                'Barra do Pirain',
             ],
             'Barra Mansa' => [
                 'barra mansa',
@@ -158,6 +159,7 @@ class FixCityUsers extends Command
                 'Berford Roxo',
                 'Rio de Janeiro Belford Roxo',
                 'Belford-Roxo',
+                'Bel Roxo',
             ],
             'Bom Jardim' => [
                 'bom jardim',
