@@ -138,6 +138,8 @@ class FixCityUsers extends Command
                 'Barra do Pirai Bairro Boca do Mato',
                 'Barra do Piraí Estado do Rio de Janeiro',
                 'Barra do Pirain',
+                'Barra D Piraí',
+                'Barra Só Pirai',
             ],
             'Barra Mansa' => [
                 'barra mansa',
@@ -250,7 +252,8 @@ class FixCityUsers extends Command
             'Itaguaí' => [
                 'itaguaí',
                 'itaguai',
-                'ITAGUAÍ'
+                'ITAGUAÍ',
+                'Itaguaí Rio de Janeiro',
             ],
             'Itaocara' => [
                 'itaocara',
@@ -679,6 +682,10 @@ class FixCityUsers extends Command
                 'Seropédica Campo Lindi',
                 'Rj Seropédica',
                 'Rj- Seropedica',
+                'Canto do Rio Seropédica',
+                'Canto do Rio Seropedica',
+                'Seropedica Bairro - Fazenda Caxias',
+                'Serooedica',
             ],
             'Silva Jardim' => [
                 'silva jardim'
