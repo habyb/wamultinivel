@@ -140,6 +140,7 @@ class FixCityUsers extends Command
                 'Barra do Pirain',
                 'Barra D Piraí',
                 'Barra Só Pirai',
+                'Barra do Piraí Rio de Janeiro',
             ],
             'Barra Mansa' => [
                 'barra mansa',
@@ -574,6 +575,10 @@ class FixCityUsers extends Command
                 'Rio D Janeiro',
                 'Rioo de Janeiro',
                 'Rio de',
+                'Rio de Janei',
+                'Rua de Janeiro',
+                'Top de Janeiro',
+                'Rio de Janeiro Aneiro',
             ],
             'Santa Maria Madalena' => [
                 'Santa maria madalena',
@@ -627,7 +632,8 @@ class FixCityUsers extends Command
                 'são josé do vale do rio preto',
                 'sao jose do vale do rio preto',
                 'São Jose do Vale do Rio Preto',
-                'Sjvrp'
+                'Sjvrp',
+                'São José Vale do Rio Preto',
             ],
             'São Pedro da Aldeia' => [
                 'são pedro da aldeia',
