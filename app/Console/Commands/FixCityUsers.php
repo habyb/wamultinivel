@@ -827,6 +827,7 @@ class FixCityUsers extends Command
                 'Vença',
                 'Resende Volta Redonda Valença',
                 'Fazenda Botafogo',
+                'Conservatoria Valença',
             ],
             'Varre-Sai' => [
                 'varre-sai',
