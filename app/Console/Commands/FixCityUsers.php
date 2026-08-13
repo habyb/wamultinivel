@@ -693,6 +693,7 @@ class FixCityUsers extends Command
                 'Canto do Rio Seropedica',
                 'Seropedica Bairro - Fazenda Caxias',
                 'Serooedica',
+                'Moro Em Seropédica',
             ],
             'Silva Jardim' => [
                 'silva jardim'
