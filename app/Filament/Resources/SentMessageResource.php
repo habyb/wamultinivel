@@ -648,8 +648,6 @@ class SentMessageResource extends Resource
                         ->schema([
                             Select::make('template_name')
                                 ->label('Template')
-                                // Apenas cache — nada de chamada remota no render
-                                ->options(fn(WhatsAppServiceBusinessApi $svc) => $svc->getTemplate(false))
                                 ->searchable()
                                 ->preload()
                                 ->reactive()
@@ -728,17 +726,25 @@ class SentMessageResource extends Resource
                                                 ->send();
                                         })
                                 )
-                                // opcional: se quiser exibir só os aprovados e que iniciam por "image_" ou "video_"
-                                ->options(function (WhatsAppServiceBusinessApi $svc) {
-                                    return collect($svc->getTemplate())
-                                        ->filter(function ($label, $name) {
-                                            return Str::contains($label, '(APPROVED)')
-                                                && Str::startsWith(Str::lower($name), [
-                                                    'imagem_sem_',
-                                                    'imagem_com_',
-                                                    'video_sem_',
-                                                    'video_com_'
-                                                ]);
+                                // opcional: se quiser exibir só os aprovados e que iniciam por "image_" ou "video_" dependendo do type
+                                ->options(function (WhatsAppServiceBusinessApi $svc, Get $get) {
+                                    $type = $get('type');
+
+                                    return collect($svc->getTemplate(false))
+                                        ->filter(function ($label, $name) use ($type) {
+                                            if (!Str::contains($label, '(APPROVED)')) {
+                                                return false;
+                                            }
+
+                                            if ($type === 'image') {
+                                                return Str::startsWith(Str::lower($name), 'imagem_');
+                                            }
+
+                                            if ($type === 'video') {
+                                                return Str::startsWith(Str::lower($name), 'video_');
+                                            }
+
+                                            return false;
                                         })
                                         ->mapWithKeys(fn($label, $name) => [$name => $name])
                                         ->all();
