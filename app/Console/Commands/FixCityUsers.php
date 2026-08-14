@@ -581,6 +581,9 @@ class FixCityUsers extends Command
                 'Top de Janeiro',
                 'Rio de Janeiro Aneiro',
                 'Riu de Janeiro',
+                'Rio de Janeiro Bemfica',
+                'Rio de Janeiro Janeiro',
+                'Rio de Janeiro- Campo Grande',
             ],
             'Santa Maria Madalena' => [
                 'Santa maria madalena',
@@ -695,6 +698,7 @@ class FixCityUsers extends Command
                 'Seropedica Bairro - Fazenda Caxias',
                 'Serooedica',
                 'Moro Em Seropédica',
+                'Seropédica Rio de Janeiro',
             ],
             'Silva Jardim' => [
                 'silva jardim'
@@ -830,6 +834,8 @@ class FixCityUsers extends Command
                 'Resende Volta Redonda Valença',
                 'Fazenda Botafogo',
                 'Conservatoria Valença',
+                'Valeunça',
+                'João Paulo Valença',
             ],
             'Varre-Sai' => [
                 'varre-sai',
