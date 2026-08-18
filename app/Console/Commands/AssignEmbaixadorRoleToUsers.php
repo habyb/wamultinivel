@@ -5,8 +5,7 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
-use App\Services\WhatsAppServiceBusinessApi;
-use App\Jobs\SendTemplateMessageJob;
+use App\Jobs\SendWhatsappFreeTextJob;
 
 class AssignEmbaixadorRoleToUsers extends Command
 {
@@ -24,7 +23,7 @@ class AssignEmbaixadorRoleToUsers extends Command
      */
     protected $description = 'Assigns the Embaixador role to users who have one or more guests';
 
-    public function __construct(protected WhatsAppServiceBusinessApi $whatsAppService)
+    public function __construct()
     {
         parent::__construct();
     }
@@ -68,43 +67,21 @@ class AssignEmbaixadorRoleToUsers extends Command
                         'password' => bcrypt($password),
                     ])->saveQuietly();
 
-                    // Dispatch congratulations template immediately via queue
-                    app(WhatsAppServiceBusinessApi::class)->sendText(
-                        phone: $number,
-                        template: 'parabens',
-                        language: 'pt_BR',
-                        params: [
-                            [
-                                'type' => 'body',
-                                'parameters' => [
-                                    ['type' => 'text', 'parameter_name' => 'name', 'text' => $user->name]
-                                ],
-                            ]
-                        ]
-                    );
+                    // Mensagem de Parabéns
+                    $msgParabens = "🥳 Parabéns {$user->name}!\n\n" .
+                                   "Agora você faz parte do nosso time de Embaixadores!\n\n" .
+                                   "Para acompanhar o crescimento da sua rede de convidados, acesse o link abaixo.\n\n" .
+                                   "https://convite.andrecorrea.com.br";
 
-                    // Dispatch password template with a 10-second delay via queue
-                    SendTemplateMessageJob::dispatch(
-                        $number,
-                        'senha',
-                        'pt_BR',
-                        [
-                            [
-                                'type' => 'body',
-                                'parameters' => [
-                                    ['type' => 'text', 'text' => $password]
-                                ],
-                            ],
-                            [
-                                'type' => 'button',
-                                'sub_type' => 'url',
-                                'index' => 0,
-                                'parameters' => [
-                                    ['type' => 'text', 'text' => $password]
-                                ]
-                            ]
-                        ]
-                    )->delay(now()->addSeconds(10));
+                    // Mensagem de Senha
+                    $msgSenha = "Para acessar o seu painel, utilize o seu número de WhatsApp e a senha provisória abaixo:\n\n" .
+                                "*{$password}*";
+
+                    // Dispatch congratulations immediately via queue
+                    SendWhatsappFreeTextJob::dispatch($number, $msgParabens);
+
+                    // Dispatch password with a 5-second delay via queue
+                    SendWhatsappFreeTextJob::dispatch($number, $msgSenha)->delay(now()->addSeconds(5));
                 }
             }
         });
