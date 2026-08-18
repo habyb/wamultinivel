@@ -27,6 +27,16 @@ class AppServiceProvider extends ServiceProvider
         \Illuminate\Support\Facades\View::composer('*', function (View $view) {
             Debugbar::addMessage('View carregada: ' . $view->getPath(), 'views');
         });
+
+        // WhatsApp provider binding: WABA ou UAZAPI
+        $this->app->singleton(
+            \App\Contracts\WhatsAppServiceInterface::class,
+            function () {
+                return config('services.whatsapp.provider') === 'UAZAPI'
+                    ? new \App\Services\WhatsAppServiceUazapi()
+                    : new \App\Services\WhatsAppServiceBusinessApi();
+            }
+        );
     }
 
     /**

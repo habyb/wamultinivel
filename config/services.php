@@ -57,4 +57,13 @@ return [
         'phone_account_id_test' => env('USINESS_API_TEST_PHONE_ACCOUNT_ID'),
     ],
 
+    'whatsapp' => [
+        'provider' => env('WHATSAPP_PROVIDER', 'WABA'),
+    ],
+
+    'uazapi' => [
+        'url'   => env('UAZAPI_URL'),
+        'token' => env('UAZAPI_TOKEN'),
+    ],
+
 ];

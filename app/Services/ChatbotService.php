@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use App\Contracts\WhatsAppServiceInterface;
 
 class ChatbotService
 {
@@ -16,7 +17,7 @@ class ChatbotService
     // Hash bcrypt pré-computado para a string 'password'
     protected static string $dummyPasswordHash = '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi';
 
-    public function __construct(WhatsAppServiceBusinessApi $whatsapp)
+    public function __construct(WhatsAppServiceInterface $whatsapp)
     {
         $this->whatsapp = $whatsapp;
     }

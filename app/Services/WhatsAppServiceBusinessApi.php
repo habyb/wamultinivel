@@ -9,7 +9,9 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 
-class WhatsAppServiceBusinessApi
+use App\Contracts\WhatsAppServiceInterface;
+
+class WhatsAppServiceBusinessApi implements WhatsAppServiceInterface
 {
     /**
      * Sends a list message (interactive dropdown)

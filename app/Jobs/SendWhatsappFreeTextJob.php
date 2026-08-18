@@ -2,7 +2,7 @@
 
 namespace App\Jobs;
 
-use App\Services\WhatsAppServiceBusinessApi;
+use App\Contracts\WhatsAppServiceInterface;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -30,6 +30,6 @@ class SendWhatsappFreeTextJob implements ShouldQueue
      */
     public function handle(): void
     {
-        app(WhatsAppServiceBusinessApi::class)->sendFreeText($this->waId, $this->text);
+        app(WhatsAppServiceInterface::class)->sendFreeText($this->waId, $this->text);
     }
 }
