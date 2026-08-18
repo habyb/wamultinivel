@@ -59,26 +59,23 @@ class WhatsAppServiceUazapi implements WhatsAppServiceInterface
     }
 
     /**
-     * Sends a message with interactive buttons via /send/menu (menuType: button).
+     * Sends a message with interactive buttons via /send/menu (type: button).
      *
      * @param array $buttons Associative array ['button_id' => 'Button Title']
      */
     public function sendInteractiveButtons(string $phone, string $bodyText, array $buttons)
     {
-        $buttonObjects = [];
+        $choices = [];
         foreach ($buttons as $id => $title) {
-            $buttonObjects[] = [
-                'id'   => (string) $id,
-                'text' => $title,
-            ];
+            $choices[] = $title . '|' . $id;
         }
 
         $response = Http::withHeaders($this->headers())
             ->post($this->baseUrl() . '/send/menu', [
-                'number'   => $phone,
-                'menuType' => 'button',
-                'text'     => $bodyText,
-                'buttons'  => $buttonObjects,
+                'number'  => $phone,
+                'type'    => 'button',
+                'text'    => $bodyText,
+                'choices' => $choices,
             ]);
 
         if (! $response->successful()) {
@@ -93,7 +90,7 @@ class WhatsAppServiceUazapi implements WhatsAppServiceInterface
     }
 
     /**
-     * Sends a list message (interactive dropdown) via /send/menu (menuType: list).
+     * Sends a list message (interactive dropdown) via /send/menu (type: list).
      */
     public function sendListMessage(
         string $phone,
@@ -102,16 +99,40 @@ class WhatsAppServiceUazapi implements WhatsAppServiceInterface
         array $sections,
         ?string $headerText = null
     ) {
+        $choices = [];
+        foreach ($sections as $section) {
+            if (isset($section['title'])) {
+                $choices[] = '[' . $section['title'] . ']';
+            }
+            if (isset($section['rows'])) {
+                foreach ($section['rows'] as $row) {
+                    $id = $row['id'] ?? '';
+                    $title = $row['title'] ?? '';
+                    $desc = $row['description'] ?? '';
+                    
+                    // Format: "texto|id|descrição"
+                    $item = $title;
+                    if ($id || $desc) {
+                        $item .= '|' . $id;
+                    }
+                    if ($desc) {
+                        $item .= '|' . $desc;
+                    }
+                    $choices[] = $item;
+                }
+            }
+        }
+
         $payload = [
             'number'     => $phone,
-            'menuType'   => 'list',
+            'type'       => 'list',
             'text'       => $bodyText,
-            'buttonText' => $buttonText,
-            'sections'   => $sections,
+            'listButton' => $buttonText,
+            'choices'    => $choices,
         ];
 
         if ($headerText) {
-            $payload['title'] = $headerText;
+            $payload['footerText'] = $headerText; // UAZAPI doesn't have headerText, mapped to footerText if needed, or omit.
         }
 
         $response = Http::withHeaders($this->headers())
