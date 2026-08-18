@@ -73,15 +73,20 @@ class AssignEmbaixadorRoleToUsers extends Command
                                    "Para acompanhar o crescimento da sua rede de convidados, acesse o link abaixo.\n\n" .
                                    "https://convite.andrecorrea.com.br";
 
-                    // Mensagem de Senha
-                    $msgSenha = "Para acessar o seu painel, utilize o seu número de WhatsApp e a senha provisória abaixo:\n\n" .
-                                "*{$password}*";
+                    // Mensagem de Introdução da Senha
+                    $msgIntroSenha = "Para acessar o seu painel, utilize o seu número de WhatsApp e a senha provisória abaixo:";
+                    
+                    // Apenas a senha para facilitar copiar/colar
+                    $msgApenasSenha = $password;
 
                     // Dispatch congratulations immediately via queue
                     SendWhatsappFreeTextJob::dispatch($number, $msgParabens);
 
-                    // Dispatch password with a 5-second delay via queue
-                    SendWhatsappFreeTextJob::dispatch($number, $msgSenha)->delay(now()->addSeconds(5));
+                    // Dispatch password intro with a 5-second delay via queue
+                    SendWhatsappFreeTextJob::dispatch($number, $msgIntroSenha)->delay(now()->addSeconds(5));
+
+                    // Dispatch exact password with an 8-second delay via queue (5s + 3s delay)
+                    SendWhatsappFreeTextJob::dispatch($number, $msgApenasSenha)->delay(now()->addSeconds(8));
                 }
             }
         });
