@@ -80,7 +80,7 @@ class ChatbotService
 
                 $msg2 = "*CONVITE especial!*\n\n" .
                         "*Quero te convidar para fazer parte do Time André Corrêa, uma equipe que acredita no trabalho sério e na construção de um futuro melhor.*\n\n" .
-                        "Para participar, é só clicar no link abaixo e responder 5 perguntas rápidas.\n\n" .
+                        "Para participar, é só clicar no link abaixo e responder 2 perguntas rápidas.\n\n" .
                         "https://convite.andrecorrea.com.br/{$code}\n\n" .
                         "Também estou enviando os links das redes sociais do deputado para você conhecer melhor seu trabalho.\n\n" .
                         "📘 Facebook: https://www.facebook.com/depandrecorrea1\n" .
@@ -146,7 +146,7 @@ class ChatbotService
 
                 $msg2 = "*CONVITE especial!*\n\n" .
                         "*Quero te convidar para fazer parte do Time André Corrêa, uma equipe que acredita no trabalho sério e na construção de um futuro melhor.*\n\n" .
-                        "Para participar, é só clicar no link abaixo e responder 5 perguntas rápidas.\n\n" .
+                        "Para participar, é só clicar no link abaixo e responder 2 perguntas rápidas.\n\n" .
                         "https://convite.andrecorrea.com.br/{$code}\n\n" .
                         "Também estou enviando os links das redes sociais do deputado para você conhecer melhor seu trabalho.\n\n" .
                         "📘 Facebook: https://www.facebook.com/depandrecorrea1\n" .
@@ -225,15 +225,6 @@ class ChatbotService
 
             case 'AWAITING_CITY':
                 return $this->processAwaitingCity($waId, $user, $text);
-
-            case 'AWAITING_NEIGHBORHOOD':
-                return $this->processAwaitingNeighborhood($waId, $user, $text);
-
-            case 'AWAITING_CONCERN_01':
-                return $this->processAwaitingConcern01($waId, $user, $text);
-
-            case 'AWAITING_DATE_OF_BIRTH':
-                return $this->processAwaitingDateOfBirth($waId, $user, $text);
 
             default:
                 $this->clearStep($waId);
@@ -326,161 +317,34 @@ class ChatbotService
         
         $finalCity = implode(' ', $normalizedParts);
 
-        $user->update([
-            'city' => $finalCity,
-            'is_add_city' => true
-        ]);
-
-        if ($finalCity === 'Rio de Janeiro') {
-            $this->setStep($waId, 'AWAITING_NEIGHBORHOOD');
-            $user->update(['is_question_neighborhood' => true]);
-            $this->sendReply($waId, "Vimos que você é do Rio de Janeiro! Por favor, digite seu *Bairro*.");
-        } else {
-            $this->askConcern01($waId, $user, $finalCity);
-        }
-    }
-
-    protected function processAwaitingNeighborhood($waId, User $user, $text)
-    {
-        $cleanedNeighborhood = preg_replace('/\s+/', ' ', trim($text));
-
-        // 1. Validar letras, números, espaços e hifens
-        if (!preg_match('/^[a-zA-ZÀ-ÿ0-9\s\-]+$/u', $cleanedNeighborhood)) {
-            return $this->sendReply($waId, "⚠️ O nome do bairro contém caracteres inválidos. Por favor, digite apenas letras e números.");
-        }
-
-        // 2. Validação de tamanho
-        if (mb_strlen($cleanedNeighborhood) < 2 || mb_strlen($cleanedNeighborhood) > 50) {
-            return $this->sendReply($waId, "⚠️ O nome do bairro parece inválido. Por favor, verifique e tente novamente.");
-        }
-
-        // 3. Normalizar para Title Case (mantendo preposições em lowercase)
-        $parts = explode(' ', mb_strtolower($cleanedNeighborhood));
-        $prepositions = ['da', 'de', 'do', 'das', 'dos', 'e'];
-        $normalizedParts = array_map(function ($part, $index) use ($prepositions) {
-            if ($index > 0 && in_array($part, $prepositions)) {
-                return $part;
-            }
-            return mb_convert_case($part, MB_CASE_TITLE, "UTF-8");
-        }, $parts, array_keys($parts));
-        
-        $finalNeighborhood = implode(' ', $normalizedParts);
-
-        $user->update([
-            'neighborhood' => $finalNeighborhood,
-            'is_add_neighborhood' => true
-        ]);
-        $this->askConcern01($waId, $user, $user->city);
-    }
-
-    protected function processAwaitingConcern01($waId, User $user, $text)
-    {
-        $concerns = collect($this->getConcernsList()[0]['rows'])->pluck('title')->toArray();
-        if (!in_array($text, $concerns)) {
-            $this->sendReply($waId, "⚠️ Resposta não permitida. Selecione uma resposta da lista.");
-            return $this->askConcern01($waId, $user, $user->city);
-        }
-
-        $user->update([
-            'concern_01' => $text,
-            'is_add_concern_01' => true,
-            'is_question_date_of_birth' => true
-        ]);
-        $this->setStep($waId, 'AWAITING_DATE_OF_BIRTH');
-        $this->sendReply($waId, "Digite sua *Data de Nascimento*.\nDigite apenas os números.\nEx: *01011980*");
-    }
-
-    protected function processAwaitingDateOfBirth($waId, User $user, $text)
-    {
-        $dateInput = preg_replace('/\D/', '', $text);
-        $formattedDate = null;
-
-        if (strlen($dateInput) === 6) {
-            $day = substr($dateInput, 0, 2);
-            $month = substr($dateInput, 2, 2);
-            $year = substr($dateInput, 4, 2);
-            
-            // Lógica para ano: se > 26 (ano atual 2026), assume 19XX, senão 20XX
-            $year = (int)$year > 26 ? "19$year" : "20$year";
-            $dateInput = $day . $month . $year;
-        }
-
-        if (strlen($dateInput) === 8) {
-            $day = substr($dateInput, 0, 2);
-            $month = substr($dateInput, 2, 2);
-            $year = substr($dateInput, 4, 4);
-            
-            if (checkdate((int)$month, (int)$day, (int)$year)) {
-                $formattedDate = "$day/$month/$year";
-            }
-        }
-
-        if (!$formattedDate) {
-            return $this->sendReply($waId, "⚠️ A data informada é inválida.\nPor favor revise e tente novamente.");
-        }
-
         $code = $user->code ?: strtoupper(Str::random(10));
 
         $user->update([
-            'date_of_birth' => $formattedDate,
+            'city' => $finalCity,
+            'is_add_city' => true,
             'is_add_date_of_birth' => true,
             'code' => $code,
         ]);
         $this->clearStep($waId);
-        
+
         $msg1 = "{$user->name}, agora você faz parte do nosso time vencedor! 🚀\n\n" .
                 "Utilize a mensagem abaixo para facilitar o compartilhamento com seus amigos!";
-                
+
         $msg2 = "*CONVITE especial!*\n\n" .
                 "*Quero te convidar para fazer parte do Time André Corrêa, uma equipe que acredita no trabalho sério e na construção de um futuro melhor.*\n\n" .
-                "Para participar, é só clicar no link abaixo e responder 5 perguntas rápidas.\n\n" .
+                "Para participar, é só clicar no link abaixo e responder 2 perguntas rápidas.\n\n" .
                 "https://convite.andrecorrea.com.br/{$code}\n\n" .
                 "Também estou enviando os links das redes sociais do deputado para você conhecer melhor seu trabalho.\n\n" .
                 "📘 Facebook: https://www.facebook.com/depandrecorrea1\n" .
                 "📸 Instagram: https://instagram.com/depandrecorrea\n" .
                 "🌐 Site: https://www.andrecorrea.com.br/\n\n" .
                 "Contamos com você nessa caminhada!";
-        
+
         $response = $this->sendReply($waId, $msg1);
-        
+
         SendWhatsappFreeTextJob::dispatch($waId, $msg2)->delay(now()->addSeconds(3));
-        
+
         return $response;
-    }
-
-    protected function askConcern01($waId, $user, $city)
-    {
-        $this->setStep($waId, 'AWAITING_CONCERN_01');
-        $user->update(['is_question_concern_01' => true]);
-        
-        $this->whatsapp->sendListMessage(
-            $waId, 
-            "Escolha uma das opções na lista.", 
-            "Selecione", 
-            $this->getConcernsList(),
-            "Principal preocupação"
-        );
-    }
-
-    protected function getConcernsList()
-    {
-        return [
-            [
-                'title' => 'Preocupações',
-                'rows' => [
-                    ['id' => 'Asfalto ruim', 'title' => 'Asfalto ruim', 'description' => 'Ruas esburacadas e de difícil acesso.'],
-                    ['id' => 'Cultura e Lazer', 'title' => 'Cultura e Lazer', 'description' => 'Falta de espaços culturais e recreativos.'],
-                    ['id' => 'Falta de água', 'title' => 'Falta de água', 'description' => 'Escassez ou interrupção no abastecimento.'],
-                    ['id' => 'Falta de creches', 'title' => 'Falta de creches', 'description' => 'Poucas vagas para crianças pequenas.'],
-                    ['id' => 'Falta de emprego', 'title' => 'Falta de emprego', 'description' => 'Escassez de oportunidades de trabalho.'],
-                    ['id' => 'Iluminação e segurança', 'title' => 'Iluminação e segurança', 'description' => 'Ruas escuras e alto índice de crimes.'],
-                    ['id' => 'Qualidade na educação', 'title' => 'Qualidade na educação', 'description' => 'Ensino deficiente e precário.'],
-                    ['id' => 'Saneamento básico', 'title' => 'Saneamento básico', 'description' => 'Falta de esgoto e água tratada.'],
-                    ['id' => 'Saúde precária', 'title' => 'Saúde precária', 'description' => 'Falta de médicos e estrutura hospitalar.'],
-                    ['id' => 'Transporte insuficiente', 'title' => 'Transporte insuficiente', 'description' => 'Poucos ônibus e lotação diária.'],
-                ]
-            ]
-        ];
     }
 
     protected function setStep($waId, $step)
