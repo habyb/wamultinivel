@@ -86,7 +86,6 @@ class UserResource extends Resource
                         ->maxLength(255)
                         ->live(onBlur: true),
                     Forms\Components\TextInput::make('neighborhood')
-                        ->required(fn (Get $get): bool => $get('city') === 'Rio de Janeiro')
                         ->maxLength(255),
                 ])->columns(2),
                 Grid::make(2)->schema([
@@ -103,15 +102,13 @@ class UserResource extends Resource
                             'Saneamento básico' => 'Saneamento básico',
                             'Saúde precária' => 'Saúde precária',
                             'Transporte insuficiente' => 'Transporte insuficiente',
-                        ])
-                        ->required(),
+                        ]),
                     DatePicker::make('date_of_birth')
                         ->label('Date of Birth')
                         ->native(false)
                         ->extraInputAttributes(['readonly' => 'readonly'])
                         ->displayFormat('d/m/Y')
-                        ->format('d/m/Y')
-                        ->required(),
+                        ->format('d/m/Y'),
                 ])->columns(2),
                 Grid::make(2)->schema([
                     Forms\Components\TextInput::make('password')
