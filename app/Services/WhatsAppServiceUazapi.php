@@ -46,10 +46,12 @@ class WhatsAppServiceUazapi implements WhatsAppServiceInterface
 
         $response = Http::withHeaders($this->headers())
             ->post($this->baseUrl() . '/send/text', [
-                'number'      => $phone,
-                'text'        => $text,
-                'linkPreview' => false,
-                'delay'       => $delay,
+                'number'       => $phone,
+                'text'         => $text,
+                'linkPreview'  => false,
+                'delay'        => $delay,
+                'readchat'     => true,
+                'readmessages' => true,
             ]);
 
         if (! $response->successful()) {
@@ -79,12 +81,14 @@ class WhatsAppServiceUazapi implements WhatsAppServiceInterface
 
         $response = Http::withHeaders($this->headers())
             ->post($this->baseUrl() . '/send/menu', [
-                'number'      => $phone,
-                'type'        => 'button',
-                'text'        => $bodyText,
-                'choices'     => $choices,
-                'linkPreview' => false,
-                'delay'       => $delay,
+                'number'       => $phone,
+                'type'         => 'button',
+                'text'         => $bodyText,
+                'choices'      => $choices,
+                'linkPreview'  => false,
+                'delay'        => $delay,
+                'readchat'     => true,
+                'readmessages' => true,
             ]);
 
         if (! $response->successful()) {
@@ -132,12 +136,18 @@ class WhatsAppServiceUazapi implements WhatsAppServiceInterface
             }
         }
 
+        $delay = min(1000 + (mb_strlen($bodyText) * 30), 10000);
+
         $payload = [
-            'number'     => $phone,
-            'type'       => 'list',
-            'text'       => $bodyText,
-            'listButton' => $buttonText,
-            'choices'    => $choices,
+            'number'       => $phone,
+            'type'         => 'list',
+            'text'         => $bodyText,
+            'listButton'   => $buttonText,
+            'choices'      => $choices,
+            'linkPreview'  => false,
+            'delay'        => $delay,
+            'readchat'     => true,
+            'readmessages' => true,
         ];
 
         if ($headerText) {
