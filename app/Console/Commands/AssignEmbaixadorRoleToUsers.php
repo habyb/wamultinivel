@@ -89,13 +89,14 @@ class AssignEmbaixadorRoleToUsers extends Command
                     $msgApenasSenha = $password;
 
                     // Dispatch congratulations immediately via queue
+                    // Essa mensagem é grande e terá um delay interno no Uazapi de aprox 7 a 10 segundos
                     SendWhatsappFreeTextJob::dispatch($number, $msgParabens);
 
-                    // Dispatch password intro with a 5-second delay via queue
-                    SendWhatsappFreeTextJob::dispatch($number, $msgIntroSenha)->delay(now()->addSeconds(5));
+                    // Dispatch password intro with a 12-second delay via queue para garantir que chegue DEPOIS da mensagem de parabéns
+                    SendWhatsappFreeTextJob::dispatch($number, $msgIntroSenha)->delay(now()->addSeconds(12));
 
-                    // Dispatch exact password with an 8-second delay via queue (5s + 3s delay)
-                    SendWhatsappFreeTextJob::dispatch($number, $msgApenasSenha)->delay(now()->addSeconds(8));
+                    // Dispatch exact password with a 17-second delay via queue
+                    SendWhatsappFreeTextJob::dispatch($number, $msgApenasSenha)->delay(now()->addSeconds(17));
                 }
             }
         });
