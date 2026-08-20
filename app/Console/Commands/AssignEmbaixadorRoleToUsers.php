@@ -68,10 +68,19 @@ class AssignEmbaixadorRoleToUsers extends Command
                     ])->saveQuietly();
 
                     // Mensagem de Parabéns
-                    $msgParabens = "🥳 Parabéns {$user->name}!\n\n" .
-                                   "Agora você faz parte do nosso time de Embaixadores!\n\n" .
-                                   "Para acompanhar o crescimento da sua rede de convidados, acesse o link abaixo.\n\n" .
-                                   "https://convite.andrecorrea.com.br";
+                    $parabensMessages = [
+                        "🥳 Parabéns {$user->name}!\n\nAgora você faz parte do nosso time de Embaixadores!\n\nPara acompanhar o crescimento da sua rede de convidados, acesse o link abaixo.\n\nhttps://convite.andrecorrea.com.br",
+                        "🎉 Uhuu, {$user->name}! Você acaba de se tornar um de nossos Embaixadores!\n\nAcompanhe de perto a sua rede de convidados pelo link abaixo:\n\nhttps://convite.andrecorrea.com.br",
+                        "🎊 Excelente notícia, {$user->name}! Agora você integra o seleto time de Embaixadores!\n\nVeja como a sua rede está crescendo acessando este link:\n\nhttps://convite.andrecorrea.com.br",
+                        "🌟 Parabéns, {$user->name}! Você subiu de nível e virou um Embaixador do nosso time!\n\nPara monitorar o crescimento dos seus convidados, clique aqui:\n\nhttps://convite.andrecorrea.com.br",
+                        "🚀 Boas-vindas ao nível Embaixador, {$user->name}!\n\nAcompanhe toda a evolução da sua rede de convidados acessando o seu painel no link abaixo:\n\nhttps://convite.andrecorrea.com.br",
+                        "👏 Show de bola, {$user->name}! Você alcançou o status de Embaixador na nossa equipe!\n\nFique de olho na sua rede acessando este link:\n\nhttps://convite.andrecorrea.com.br",
+                        "🏆 Parabéns pela conquista, {$user->name}! Você é oficialmente um dos nossos Embaixadores!\n\nVocê pode ver todos os seus indicados clicando no link abaixo:\n\nhttps://convite.andrecorrea.com.br",
+                        "✨ Muito bem, {$user->name}! Que orgulho ter você no time de Embaixadores!\n\nMonitore o sucesso dos seus convites direto no link a seguir:\n\nhttps://convite.andrecorrea.com.br",
+                        "🥳 Parabéns, {$user->name}! Agora você é um Embaixador oficial do nosso projeto!\n\nAcesse o link abaixo para acompanhar todos que entraram pelo seu convite:\n\nhttps://convite.andrecorrea.com.br",
+                        "🎉 Sensacional, {$user->name}! Bem-vindo(a) ao grupo de Embaixadores!\n\nPara ver o tamanho da sua rede de convidados, é só acessar o link abaixo:\n\nhttps://convite.andrecorrea.com.br",
+                    ];
+                    $msgParabens = $parabensMessages[array_rand($parabensMessages)];
 
                     // Mensagem de Introdução da Senha
                     $msgIntroSenha = "Para acessar o seu painel, utilize o seu número de WhatsApp e a senha provisória abaixo:";

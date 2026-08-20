@@ -64,28 +64,42 @@ class ChatbotService
             if ($user && $user->is_add_date_of_birth) {
                 $text = trim($text);
                 if (in_array($text, ['SIM', 'NÃO'])) {
-                    $msg = "\n\nMuito obrigado por sua resposta. Sua participação é muito importante para nós e nos ajuda a melhorar cada vez mais.\n\n" .
-                        "Acompanhe nosso trabalho nessas áreas através de minhas redes sociais:\n\n" .
-                        "*📘 Facebook:* https://www.facebook.com/depandrecorrea1\n" .
-                        "*📸 Instagram:* https://instagram.com/depandrecorrea\n" .
-                        "*🌐 Site:* https://www.andrecorrea.com.br/";
+                    $msg = "\n\nMuito obrigado por sua resposta. Sua participação é muito importante para nós e nos ajuda a melhorar cada vez mais.";
 
                     return $this->sendReply($waId, "Olá *{$user->name}*!$msg");
                 }
 
                 $code = $user->code ?: '';
 
-                $msg1 = "{$user->name}, você já faz parte do nosso time vencedor! 🚀\n\n" .
-                        "Utilize a mensagem abaixo para facilitar o compartilhamento com seus amigos!";
+                $alreadyRegisteredMessages = [
+                    "{$user->name}, você já faz parte do nosso time vencedor! 🚀",
+                    "Olá, {$user->name}! Vi sua mensagem, mas fique tranquilo(a): o seu cadastro já está confirmado e você já faz parte do nosso time vencedor! 🚀",
+                    "Tudo certo por aqui, {$user->name}! Você já concluiu essa etapa de inscrição e está oficialmente no nosso time vencedor! 🚀",
+                    "Opa, {$user->name}! Não precisa se cadastrar de novo, sua vaga no nosso time vencedor já está super garantida! 🚀",
+                    "Que bom te ver novamente, {$user->name}! Só para te avisar que o seu registro já está pronto e você já é do nosso time vencedor! 🚀",
+                    "Ei, {$user->name}! O sistema já reconheceu o seu número por aqui. Você já completou a inscrição no nosso time vencedor! 🚀",
+                    "Pode relaxar, {$user->name}! Seus dados já estão com a gente e você já integra o nosso time vencedor! 🚀",
+                    "Cadastro detectado com sucesso, {$user->name}! Você já finalizou esse processo e já faz parte do nosso time vencedor! 🚀",
+                    "Boas notícias, {$user->name}: não falta mais nada do seu lado! Você já está 100% cadastrado(a) no nosso time vencedor! 🚀",
+                    "Tudo pronto com o seu perfil, {$user->name}! Você já passou por essa fase e já é membro do nosso time vencedor! 🚀",
+                ];
+                $msg1 = $alreadyRegisteredMessages[array_rand($alreadyRegisteredMessages)];
 
-                $msg2 = "*CONVITE especial!*\n\n" .
-                        "*Quero te convidar para fazer parte do Time André Corrêa, uma equipe que acredita no trabalho sério e na construção de um futuro melhor.*\n\n" .
-                        "Para participar, é só clicar no link abaixo e responder 2 perguntas rápidas.\n\n" .
+                $inviteMessages = [
+                    "✉️ *Convite especial!* Quero te convidar para fazer parte do Time André Corrêa, uma equipe que acredita no trabalho sério e na construção de um futuro melhor. Para participar, é só clicar no link abaixo e responder 2 perguntas rápidas.",
+                    "🌟 *Convite Exclusivo!* Gostaria muito que você fizesse parte do Time André Corrêa. Somos um grupo focado em trabalho sério e em construir um amanhã melhor. Para entrar, basta acessar o link abaixo e responder a duas perguntinhas.",
+                    "📩 *Você recebeu um convite!* Venha integrar o Time André Corrêa, uma equipe dedicada ao trabalho de verdade por um futuro promissor. É super fácil participar: clique no link a seguir e responda 2 perguntas bem rápidas.",
+                    "🎯 *Um convite para você!* Quero te chamar para o Time André Corrêa. Aqui, o nosso foco é o comprometimento para garantir um futuro melhor para todos. Para confirmar sua participação, clique no link abaixo e responda a 2 perguntas.",
+                    "✨ *Olhe esse convite especial!* Estou te chamando para o Time André Corrêa. Somos uma equipe que valoriza o esforço e a construção de dias melhores. Faça parte clicando no link abaixo e respondendo a duas questões curtas.",
+                    "✉️ *Convite importante!* Faça parte da nossa rede no Time André Corrêa. Juntos, acreditamos que o trabalho sério constrói um futuro de verdade. Para se juntar a nós, acesse o link abaixo e responda apenas 2 perguntas.",
+                    "🤝 *Chegou um convite para você!* Venha caminhar com o Time André Corrêa, um grupo que aposta no trabalho duro para transformar o amanhã. É muito simples participar: clique no link e complete 2 respostas rápidas.",
+                    "Olá! Tenho um *convite super especial* para você. Venha somar forças com o Time André Corrêa! Acreditamos no poder da dedicação para melhorar o nosso futuro. Topa? É só clicar no link abaixo e preencher 2 questões rápidas.",
+                    "🚀 *Convite imperdível!* Junte-se ao Time André Corrêa e faça parte de uma equipe comprometida com resultados e um futuro muito melhor. Para começar, toque no link abaixo e responda a 2 perguntas super rápidas.",
+                    "💙 *Um convite especial passando por aqui!* Quero te convidar para o Time André Corrêa, uma equipe que acredita de verdade que o trabalho sério muda o futuro. Clique no link abaixo, responda 2 perguntas rapidinho e venha com a gente!",
+                ];
+                
+                $msg2 = $inviteMessages[array_rand($inviteMessages)] . "\n\n" .
                         "https://convite.andrecorrea.com.br/{$code}\n\n" .
-                        "Também estou enviando os links das redes sociais do deputado para você conhecer melhor seu trabalho.\n\n" .
-                        "📘 Facebook: https://www.facebook.com/depandrecorrea1\n" .
-                        "📸 Instagram: https://instagram.com/depandrecorrea\n" .
-                        "🌐 Site: https://www.andrecorrea.com.br/\n\n" .
                         "Contamos com você nessa caminhada!";
 
                 $response = $this->sendReply($waId, $msg1);
@@ -113,8 +127,19 @@ class ChatbotService
         $this->setStep($waId, 'AWAITING_REGISTRATION_CONFIRMATION');
         
         $greeting = get_greeting();
-        $msg = "Olá. {$greeting}! Seja Bem-vindo(a) ao time do Dep. André Corrêa.\n\n" .
-               "Percebi que este é o nosso primeiro contato e para continuarmos basta tocar no botão abaixo. Ao continuar, você aceita receber nossos informativos. 📩👇";
+        $messages = [
+            "Olá. {$greeting}! Seja Bem-vindo(a) ao time do Dep. André Corrêa.\n\nPercebi que este é o nosso primeiro contato e para continuarmos basta tocar no botão abaixo. Ao continuar, você aceita receber nossos informativos. 📩👇",
+            "Olá, {$greeting}! Que bom ter você no time do Dep. André Corrêa! Como é a nossa primeira conversa, clique no botão abaixo para prosseguir e confirmar que deseja receber nossas novidades. 🤝👇",
+            "{$greeting}! Seja muito bem-vindo(a) à equipe do Deputado André Corrêa. Vi aqui que é o nosso primeiro contato. Para iniciar e aceitar nossos comunicados, é só tocar no botão a seguir. 📲👇",
+            "Oi! {$greeting}! Bem-vindo(a) ao grupo de apoio do Dep. André Corrêa. Para darmos o primeiro passo e você concordar em receber nossas mensagens, basta clicar no botão abaixo. ✨👇",
+            "Saudações! {$greeting}! É um prazer ter você no time do Dep. André Corrêa. Como ainda não nos falamos antes, toque no botão abaixo para continuar e aceitar nossos informativos. 🚀👇",
+            "Olá! {$greeting}! Você agora faz parte da rede do Dep. André Corrêa, seja bem-vindo(a)! Para liberar nosso papo e confirmar o recebimento de atualizações, clique no botão aqui embaixo. 📩👇",
+            "{$greeting}! Que alegria receber você no time do Dep. André Corrêa! Sendo esta a nossa primeira troca de mensagens, toque no botão abaixo para avançar e aceitar nossa comunicação. ✅👇",
+            "Tudo bem? {$greeting}! Bem-vindo(a) à nossa equipe do Deputado André Corrêa. Para começar oficialmente e permitir o envio das nossas notícias, você só precisa clicar no botão abaixo. 📰👇",
+            "Oi, {$greeting}! Seja muito bem-vindo(a) ao projeto do Dep. André Corrêa! Para continuarmos nosso primeiro contato e você autorizar nossos informativos, toque no botão a seguir. 🎯👇",
+            "Olá! {$greeting}! É ótimo ter você com o Dep. André Corrêa. Como estamos começando a conversar agora, clique no botão abaixo para confirmar sua entrada e aceitar receber nossos alertas. 🔔👇",
+        ];
+        $msg = $messages[array_rand($messages)];
         
         return $this->whatsapp->sendInteractiveButtons($waId, $msg, [
             'confirm_yes' => 'Continuar',
@@ -141,17 +166,35 @@ class ChatbotService
                 // Cenário A: Usuário Completo
                 $code = $user->code ?: '';
 
-                $msg1 = "{$user->name}, *você já está cadastrado* e faz parte do nosso time vencedor! 🚀\n\n" .
-                        "Utilize a mensagem abaixo para facilitar o compartilhamento com seus amigos!";
+                $alreadyRegisteredMessages = [
+                    "{$user->name}, *você já está cadastrado* e faz parte do nosso time vencedor! 🚀",
+                    "Olá, {$user->name}! Vi sua mensagem, mas fique tranquilo(a): o seu cadastro já está confirmado e você já faz parte do nosso time vencedor! 🚀",
+                    "Tudo certo por aqui, {$user->name}! Você já concluiu essa etapa de inscrição e está oficialmente no nosso time vencedor! 🚀",
+                    "Opa, {$user->name}! Não precisa se cadastrar de novo, sua vaga no nosso time vencedor já está super garantida! 🚀",
+                    "Que bom te ver novamente, {$user->name}! Só para te avisar que o seu registro já está pronto e você já é do nosso time vencedor! 🚀",
+                    "Ei, {$user->name}! O sistema já reconheceu o seu número por aqui. Você já completou a inscrição no nosso time vencedor! 🚀",
+                    "Pode relaxar, {$user->name}! Seus dados já estão com a gente e você já integra o nosso time vencedor! 🚀",
+                    "Cadastro detectado com sucesso, {$user->name}! Você já finalizou esse processo e já faz parte do nosso time vencedor! 🚀",
+                    "Boas notícias, {$user->name}: não falta mais nada do seu lado! Você já está 100% cadastrado(a) no nosso time vencedor! 🚀",
+                    "Tudo pronto com o seu perfil, {$user->name}! Você já passou por essa fase e já é membro do nosso time vencedor! 🚀",
+                ];
+                $msg1 = $alreadyRegisteredMessages[array_rand($alreadyRegisteredMessages)];
 
-                $msg2 = "*CONVITE especial!*\n\n" .
-                        "*Quero te convidar para fazer parte do Time André Corrêa, uma equipe que acredita no trabalho sério e na construção de um futuro melhor.*\n\n" .
-                        "Para participar, é só clicar no link abaixo e responder 2 perguntas rápidas.\n\n" .
+                $inviteMessages = [
+                    "✉️ *Convite especial!* Quero te convidar para fazer parte do Time André Corrêa, uma equipe que acredita no trabalho sério e na construção de um futuro melhor. Para participar, é só clicar no link abaixo e responder 2 perguntas rápidas.",
+                    "🌟 *Convite Exclusivo!* Gostaria muito que você fizesse parte do Time André Corrêa. Somos um grupo focado em trabalho sério e em construir um amanhã melhor. Para entrar, basta acessar o link abaixo e responder a duas perguntinhas.",
+                    "📩 *Você recebeu um convite!* Venha integrar o Time André Corrêa, uma equipe dedicada ao trabalho de verdade por um futuro promissor. É super fácil participar: clique no link a seguir e responda 2 perguntas bem rápidas.",
+                    "🎯 *Um convite para você!* Quero te chamar para o Time André Corrêa. Aqui, o nosso foco é o comprometimento para garantir um futuro melhor para todos. Para confirmar sua participação, clique no link abaixo e responda a 2 perguntas.",
+                    "✨ *Olhe esse convite especial!* Estou te chamando para o Time André Corrêa. Somos uma equipe que valoriza o esforço e a construção de dias melhores. Faça parte clicando no link abaixo e respondendo a duas questões curtas.",
+                    "✉️ *Convite importante!* Faça parte da nossa rede no Time André Corrêa. Juntos, acreditamos que o trabalho sério constrói um futuro de verdade. Para se juntar a nós, acesse o link abaixo e responda apenas 2 perguntas.",
+                    "🤝 *Chegou um convite para você!* Venha caminhar com o Time André Corrêa, um grupo que aposta no trabalho duro para transformar o amanhã. É muito simples participar: clique no link e complete 2 respostas rápidas.",
+                    "Olá! Tenho um *convite super especial* para você. Venha somar forças com o Time André Corrêa! Acreditamos no poder da dedicação para melhorar o nosso futuro. Topa? É só clicar no link abaixo e preencher 2 questões rápidas.",
+                    "🚀 *Convite imperdível!* Junte-se ao Time André Corrêa e faça parte de uma equipe comprometida com resultados e um futuro muito melhor. Para começar, toque no link abaixo e responda a 2 perguntas super rápidas.",
+                    "💙 *Um convite especial passando por aqui!* Quero te convidar para o Time André Corrêa, uma equipe que acredita de verdade que o trabalho sério muda o futuro. Clique no link abaixo, responda 2 perguntas rapidinho e venha com a gente!",
+                ];
+                
+                $msg2 = $inviteMessages[array_rand($inviteMessages)] . "\n\n" .
                         "https://convite.andrecorrea.com.br/{$code}\n\n" .
-                        "Também estou enviando os links das redes sociais do deputado para você conhecer melhor seu trabalho.\n\n" .
-                        "📘 Facebook: https://www.facebook.com/depandrecorrea1\n" .
-                        "📸 Instagram: https://instagram.com/depandrecorrea\n" .
-                        "🌐 Site: https://www.andrecorrea.com.br/\n\n" .
                         "Contamos com você nessa caminhada!";
 
                 $this->sendReply($waId, $msg1);
@@ -240,7 +283,19 @@ class ChatbotService
         if (in_array($textClean, ['confirm_yes', 'continuar', 'sim', 'yes', 'ok', 'aceito', 'quero', 'sim, quero receber'])) {
             $this->setStep($waId, 'AWAITING_NAME');
             $user->update(['is_question_name' => true]);
-            $this->sendReply($waId, "Legal! Vamos começar. Digite seu *Nome e Sobrenome*.");
+            $namePrompts = [
+                "Perfeito! Para começarmos, qual o seu nome completo?",
+                "Legal! Me diga seu nome e sobrenome, por favor.",
+                "Tudo certo! Pode me informar seu nome completo para o cadastro?",
+                "Excelente! Para dar andamento ao seu cadastro, digite seu nome e sobrenome.",
+                "Maravilha! Vamos iniciar: por favor, digite o seu nome completo aqui.",
+                "Ótimo! O primeiro passo é simples: qual é o seu nome e sobrenome?",
+                "Muito bom! Para eu registrar você no nosso time, me envie seu nome completo.",
+                "Show! Vamos começar o seu cadastro. Pode digitar seu nome e sobrenome, por favor?",
+                "Tudo pronto por aqui! Para iniciar nossa conversa, qual é o seu nome completo?",
+                "Que legal ter você com a gente! Escreva seu nome e sobrenome para eu te cadastrar.",
+            ];
+            $this->sendReply($waId, $namePrompts[array_rand($namePrompts)]);
         } else {
             $this->sendReply($waId, "⚠️ Resposta não permitida. Por favor, clique no botão *Continuar* para prosseguir.");
         }
@@ -284,7 +339,19 @@ class ChatbotService
             'is_question_city' => true
         ]);
         $this->setStep($waId, 'AWAITING_CITY');
-        $this->sendReply($waId, "Legal {$finalName}, agora por favor digite o nome da sua *Cidade*.");
+        $cityPrompts = [
+            "Legal {$finalName}, agora por favor digite o nome da sua *Cidade*.",
+            "Perfeito, {$finalName}! Para continuarmos, me diga de qual *Cidade* você é.",
+            "Ótimo, {$finalName}. Qual é o nome da sua *Cidade*?",
+            "Tudo certo, {$finalName}! Agora eu só preciso saber a sua *Cidade*.",
+            "Muito bom, {$finalName}! Digite o nome da sua *Cidade* para avançarmos.",
+            "Anotado, {$finalName}! Em qual *Cidade* você mora atualmente?",
+            "Excelente, {$finalName}! Agora, por favor, me informe a sua *Cidade*.",
+            "Maravilha, {$finalName}. Para finalizarmos essa etapa, digite a sua *Cidade*.",
+            "Show de bola, {$finalName}! Me escreve aqui o nome da sua *Cidade*.",
+            "Beleza, {$finalName}! Qual é a *Cidade* onde você mora?",
+        ];
+        $this->sendReply($waId, $cityPrompts[array_rand($cityPrompts)]);
     }
 
     protected function processAwaitingCity($waId, User $user, $text)
@@ -327,17 +394,34 @@ class ChatbotService
         ]);
         $this->clearStep($waId);
 
-        $msg1 = "{$user->name}, agora você faz parte do nosso time vencedor! 🚀\n\n" .
-                "Utilize a mensagem abaixo para facilitar o compartilhamento com seus amigos!";
+        $completionMessages = [
+            "{$user->name}, agora você faz parte do nosso time vencedor! 🚀\n\nUtilize a mensagem abaixo para facilitar o compartilhamento com seus amigos!",
+            "Oficializado, {$user->name}! Você já está no nosso time vencedor! 🚀 Use o texto logo abaixo para convidar seus amigos com facilidade.",
+            "Parabéns, {$user->name}! Você acaba de entrar para o nosso time vencedor! 🚀 Compartilhe a mensagem abaixo com seus amigos para facilitar o convite.",
+            "Que incrível, {$user->name}! Agora você integra o nosso time vencedor! 🚀 Para chamar seus amigos, é só usar a mensagem prontinha aqui embaixo.",
+            "{$user->name}, seja muito bem-vindo ao nosso time vencedor! 🚀 Facilite o convite para seus amigos encaminhando a mensagem a seguir.",
+            "Prontinho, {$user->name}! Sua vaga no nosso time vencedor está garantida! 🚀 Basta copiar ou encaminhar a mensagem abaixo para os seus contatos.",
+            "Show, {$user->name}! Você entrou de vez para o nosso time vencedor! 🚀 Para te ajudar a trazer mais pessoas, preparamos a mensagem abaixo.",
+            "Tudo certo, {$user->name}! É uma honra ter você no nosso time vencedor! 🚀 Aproveite o texto abaixo para compartilhar facilmente com seus amigos.",
+            "Feito, {$user->name}! Você já é parte oficial do nosso time vencedor! 🚀 Use a mensagem a seguir para espalhar essa novidade por aí.",
+            "Boas-vindas oficiais, {$user->name}! Agora você está no nosso time vencedor! 🚀 Encaminhe a mensagem abaixo para seus amigos e facilite o compartilhamento.",
+        ];
+        $msg1 = $completionMessages[array_rand($completionMessages)];
 
-        $msg2 = "*CONVITE especial!*\n\n" .
-                "*Quero te convidar para fazer parte do Time André Corrêa, uma equipe que acredita no trabalho sério e na construção de um futuro melhor.*\n\n" .
-                "Para participar, é só clicar no link abaixo e responder 2 perguntas rápidas.\n\n" .
+        $inviteMessages = [
+            "✉️ *Convite especial!* Quero te convidar para fazer parte do Time André Corrêa, uma equipe que acredita no trabalho sério e na construção de um futuro melhor. Para participar, é só clicar no link abaixo e responder 2 perguntas rápidas.",
+            "🌟 *Convite Exclusivo!* Gostaria muito que você fizesse parte do Time André Corrêa. Somos um grupo focado em trabalho sério e em construir um amanhã melhor. Para entrar, basta acessar o link abaixo e responder a duas perguntinhas.",
+            "📩 *Você recebeu um convite!* Venha integrar o Time André Corrêa, uma equipe dedicada ao trabalho de verdade por um futuro promissor. É super fácil participar: clique no link a seguir e responda 2 perguntas bem rápidas.",
+            "🎯 *Um convite para você!* Quero te chamar para o Time André Corrêa. Aqui, o nosso foco é o comprometimento para garantir um futuro melhor para todos. Para confirmar sua participação, clique no link abaixo e responda a 2 perguntas.",
+            "✨ *Olhe esse convite especial!* Estou te chamando para o Time André Corrêa. Somos uma equipe que valoriza o esforço e a construção de dias melhores. Faça parte clicando no link abaixo e respondendo a duas questões curtas.",
+            "✉️ *Convite importante!* Faça parte da nossa rede no Time André Corrêa. Juntos, acreditamos que o trabalho sério constrói um futuro de verdade. Para se juntar a nós, acesse o link abaixo e responda apenas 2 perguntas.",
+            "🤝 *Chegou um convite para você!* Venha caminhar com o Time André Corrêa, um grupo que aposta no trabalho duro para transformar o amanhã. É muito simples participar: clique no link e complete 2 respostas rápidas.",
+            "Olá! Tenho um *convite super especial* para você. Venha somar forças com o Time André Corrêa! Acreditamos no poder da dedicação para melhorar o nosso futuro. Topa? É só clicar no link abaixo e preencher 2 questões rápidas.",
+            "🚀 *Convite imperdível!* Junte-se ao Time André Corrêa e faça parte de uma equipe comprometida com resultados e um futuro muito melhor. Para começar, toque no link abaixo e responda a 2 perguntas super rápidas.",
+            "💙 *Um convite especial passando por aqui!* Quero te convidar para o Time André Corrêa, uma equipe que acredita de verdade que o trabalho sério muda o futuro. Clique no link abaixo, responda 2 perguntas rapidinho e venha com a gente!",
+        ];
+        $msg2 = $inviteMessages[array_rand($inviteMessages)] . "\n\n" .
                 "https://convite.andrecorrea.com.br/{$code}\n\n" .
-                "Também estou enviando os links das redes sociais do deputado para você conhecer melhor seu trabalho.\n\n" .
-                "📘 Facebook: https://www.facebook.com/depandrecorrea1\n" .
-                "📸 Instagram: https://instagram.com/depandrecorrea\n" .
-                "🌐 Site: https://www.andrecorrea.com.br/\n\n" .
                 "Contamos com você nessa caminhada!";
 
         $response = $this->sendReply($waId, $msg1);
