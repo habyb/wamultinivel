@@ -75,12 +75,16 @@ class WhatsAppServiceUazapi implements WhatsAppServiceInterface
             $choices[] = $title . '|' . $id;
         }
 
+        $delay = min(1000 + (mb_strlen($bodyText) * 30), 10000);
+
         $response = Http::withHeaders($this->headers())
             ->post($this->baseUrl() . '/send/menu', [
-                'number'  => $phone,
-                'type'    => 'button',
-                'text'    => $bodyText,
-                'choices' => $choices,
+                'number'      => $phone,
+                'type'        => 'button',
+                'text'        => $bodyText,
+                'choices'     => $choices,
+                'linkPreview' => false,
+                'delay'       => $delay,
             ]);
 
         if (! $response->successful()) {
