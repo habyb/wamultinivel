@@ -41,10 +41,15 @@ class WhatsAppServiceUazapi implements WhatsAppServiceInterface
      */
     public function sendFreeText(string $phone, string $text)
     {
+        // Simula o tempo de digitação humano: 1 segundo base + 30ms por caractere (máximo de 10 segundos)
+        $delay = min(1000 + (mb_strlen($text) * 30), 10000);
+
         $response = Http::withHeaders($this->headers())
             ->post($this->baseUrl() . '/send/text', [
-                'number' => $phone,
-                'text'   => $text,
+                'number'      => $phone,
+                'text'        => $text,
+                'linkPreview' => false,
+                'delay'       => $delay,
             ]);
 
         if (! $response->successful()) {
