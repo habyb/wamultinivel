@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * @property string $group
@@ -24,4 +25,19 @@ class Setting extends Model
         'locked' => 'boolean',
         'payload' => 'array',
     ];
+
+    protected static function booted()
+    {
+        static::saved(function ($setting) {
+            if ($setting->name === 'whatsapp_token') {
+                Cache::forget('uazapi_token');
+            }
+        });
+
+        static::deleted(function ($setting) {
+            if ($setting->name === 'whatsapp_token') {
+                Cache::forget('uazapi_token');
+            }
+        });
+    }
 }

@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Contracts\WhatsAppServiceInterface;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
+use App\Models\Setting;
 
 class WhatsAppServiceUazapi implements WhatsAppServiceInterface
 {
@@ -18,10 +20,18 @@ class WhatsAppServiceUazapi implements WhatsAppServiceInterface
 
     /**
      * Token de autenticação da uazapi.
+     * Busca na tabela Settings (via Filament) utilizando cache para performance.
+     * Faz fallback para as variáveis de ambiente originais se o registro não existir.
      */
     protected function token(): string
     {
-        return config('services.uazapi.token');
+        return Cache::rememberForever('uazapi_token', function () {
+            $setting = Setting::where('name', 'whatsapp_token')->first();
+            if ($setting && isset($setting->payload['value'])) {
+                return $setting->payload['value'];
+            }
+            return config('services.uazapi.token');
+        });
     }
 
     /**
