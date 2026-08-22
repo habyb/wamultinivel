@@ -27,20 +27,29 @@ class ChatbotService
         $waId = $contact['wa_id'];
         $profileName = $contact['profile']['name'] ?? 'Amigo(a)';
         
+        $type = $message['type'] ?? '';
         $text = '';
-        if (($message['type'] ?? '') === 'text') {
-            $text = $message['text']['body'] ?? '';
-        } elseif (($message['type'] ?? '') === 'interactive') {
-            $text = $message['interactive']['button_reply']['id'] ?? 
-                    $message['interactive']['button_reply']['title'] ?? 
-                    $message['interactive']['list_reply']['title'] ?? 
-                    $message['interactive']['list_reply']['id'] ?? '';
-        } elseif (($message['type'] ?? '') === 'button') {
-            $text = $message['button']['text'] ?? 
-                    $message['button']['payload'] ?? '';
+
+        if ($type === 'text') {
+            $body = $message['text']['body'] ?? '';
+            $text = is_string($body) ? $body : '';
+        } elseif ($type === 'interactive') {
+            $btn = $message['interactive']['button_reply']['id'] ?? 
+                   $message['interactive']['button_reply']['title'] ?? 
+                   $message['interactive']['list_reply']['title'] ?? 
+                   $message['interactive']['list_reply']['id'] ?? '';
+            $text = is_string($btn) ? $btn : '';
+        } elseif ($type === 'button') {
+            $btn = $message['button']['text'] ?? 
+                   $message['button']['payload'] ?? '';
+            $text = is_string($btn) ? $btn : '';
         }
 
-        // Log::info("Processing message from $waId: $text");
+        // Se o tipo for algo diferente (áudio, imagem, doc) ou o texto extraído for nulo/vazio e for arquivo
+        $mediaTypes = ['image', 'audio', 'video', 'document', 'sticker', 'location', 'imagemessage', 'audiomessage', 'videomessage', 'documentmessage', 'stickermessage', 'locationmessage', 'vcard', 'contactmessage'];
+        if (in_array(strtolower($type), $mediaTypes) || (empty($text) && !in_array($type, ['text', 'interactive', 'button']))) {
+            return $this->sendReply($waId, "Ainda não consigo entender áudios, imagens ou outros tipos de arquivos. Por favor, digite em texto.");
+        };
 
         // 1. Comando de reset/reiniciar (Escape)
         if (Str::upper(trim($text)) === 'REINICIAR') {

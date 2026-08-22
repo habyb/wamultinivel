@@ -108,10 +108,10 @@ class ChatProcessController extends Controller
                 'text' => ['body' => $msg['text'] ?? $msg['content'] ?? ''],
             ];
         } else {
-            // Outros tipos (imagem, áudio, etc.) — tratar como texto genérico
+            // Outros tipos (imagem, áudio, etc.) — manter o tipo original para tratamento no ChatbotService
             $message = [
-                'type' => 'text',
-                'text' => ['body' => $msg['text'] ?? $msg['content'] ?? ''],
+                'type' => $msgType,
+                'text' => ['body' => ''],
             ];
         }
 
