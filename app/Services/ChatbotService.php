@@ -72,16 +72,16 @@ class ChatbotService
                 $code = $user->code ?: '';
 
                 $alreadyRegisteredMessages = [
-                    "{$user->name}, você já faz parte do nosso time vencedor! 🚀. Utilize a mensagem abaixo para facilitar o compartilhamento com seus amigos! 👇",
-                    "Olá, {$user->name}! Vi sua mensagem, mas fique tranquilo(a): o seu cadastro já está confirmado e você já faz parte do nosso time vencedor! 🚀. Dá uma olhada na mensagem aqui embaixo! É só copiar e colar no grupo da galera. 👇",
-                    "Tudo certo por aqui, {$user->name}! Você já concluiu essa etapa de inscrição e está oficialmente no nosso time vencedor! 🚀. Preguiça de digitar? Tranquilo! Copie a mensagem abaixo e mande para os seus amigos. 😜",
-                    "Opa, {$user->name}! Não precisa se cadastrar de novo, sua vaga no nosso time vencedor já está super garantida! 🚀. Bora compartilhar? Copie o textinho abaixo e espalhe a novidade! ✨",
-                    "Que bom te ver novamente, {$user->name}! Só para te avisar que o seu registro já está pronto e você já é do nosso time vencedor! 🚀. Copie a mensagem abaixo e mande para os seus contatos! 😉",
-                    "Ei, {$user->name}! O sistema já reconheceu o seu número por aqui. Você já completou a inscrição no nosso time vencedor! 🚀. Mensagem pronta para enviar aos amigos: é só copiar e encaminhar! 📲",
-                    "Pode relaxar, {$user->name}! Seus dados já estão com a gente e você já integra o nosso time vencedor! 🚀. Quer avisar seus amigos? Use o texto abaixo, já deixamos tudo pronto pra você! 👇",
-                    "Cadastro detectado com sucesso, {$user->name}! Você já finalizou esse processo e já faz parte do nosso time vencedor! 🚀. Pra facilitar sua vida, preparamos essa mensagem. É só copiar e mandar pro pessoal! 🙌",
-                    "Boas notícias, {$user->name}: não falta mais nada do seu lado! Você já está 100% cadastrado(a) no nosso time vencedor! 🚀. Compartilhe essa ideia com seus amigos utilizando a mensagem sugerida abaixo. 🤝",
-                    "Tudo pronto com o seu perfil, {$user->name}! Você já passou por essa fase e já é membro do nosso time vencedor! 🚀. Não deixe seus amigos de fora! Copie o texto abaixo e envie pra eles agora mesmo. 🏃‍♂️💨",
+                    "{$user->name}, você já faz parte do nosso time vencedor! 🚀\n\nUtilize a mensagem abaixo para facilitar o compartilhamento com seus amigos! 👇",
+                    "Olá, {$user->name}! Vi sua mensagem, mas fique tranquilo(a): o seu cadastro já está confirmado e você já faz parte do nosso time vencedor! 🚀\n\nDá uma olhada na mensagem aqui embaixo! É só copiar e colar no grupo da galera. 👇",
+                    "Tudo certo por aqui, {$user->name}! Você já concluiu essa etapa de inscrição e está oficialmente no nosso time vencedor! 🚀\n\nPreguiça de digitar? Tranquilo! Copie a mensagem abaixo e mande para os seus amigos. 😜",
+                    "Opa, {$user->name}! Não precisa se cadastrar de novo, sua vaga no nosso time vencedor já está super garantida! 🚀\n\nBora compartilhar? Copie o textinho abaixo e espalhe a novidade! ✨",
+                    "Que bom te ver novamente, {$user->name}! Só para te avisar que o seu registro já está pronto e você já é do nosso time vencedor! 🚀\n\nCopie a mensagem abaixo e mande para os seus contatos! 😉",
+                    "Ei, {$user->name}! O sistema já reconheceu o seu número por aqui. Você já completou a inscrição no nosso time vencedor! 🚀\n\nMensagem pronta para enviar aos amigos: é só copiar e encaminhar! 📲",
+                    "Pode relaxar, {$user->name}! Seus dados já estão com a gente e você já integra o nosso time vencedor! 🚀\n\nQuer avisar seus amigos? Use o texto abaixo, já deixamos tudo pronto pra você! 👇",
+                    "Cadastro detectado com sucesso, {$user->name}! Você já finalizou esse processo e já faz parte do nosso time vencedor! 🚀\n\nPra facilitar sua vida, preparamos essa mensagem. É só copiar e mandar pro pessoal! 🙌",
+                    "Boas notícias, {$user->name}: não falta mais nada do seu lado! Você já está 100% cadastrado(a) no nosso time vencedor! 🚀\n\nCompartilhe essa ideia com seus amigos utilizando a mensagem sugerida abaixo. 🤝",
+                    "Tudo pronto com o seu perfil, {$user->name}! Você já passou por essa fase e já é membro do nosso time vencedor! 🚀\n\nNão deixe seus amigos de fora! Copie o texto abaixo e envie pra eles agora mesmo. 🏃‍♂️💨",
                 ];
                 $msg1 = $alreadyRegisteredMessages[array_rand($alreadyRegisteredMessages)];
 
@@ -167,16 +167,16 @@ class ChatbotService
                 $code = $user->code ?: '';
 
                 $alreadyRegisteredMessages = [
-                    "{$user->name}, *você já está cadastrado* e faz parte do nosso time vencedor! 🚀. Utilize a mensagem abaixo para facilitar o compartilhamento com seus amigos! 👇",
-                    "Olá, {$user->name}! Vi sua mensagem, mas fique tranquilo(a): o seu cadastro já está confirmado e você já faz parte do nosso time vencedor! 🚀. Dá uma olhada na mensagem aqui embaixo! É só copiar e colar no grupo da galera. 🚀",
-                    "Tudo certo por aqui, {$user->name}! Você já concluiu essa etapa de inscrição e está oficialmente no nosso time vencedor! 🚀. Preguiça de digitar? Tranquilo! Copie a mensagem abaixo e mande para os seus amigos. 😜",
-                    "Opa, {$user->name}! Não precisa se cadastrar de novo, sua vaga no nosso time vencedor já está super garantida! 🚀. Bora compartilhar? Copie o textinho abaixo e espalhe a novidade! ✨",
-                    "Que bom te ver novamente, {$user->name}! Só para te avisar que o seu registro já está pronto e você já é do nosso time vencedor! 🚀. Copie a mensagem abaixo e mande para os seus contatos! 😉",
-                    "Ei, {$user->name}! O sistema já reconheceu o seu número por aqui. Você já completou a inscrição no nosso time vencedor! 🚀. Mensagem pronta para enviar aos amigos: é só copiar e encaminhar! 📲",
-                    "Pode relaxar, {$user->name}! Seus dados já estão com a gente e você já integra o nosso time vencedor! 🚀. Quer avisar seus amigos? Use o texto abaixo, já deixamos tudo pronto pra você! 👇",
-                    "Cadastro detectado com sucesso, {$user->name}! Você já finalizou esse processo e já faz parte do nosso time vencedor! 🚀. Pra facilitar sua vida, preparamos essa mensagem. É só copiar e mandar pro pessoal! 🙌",
-                    "Boas notícias, {$user->name}: não falta mais nada do seu lado! Você já está 100% cadastrado(a) no nosso time vencedor! 🚀. Compartilhe essa ideia com seus amigos utilizando a mensagem sugerida abaixo. 🤝",
-                    "Tudo pronto com o seu perfil, {$user->name}! Você já passou por essa fase e já é membro do nosso time vencedor! 🚀. Não deixe seus amigos de fora! Copie o texto abaixo e envie pra eles agora mesmo. 🏃‍♂️💨",
+                    "{$user->name}, *você já está cadastrado* e faz parte do nosso time vencedor! 🚀\n\nUtilize a mensagem abaixo para facilitar o compartilhamento com seus amigos! 👇",
+                    "Olá, {$user->name}! Vi sua mensagem, mas fique tranquilo(a): o seu cadastro já está confirmado e você já faz parte do nosso time vencedor! 🚀\n\nDá uma olhada na mensagem aqui embaixo! É só copiar e colar no grupo da galera. 🚀",
+                    "Tudo certo por aqui, {$user->name}! Você já concluiu essa etapa de inscrição e está oficialmente no nosso time vencedor! 🚀\n\nPreguiça de digitar? Tranquilo! Copie a mensagem abaixo e mande para os seus amigos. 😜",
+                    "Opa, {$user->name}! Não precisa se cadastrar de novo, sua vaga no nosso time vencedor já está super garantida! 🚀\n\nBora compartilhar? Copie o textinho abaixo e espalhe a novidade! ✨",
+                    "Que bom te ver novamente, {$user->name}! Só para te avisar que o seu registro já está pronto e você já é do nosso time vencedor! 🚀\n\nCopie a mensagem abaixo e mande para os seus contatos! 😉",
+                    "Ei, {$user->name}! O sistema já reconheceu o seu número por aqui. Você já completou a inscrição no nosso time vencedor! 🚀\n\nMensagem pronta para enviar aos amigos: é só copiar e encaminhar! 📲",
+                    "Pode relaxar, {$user->name}! Seus dados já estão com a gente e você já integra o nosso time vencedor! 🚀\n\nQuer avisar seus amigos? Use o texto abaixo, já deixamos tudo pronto pra você! 👇",
+                    "Cadastro detectado com sucesso, {$user->name}! Você já finalizou esse processo e já faz parte do nosso time vencedor! 🚀\n\nPra facilitar sua vida, preparamos essa mensagem. É só copiar e mandar pro pessoal! 🙌",
+                    "Boas notícias, {$user->name}: não falta mais nada do seu lado! Você já está 100% cadastrado(a) no nosso time vencedor! 🚀\n\nCompartilhe essa ideia com seus amigos utilizando a mensagem sugerida abaixo. 🤝",
+                    "Tudo pronto com o seu perfil, {$user->name}! Você já passou por essa fase e já é membro do nosso time vencedor! 🚀\n\nNão deixe seus amigos de fora! Copie o texto abaixo e envie pra eles agora mesmo. 🏃‍♂️💨",
                 ];
                 $msg1 = $alreadyRegisteredMessages[array_rand($alreadyRegisteredMessages)];
 
@@ -396,15 +396,15 @@ class ChatbotService
 
         $completionMessages = [
             "{$user->name}, agora você faz parte do nosso time vencedor! 🚀\n\nUtilize a mensagem abaixo para facilitar o compartilhamento com seus amigos!",
-            "Oficializado, {$user->name}! Você já está no nosso time vencedor! 🚀 Use o texto logo abaixo para convidar seus amigos com facilidade.",
-            "Parabéns, {$user->name}! Você acaba de entrar para o nosso time vencedor! 🚀 Compartilhe a mensagem abaixo com seus amigos para facilitar o convite.",
-            "Que incrível, {$user->name}! Agora você integra o nosso time vencedor! 🚀 Para chamar seus amigos, é só usar a mensagem prontinha aqui embaixo.",
-            "{$user->name}, seja muito bem-vindo ao nosso time vencedor! 🚀 Facilite o convite para seus amigos encaminhando a mensagem a seguir.",
-            "Prontinho, {$user->name}! Sua vaga no nosso time vencedor está garantida! 🚀 Basta copiar ou encaminhar a mensagem abaixo para os seus contatos.",
-            "Show, {$user->name}! Você entrou de vez para o nosso time vencedor! 🚀 Para te ajudar a trazer mais pessoas, preparamos a mensagem abaixo.",
-            "Tudo certo, {$user->name}! É uma honra ter você no nosso time vencedor! 🚀 Aproveite o texto abaixo para compartilhar facilmente com seus amigos.",
-            "Feito, {$user->name}! Você já é parte oficial do nosso time vencedor! 🚀 Use a mensagem a seguir para espalhar essa novidade por aí.",
-            "Boas-vindas oficiais, {$user->name}! Agora você está no nosso time vencedor! 🚀 Encaminhe a mensagem abaixo para seus amigos e facilite o compartilhamento.",
+            "Oficializado, {$user->name}! Você já está no nosso time vencedor! 🚀\n\nUse o texto logo abaixo para convidar seus amigos com facilidade.",
+            "Parabéns, {$user->name}! Você acaba de entrar para o nosso time vencedor! 🚀\n\nCompartilhe a mensagem abaixo com seus amigos para facilitar o convite.",
+            "Que incrível, {$user->name}! Agora você integra o nosso time vencedor! 🚀\n\nPara chamar seus amigos, é só usar a mensagem prontinha aqui embaixo.",
+            "{$user->name}, seja muito bem-vindo ao nosso time vencedor! 🚀\n\nFacilite o convite para seus amigos encaminhando a mensagem a seguir.",
+            "Prontinho, {$user->name}! Sua vaga no nosso time vencedor está garantida! 🚀\n\nBasta copiar ou encaminhar a mensagem abaixo para os seus contatos.",
+            "Show, {$user->name}! Você entrou de vez para o nosso time vencedor! 🚀\n\nPara te ajudar a trazer mais pessoas, preparamos a mensagem abaixo.",
+            "Tudo certo, {$user->name}! É uma honra ter você no nosso time vencedor! 🚀\n\nAproveite o texto abaixo para compartilhar facilmente com seus amigos.",
+            "Feito, {$user->name}! Você já é parte oficial do nosso time vencedor! 🚀\n\nUse a mensagem a seguir para espalhar essa novidade por aí.",
+            "Boas-vindas oficiais, {$user->name}! Agora você está no nosso time vencedor! 🚀\n\nEncaminhe a mensagem abaixo para seus amigos e facilite o compartilhamento.",
         ];
         $msg1 = $completionMessages[array_rand($completionMessages)];
 
