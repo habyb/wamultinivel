@@ -141,7 +141,10 @@ class CustomRequestPasswordReset extends RequestPasswordReset
                     text: "*Obrigado pela sua solicitação*\n🙂 Olá *{$user->name}*! Para acessar, use o link e o código abaixo:\n\nhttps://convite.andrecorrea.com.br\n\nLogo abaixo está a sua nova senha, enviamos ela separadamente para facilitar que você copie e cole."
                 );
 
-                dispatch(new SendPasswordMessageJob($number, $password))->delay(now()->addSeconds(3));
+                app(WhatsAppServiceUazapi::class)->sendFreeText(
+                    phone: $number,
+                    text: $password
+                );
 
                 Notification::make()
                     ->title(__('We sent your new password by WhatsApp'))
