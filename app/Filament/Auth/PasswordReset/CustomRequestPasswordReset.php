@@ -16,7 +16,7 @@ use Filament\Actions\Action;
 use DanHarrin\LivewireRateLimiting\Exceptions\TooManyRequestsException;
 use Exception;
 use App\Models\User;
-use App\Services\WhatsAppServiceBusinessApi;
+use App\Services\WhatsAppServiceUazapi;
 use App\Jobs\SendPasswordMessageJob;
 
 class CustomRequestPasswordReset extends RequestPasswordReset
@@ -136,18 +136,9 @@ class CustomRequestPasswordReset extends RequestPasswordReset
                     'password' => bcrypt($password),
                 ])->saveQuietly();
 
-                app(WhatsAppServiceBusinessApi::class)->sendText(
+                app(WhatsAppServiceUazapi::class)->sendFreeText(
                     phone: $number,
-                    template: 'solicitacao_obrigado',
-                    language: 'pt_BR',
-                    params: [
-                        [
-                            'type' => 'body',
-                            'parameters' => [
-                                ['type' => 'text', 'parameter_name' => 'name', 'text' => $user->name]
-                            ],
-                        ]
-                    ]
+                    text: "Olá {$user->name}, recebemos uma solicitação de recuperação de senha para a sua conta.\n\nAbaixo está a sua nova senha, enviamos ela separadamente para facilitar que você copie e cole."
                 );
 
                 dispatch(new SendPasswordMessageJob($number, $password))->delay(now()->addSeconds(3));

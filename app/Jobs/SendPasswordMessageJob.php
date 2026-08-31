@@ -2,7 +2,7 @@
 
 namespace App\Jobs;
 
-use App\Services\WhatsAppServiceBusinessApi;
+use App\Services\WhatsAppServiceUazapi;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -24,26 +24,9 @@ class SendPasswordMessageJob implements ShouldQueue
 
     public function handle(): void
     {
-        app(WhatsAppServiceBusinessApi::class)->sendText(
+        app(WhatsAppServiceUazapi::class)->sendFreeText(
             phone: $this->number,
-            template: 'senha',
-            language: 'pt_BR',
-            params: [
-                [
-                    'type' => 'body',
-                    'parameters' => [
-                        ['type' => 'text', 'parameter_name' => '1', 'text' => $this->password]
-                    ],
-                ],
-                [
-                    'type' => 'button',
-                    'sub_type' => 'url',
-                    'index' => 0,
-                    'parameters' => [
-                        ['type' => 'text', 'parameter_name' => '1', 'text' => $this->password]
-                    ]
-                ]
-            ]
+            text: $this->password
         );
     }
 }
