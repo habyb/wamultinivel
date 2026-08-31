@@ -138,7 +138,7 @@ class CustomRequestPasswordReset extends RequestPasswordReset
 
                 app(WhatsAppServiceUazapi::class)->sendFreeText(
                     phone: $number,
-                    text: "🙂 Olá *{$user->name}*! Para acessar, use o link e o código abaixo:\n\nhttps://convite.andrecorrea.com.br\n\nLogo abaixo está a sua nova senha, enviamos ela separadamente para facilitar que você copie e cole."
+                    text: "🙂 Olá *{$user->name}*! Para acessar, use o link abaixo:\n\nhttps://convite.andrecorrea.com.br\n\nLogo abaixo está a sua nova senha, enviamos ela separadamente para facilitar que você copie e cole."
                 );
 
                 app(WhatsAppServiceUazapi::class)->sendFreeText(
