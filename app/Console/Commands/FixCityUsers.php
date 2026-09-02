@@ -584,6 +584,7 @@ class FixCityUsers extends Command
                 'Rio de Janeiro Bemfica',
                 'Rio de Janeiro Janeiro',
                 'Rio de Janeiro- Campo Grande',
+                'Rios de Janeiro',
             ],
             'Santa Maria Madalena' => [
                 'Santa maria madalena',
