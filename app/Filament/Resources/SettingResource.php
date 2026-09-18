@@ -49,9 +49,10 @@ class SettingResource extends Resource
                 ->maxLength(255),
             Toggle::make('locked')
                 ->label('Locked'),
-            TextInput::make('payload')
+            Forms\Components\Textarea::make('payload')
                 ->label('Value')
-                ->afterStateHydrated(function (TextInput $component, $state) {
+                ->rows(2)
+                ->afterStateHydrated(function (Forms\Components\Textarea $component, $state) {
                     $component->state(data_get($state, 'value'));
                 })
                 ->dehydrated(true)
@@ -65,7 +66,12 @@ class SettingResource extends Resource
             ->columns([
                 TextColumn::make('group')->sortable()->searchable(),
                 TextColumn::make('name')->sortable()->searchable(),
-                TextColumn::make('payload')->label('Value')->sortable()->searchable(),
+                TextColumn::make('payload')
+                    ->label('Value')
+                    ->sortable()
+                    ->searchable()
+                    ->limit(50)
+                    ->tooltip(fn ($record) => strlen(json_encode($record->payload)) > 50 ? $record->payload['value'] ?? '' : null),
                 IconColumn::make('locked')
                     ->boolean()
                     ->label('Locked'),
